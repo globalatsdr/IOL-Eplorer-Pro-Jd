@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, FileText, ArrowLeftRight, X, Lock, Unlock, KeyRound } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound } from 'lucide-react';
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
