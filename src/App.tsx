@@ -6,17 +6,21 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe } from 'lucide-react';
+
+// --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
+// Reemplaza esta URL con la dirección "Raw" de tu archivo XML en GitHub.
+// Formato: https://raw.githubusercontent.com/[USUARIO]/[REPO]/[RAMA]/[ARCHIVO]
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'local' | 'remote' | 'upload'>('local');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
-  // Change this value to modify the required password.
-  // Requirement: 4 numbers and a special character (e.g., '1234!')
   const UNLOCK_PASSWORD = "1234!"; 
   const [passwordInput, setPasswordInput] = useState('');
   
@@ -53,15 +57,44 @@ function App() {
 
   // Load Data
   useEffect(() => {
-    // Initial load with default data
-    try {
-      const data = parseIOLData(IOL_XML_DATA);
-      setLenses(data);
-    } catch (e) {
-      console.error("Failed to parse default data", e);
-    } finally {
-      setLoading(false);
-    }
+    const initData = async () => {
+      setLoading(true);
+      try {
+        // 1. Intentar cargar desde GitHub (Repositorio IOLs-Database)
+        console.log("Fetching data from:", EXTERNAL_DB_URL);
+        const response = await fetch(EXTERNAL_DB_URL);
+        
+        if (!response.ok) {
+          throw new Error(`GitHub fetch failed: ${response.statusText}`);
+        }
+
+        const text = await response.text();
+        const data = parseIOLData(text);
+        
+        if (data.length > 0) {
+          setLenses(data);
+          setDataSource('remote');
+          console.log("Loaded remote data:", data.length, "lenses");
+        } else {
+          throw new Error("Parsed data was empty");
+        }
+
+      } catch (err) {
+        console.warn("Could not load remote data, falling back to local constants.", err);
+        // 2. Si falla, usar datos locales (constants.ts)
+        try {
+          const data = parseIOLData(IOL_XML_DATA);
+          setLenses(data);
+          setDataSource('local');
+        } catch (localErr) {
+          console.error("Failed to parse default local data", localErr);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
   }, []);
 
   // Effect to switch back to Basic tab if password becomes invalid while on Advanced tab
@@ -83,9 +116,10 @@ function App() {
         try {
           const parsedData = parseIOLData(text);
           setLenses(parsedData);
+          setDataSource('upload');
           // Reset selection on new file load
           setSelectedLensIds(new Set());
-          alert(`Successfully loaded ${parsedData.length} lenses.`);
+          alert(`Successfully loaded ${parsedData.length} lenses from file.`);
         } catch (err) {
           alert('Error parsing XML file. Please check the format.');
           console.error(err);
@@ -169,7 +203,7 @@ function App() {
   }, [lenses, selectedLensIds]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Processing IOL Database...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Connecting to IOL Database...</div>;
   }
 
   return (
@@ -187,18 +221,15 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo Image: Ensure a file named 'logo.png' exists in the root/public folder */}
             <img 
               src="logo.png" 
               alt="Logo" 
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
-                // Fallback to text if image is missing
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            {/* Fallback title is hidden on small screens if logo is present, logic handled by CSS or just keep title visible */}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
@@ -221,12 +252,18 @@ function App() {
 
              <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
-             <div className="text-sm text-slate-500 hidden md:block">
-              {filteredLenses.length} lenses
+             {/* Database Status Indicator */}
+             <div className="flex items-center gap-2 text-xs md:text-sm text-slate-500 hidden md:flex">
+               {dataSource === 'remote' && <Globe className="w-3.5 h-3.5 text-green-500" />}
+               {dataSource === 'local' && <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}
+               {dataSource === 'upload' && <Upload className="w-3.5 h-3.5 text-blue-500" />}
+               <span>{filteredLenses.length} lenses</span>
              </div>
+
              <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                title="Manually upload XML file"
              >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload XML</span>
@@ -237,6 +274,16 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
+        {/* Source Warning if Remote Failed */}
+        {dataSource === 'local' && (
+          <div className="max-w-md mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
+             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+             <div className="text-sm text-amber-800">
+               <strong>Offline Mode:</strong> Could not connect to the IOLs-Database. Using limited sample data. Check your connection or the repository URL.
+             </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 mb-8 max-w-md mx-auto relative">
           <button
