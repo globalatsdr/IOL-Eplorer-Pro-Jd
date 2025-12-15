@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe, AlertTriangle } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe, AlertTriangle, Eye } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // 1. Ve a tu repositorio IOLs-Database -> Abre el archivo XML -> Click en botón "Raw".
@@ -21,6 +21,7 @@ function App() {
   const [dataSource, setDataSource] = useState<'local' | 'remote' | 'upload'>('local');
   const [fetchError, setFetchError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoError, setLogoError] = useState(false);
 
   // --- PASSWORD CONFIGURATION ---
   const UNLOCK_PASSWORD = "1234!"; 
@@ -234,15 +235,18 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="logo.png" 
-              alt="Logo" 
-              className="h-10 w-auto object-contain rounded-lg"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
+            {!logoError ? (
+              <img 
+                src="logo.png" 
+                alt="Logo" 
+                className="h-10 w-auto object-contain rounded-lg"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                 <Eye className="w-6 h-6 text-white" />
+              </div>
+            )}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
