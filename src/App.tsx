@@ -6,18 +6,20 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe, AlertTriangle } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
-// Reemplaza esta URL con la dirección "Raw" de tu archivo XML en GitHub.
-// Formato: https://raw.githubusercontent.com/[USUARIO]/[REPO]/[RAMA]/[ARCHIVO]
-const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
+// 1. Ve a tu repositorio IOLs-Database -> Abre el archivo XML -> Click en botón "Raw".
+// 2. Copia esa URL y pégala aquí abajo.
+// NOTA: El repositorio debe ser PÚBLICO.
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<'local' | 'remote' | 'upload'>('local');
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
@@ -59,16 +61,23 @@ function App() {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
+      setFetchError(null);
+      
       try {
-        // 1. Intentar cargar desde GitHub (Repositorio IOLs-Database)
-        console.log("Fetching data from:", EXTERNAL_DB_URL);
+        // 1. Intentar cargar desde GitHub
+        console.log("Attempting to fetch from:", EXTERNAL_DB_URL);
         const response = await fetch(EXTERNAL_DB_URL);
         
         if (!response.ok) {
-          throw new Error(`GitHub fetch failed: ${response.statusText}`);
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
         const text = await response.text();
+        // Verificación básica de que es XML
+        if (!text.trim().startsWith('<')) {
+            throw new Error("The file retrieved is not a valid XML file.");
+        }
+
         const data = parseIOLData(text);
         
         if (data.length > 0) {
@@ -76,11 +85,14 @@ function App() {
           setDataSource('remote');
           console.log("Loaded remote data:", data.length, "lenses");
         } else {
-          throw new Error("Parsed data was empty");
+          throw new Error("XML file was found but contained no lenses.");
         }
 
-      } catch (err) {
-        console.warn("Could not load remote data, falling back to local constants.", err);
+      } catch (err: any) {
+        const errorMsg = err.message || "Unknown error";
+        console.warn("Remote load failed:", errorMsg);
+        setFetchError(`${errorMsg} (URL: ${EXTERNAL_DB_URL})`);
+
         // 2. Si falla, usar datos locales (constants.ts)
         try {
           const data = parseIOLData(IOL_XML_DATA);
@@ -119,6 +131,7 @@ function App() {
           setDataSource('upload');
           // Reset selection on new file load
           setSelectedLensIds(new Set());
+          setFetchError(null); // Clear error if upload is successful
           alert(`Successfully loaded ${parsedData.length} lenses from file.`);
         } catch (err) {
           alert('Error parsing XML file. Please check the format.');
@@ -276,10 +289,23 @@ function App() {
         
         {/* Source Warning if Remote Failed */}
         {dataSource === 'local' && (
-          <div className="max-w-md mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
-             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-             <div className="text-sm text-amber-800">
-               <strong>Offline Mode:</strong> Could not connect to the IOLs-Database. Using limited sample data. Check your connection or the repository URL.
+          <div className="max-w-3xl mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+             <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                   <h3 className="text-sm font-bold text-amber-900">Database Connection Failed</h3>
+                   <p className="text-sm text-amber-800 mt-1">
+                     The application could not load the live database from GitHub. We have loaded a limited set of local sample data instead.
+                   </p>
+                   {fetchError && (
+                     <div className="mt-2 p-2 bg-white/50 rounded border border-amber-200 text-xs font-mono text-amber-900 break-all">
+                        <strong>Error details:</strong> {fetchError}
+                     </div>
+                   )}
+                   <p className="text-xs text-amber-700 mt-2">
+                      <strong>Tip:</strong> Ensure the repository is Public and the file path is correct. If the repo is Private, the raw link will not work.
+                   </p>
+                </div>
              </div>
           </div>
         )}
