@@ -10,6 +10,8 @@ export const parseIOLData = (xmlString: string): Lens[] => {
   Array.from(lensNodes).forEach((lensNode) => {
     try {
       const getVal = (tag: string, parent: Element = lensNode): string => {
+        // Handle namespaced tags or case insensitivity issues by checking variations if needed
+        // but getElementsByTagName is case sensitive in XML.
         const node = parent.getElementsByTagName(tag)[0];
         return node ? node.textContent?.trim() || "" : "";
       };
@@ -110,15 +112,16 @@ export const parseIOLData = (xmlString: string): Lens[] => {
       const constNodes = lensNode.getElementsByTagName("Constants");
       Array.from(constNodes).forEach((cNode) => {
          const type = cNode.getAttribute("type")?.toLowerCase();
+         // Extended list of possible tags for better compatibility with various XML formats
          const vals: ConstantValues = {
-            ultrasound: getFloatAny(["Ultrasound", "A-Constant"], cNode),
-            srkt: getFloatAny(["SRKt", "A-Constant"], cNode),
-            haigis_a0: getFloatAny(["Haigis_a0", "a0"], cNode),
-            haigis_a1: getFloatAny(["Haigis_a1", "a1"], cNode),
-            haigis_a2: getFloatAny(["Haigis_a2", "a2"], cNode),
-            hoffer_q: getFloatAny(["pACD", "Hoffer_Q"], cNode),
-            holladay_1: getFloatAny(["sf", "Holladay_1"], cNode),
-            barrett: getFloat("Barrett", cNode)
+            ultrasound: getFloatAny(["Ultrasound", "A-Constant", "A_Constant", "AConstant"], cNode),
+            srkt: getFloatAny(["SRKt", "SRK_T", "A-Constant", "A_Constant", "AConstant"], cNode),
+            haigis_a0: getFloatAny(["Haigis_a0", "a0", "A0"], cNode),
+            haigis_a1: getFloatAny(["Haigis_a1", "a1", "A1"], cNode),
+            haigis_a2: getFloatAny(["Haigis_a2", "a2", "A2"], cNode),
+            hoffer_q: getFloatAny(["pACD", "PACD", "Hoffer_Q", "HofferQ", "ACD"], cNode),
+            holladay_1: getFloatAny(["sf", "SF", "Holladay_1", "Holladay1", "SurgeonFactor"], cNode),
+            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode)
          };
 
          if (type === 'nominal') {
