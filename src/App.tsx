@@ -214,18 +214,19 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo Image: Ensure 'logo.png' is in the root 'public' folder */}
+            {/* Logo Image: Attempts to load 'logo.png' from the public root */}
             <img 
-              src="./logo.png" 
+              src="logo.png" 
               alt="Logo" 
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
-                // Fallback to text if image is missing
+                // If logo fails to load (e.g. 404), hide img and show text
+                console.warn("Logo failed to load. Check 'public/logo.png' exists.");
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            {/* Fallback title is hidden on small screens if logo is present, logic handled by CSS or just keep title visible */}
+            {/* Fallback title - shown if logo fails */}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
