@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
-import { X, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { X, ArrowDownAZ, ArrowUpAZ, Sparkles } from 'lucide-react';
 
 interface Props {
   lenses: Lens[];
   onClose: () => void;
   onRemove: (id: string) => void;
+  onFindSimilar: (lens: Lens) => void;
 }
 
-const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove }) => {
+const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimilar }) => {
   const [sortKey, setSortKey] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -217,7 +218,17 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove }) => {
                          <X className="w-5 h-5" />
                        </button>
                     </div>
-                    <div className="text-xs text-gray-500 font-normal mt-1">{lens.manufacturer}</div>
+                    <div className="text-xs text-gray-500 font-normal mt-1 mb-3">{lens.manufacturer}</div>
+                    
+                    {/* Find Similar Button */}
+                    <button 
+                      onClick={() => onFindSimilar(lens)}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-md border border-slate-200 transition-colors"
+                      title={`Find Zeiss lenses similar to ${lens.name}`}
+                    >
+                      <Sparkles className="w-3 h-3 text-yellow-500" />
+                      Find Zeiss Equivalent
+                    </button>
                   </th>
                 ))}
               </tr>
