@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Globe, AlertTriangle, Eye } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, FileText, ArrowLeftRight, X, Lock, Unlock, KeyRound, Sparkles, Eye } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // 1. Ve a tu repositorio IOLs-Database -> Abre el archivo XML -> Click en botón "Raw".
@@ -18,12 +18,11 @@ function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState<'local' | 'remote' | 'upload'>('local');
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [logoError, setLogoError] = useState(false);
 
   // --- PASSWORD CONFIGURATION ---
+  // Change this value to modify the required password.
+  // Requirement: 4 numbers and a special character (e.g., '1234!')
   const UNLOCK_PASSWORD = "1234!"; 
   const [passwordInput, setPasswordInput] = useState('');
   
@@ -60,54 +59,15 @@ function App() {
 
   // Load Data
   useEffect(() => {
-    const initData = async () => {
-      setLoading(true);
-      setFetchError(null);
-      
-      try {
-        // 1. Intentar cargar desde GitHub
-        console.log("Attempting to fetch from:", EXTERNAL_DB_URL);
-        const response = await fetch(EXTERNAL_DB_URL);
-        
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
-        const text = await response.text();
-        // Verificación básica de que es XML
-        if (!text.trim().startsWith('<')) {
-            throw new Error("The file retrieved is not a valid XML file.");
-        }
-
-        const data = parseIOLData(text);
-        
-        if (data.length > 0) {
-          setLenses(data);
-          setDataSource('remote');
-          console.log("Loaded remote data:", data.length, "lenses");
-        } else {
-          throw new Error("XML file was found but contained no lenses.");
-        }
-
-      } catch (err: any) {
-        const errorMsg = err.message || "Unknown error";
-        console.warn("Remote load failed:", errorMsg);
-        setFetchError(`${errorMsg} (URL: ${EXTERNAL_DB_URL})`);
-
-        // 2. Si falla, usar datos locales (constants.ts)
-        try {
-          const data = parseIOLData(IOL_XML_DATA);
-          setLenses(data);
-          setDataSource('local');
-        } catch (localErr) {
-          console.error("Failed to parse default local data", localErr);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initData();
+    // Initial load with default data
+    try {
+      const data = parseIOLData(IOL_XML_DATA);
+      setLenses(data);
+    } catch (e) {
+      console.error("Failed to parse default data", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Effect to switch back to Basic tab if password becomes invalid while on Advanced tab
@@ -129,11 +89,9 @@ function App() {
         try {
           const parsedData = parseIOLData(text);
           setLenses(parsedData);
-          setDataSource('upload');
           // Reset selection on new file load
           setSelectedLensIds(new Set());
-          setFetchError(null); // Clear error if upload is successful
-          alert(`Successfully loaded ${parsedData.length} lenses from file.`);
+          alert(`Successfully loaded ${parsedData.length} lenses.`);
         } catch (err) {
           alert('Error parsing XML file. Please check the format.');
           console.error(err);
@@ -168,6 +126,33 @@ function App() {
   };
 
   const clearSelection = () => setSelectedLensIds(new Set());
+
+  // Logic to find similar Zeiss lenses based on a specific target lens
+  const handleFindZeissSimilar = (targetLens: Lens) => {
+    // Find the exact "Zeiss" string used in the database (e.g., "ZEISS", "Carl Zeiss", etc.)
+    const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
+
+    if (!zeissName) {
+      alert("No Zeiss lenses found in the current database.");
+      return;
+    }
+
+    // Apply filters matching the target lens
+    setBasicFilters({
+      manufacturer: zeissName,
+      opticConcept: targetLens.specifications.opticConcept,
+      toric: targetLens.specifications.toric ? 'yes' : 'no'
+    });
+
+    // Switch to basic tab to see the dropdowns update
+    setActiveTab(FilterTab.BASIC);
+
+    // Close the comparison modal so user sees results
+    setShowComparison(false);
+
+    // Scroll to top to see results
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Filtering Logic
   const filteredLenses = useMemo(() => {
@@ -217,7 +202,7 @@ function App() {
   }, [lenses, selectedLensIds]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Connecting to IOL Database...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Processing IOL Database...</div>;
   }
 
   return (
@@ -235,18 +220,18 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {!logoError ? (
-              <img 
-                src="logo.png" 
-                alt="Logo" 
-                className="h-10 w-auto object-contain rounded-lg"
-                onError={() => setLogoError(true)}
-              />
-            ) : (
-              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                 <Eye className="w-6 h-6 text-white" />
-              </div>
-            )}
+            {/* Logo Image: Ensure a file named 'logo.png' exists in the root/public folder */}
+            <img 
+              src="logo.png" 
+              alt="Logo" 
+              className="h-10 w-auto object-contain rounded-lg"
+              onError={(e) => {
+                // Fallback to text if image is missing
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            {/* Fallback title is hidden on small screens if logo is present, logic handled by CSS or just keep title visible */}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
@@ -269,18 +254,12 @@ function App() {
 
              <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
-             {/* Database Status Indicator */}
-             <div className="flex items-center gap-2 text-xs md:text-sm text-slate-500 hidden md:flex">
-               {dataSource === 'remote' && <Globe className="w-3.5 h-3.5 text-green-500" />}
-               {dataSource === 'local' && <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}
-               {dataSource === 'upload' && <Upload className="w-3.5 h-3.5 text-blue-500" />}
-               <span>{filteredLenses.length} lenses</span>
+             <div className="text-sm text-slate-500 hidden md:block">
+              {filteredLenses.length} lenses
              </div>
-
              <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
-                title="Manually upload XML file"
              >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload XML</span>
@@ -291,29 +270,6 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Source Warning if Remote Failed */}
-        {dataSource === 'local' && (
-          <div className="max-w-3xl mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-             <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                   <h3 className="text-sm font-bold text-amber-900">Database Connection Failed</h3>
-                   <p className="text-sm text-amber-800 mt-1">
-                     The application could not load the live database from GitHub. We have loaded a limited set of local sample data instead.
-                   </p>
-                   {fetchError && (
-                     <div className="mt-2 p-2 bg-white/50 rounded border border-amber-200 text-xs font-mono text-amber-900 break-all">
-                        <strong>Error details:</strong> {fetchError}
-                     </div>
-                   )}
-                   <p className="text-xs text-amber-700 mt-2">
-                      <strong>Tip:</strong> Ensure the repository is Public and the file path is correct. If the repo is Private, the raw link will not work.
-                   </p>
-                </div>
-             </div>
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 mb-8 max-w-md mx-auto relative">
           <button
@@ -542,6 +498,7 @@ function App() {
           lenses={selectedLensesForComparison} 
           onClose={() => setShowComparison(false)}
           onRemove={removeLensFromComparison}
+          onFindSimilar={handleFindZeissSimilar}
         />
       )}
     </div>
