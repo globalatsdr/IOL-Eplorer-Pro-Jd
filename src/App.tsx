@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, RotateCcw } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, Globe } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
@@ -53,8 +53,6 @@ function App() {
     setBasicFilters(initialBasicFilters);
     setAdvFilters(initialAdvFilters);
     setShowComparison(false);
-    // Optional: if keyword was being used, we might want to clear it explicitly
-    // as part of advFilters it's already covered.
   };
 
   // Extract unique values for dropdowns
@@ -221,7 +219,7 @@ function App() {
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
-          <div className="flex items-center gap-3 md:gap-6">
+          <div className="flex items-center gap-3 md:gap-4 lg:gap-6">
              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                 {isAdvancedUnlocked ? <Unlock className="w-4 h-4 text-emerald-500" /> : <KeyRound className="w-4 h-4 text-slate-400" />}
                 <input 
@@ -232,15 +230,28 @@ function App() {
                   className="bg-transparent border-none text-sm w-24 focus:ring-0 focus:outline-none placeholder-slate-400 text-slate-700"
                 />
              </div>
+             
              <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
-             <div className="text-sm text-slate-500 hidden md:block">{filteredLenses.length} lenses</div>
-             <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
-             >
-                <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">Upload XML</span>
-             </button>
+             
+             <div className="flex items-center gap-2">
+                <a 
+                  href="https://iolcon.org/lensesTable.php" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                >
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span className="hidden sm:inline">IOLcon</span>
+                </a>
+
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span className="hidden sm:inline">Upload XML</span>
+                </button>
+             </div>
           </div>
         </div>
       </header>
@@ -279,7 +290,6 @@ function App() {
             </button>
           </div>
           
-          {/* RESET BUTTON */}
           <button 
             onClick={resetAll}
             className="absolute right-0 flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium text-sm group"
