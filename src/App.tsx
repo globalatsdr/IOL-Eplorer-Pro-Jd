@@ -9,8 +9,8 @@ import DualRangeSlider from './components/DualRangeSlider';
 import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
-// URL del archivo Raw en GitHub
-const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
+// Fixed URL: Removed 'refs/heads/' which causes 404 errors on raw.githubusercontent.com
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
@@ -60,10 +60,11 @@ function App() {
       setLoading(true);
       try {
         // 1. Intentar descargar datos externos
-        const response = await fetch(EXTERNAL_DB_URL);
+        // Add timestamp to prevent caching
+        const response = await fetch(`${EXTERNAL_DB_URL}?t=${new Date().getTime()}`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch external DB: ${response.statusText}`);
+          throw new Error(`Failed to fetch external DB: ${response.status} ${response.statusText}`);
         }
 
         const text = await response.text();
@@ -75,6 +76,7 @@ function App() {
 
         setLenses(parsedData);
         setIsOfflineMode(false); // Conexión exitosa
+        console.log(`Loaded ${parsedData.length} lenses from GitHub.`);
 
       } catch (error) {
         console.warn("Could not load external database. Falling back to local data.", error);
@@ -280,17 +282,17 @@ function App() {
         
         {/* OFFLINE MODE WARNING BANNER */}
         {isOfflineMode && (
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg shadow-sm">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <WifiOff className="h-5 w-5 text-amber-500" aria-hidden="true" />
               </div>
               <div className="ml-3">
                 <p className="text-sm text-amber-800 font-medium">
-                  Offline Mode Active
+                  Offline / Fallback Mode Active
                 </p>
                 <p className="text-xs text-amber-700 mt-0.5">
-                  Unable to connect to the live database. Displaying local example data (limited set).
+                  Could not download the latest database from GitHub. Showing local example data only.
                 </p>
               </div>
             </div>
