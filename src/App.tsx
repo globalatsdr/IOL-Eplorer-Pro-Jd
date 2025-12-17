@@ -6,17 +6,20 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff } from 'lucide-react';
+
+// --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
+// URL del archivo Raw en GitHub
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
+  const [isOfflineMode, setIsOfflineMode] = useState(false); // Estado para controlar el modo offline
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
-  // Change this value to modify the required password.
-  // Requirement: 4 numbers and a special character (e.g., '1234!')
   const UNLOCK_PASSWORD = "1234!"; 
   const [passwordInput, setPasswordInput] = useState('');
   
@@ -51,17 +54,45 @@ function App() {
     Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
   , [lenses]);
 
-  // Load Data
+  // Load Data Logic
   useEffect(() => {
-    // Initial load with default data
-    try {
-      const data = parseIOLData(IOL_XML_DATA);
-      setLenses(data);
-    } catch (e) {
-      console.error("Failed to parse default data", e);
-    } finally {
-      setLoading(false);
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // 1. Intentar descargar datos externos
+        const response = await fetch(EXTERNAL_DB_URL);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch external DB: ${response.statusText}`);
+        }
+
+        const text = await response.text();
+        const parsedData = parseIOLData(text);
+
+        if (parsedData.length === 0) {
+            throw new Error("External data parsed but returned 0 lenses");
+        }
+
+        setLenses(parsedData);
+        setIsOfflineMode(false); // Conexión exitosa
+
+      } catch (error) {
+        console.warn("Could not load external database. Falling back to local data.", error);
+        
+        // 2. Fallback a datos locales si falla la red
+        try {
+          const localData = parseIOLData(IOL_XML_DATA);
+          setLenses(localData);
+          setIsOfflineMode(true); // Activar modo offline
+        } catch (localError) {
+          console.error("Critical: Failed to parse local fallback data", localError);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Effect to switch back to Basic tab if password becomes invalid while on Advanced tab
@@ -85,6 +116,7 @@ function App() {
           setLenses(parsedData);
           // Reset selection on new file load
           setSelectedLensIds(new Set());
+          setIsOfflineMode(false); // Si el usuario sube un archivo, ya no estamos en "modo fallo"
           alert(`Successfully loaded ${parsedData.length} lenses.`);
         } catch (err) {
           alert('Error parsing XML file. Please check the format.');
@@ -94,7 +126,6 @@ function App() {
       setLoading(false);
     };
     reader.readAsText(file);
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -123,7 +154,6 @@ function App() {
 
   // Logic to find similar Zeiss lenses based on a specific target lens
   const handleFindZeissSimilar = (targetLens: Lens) => {
-    // Find the exact "Zeiss" string used in the database (e.g., "ZEISS", "Carl Zeiss", etc.)
     const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
 
     if (!zeissName) {
@@ -131,27 +161,20 @@ function App() {
       return;
     }
 
-    // Apply filters matching the target lens
     setBasicFilters({
       manufacturer: zeissName,
       opticConcept: targetLens.specifications.opticConcept,
       toric: targetLens.specifications.toric ? 'yes' : 'no'
     });
 
-    // Switch to basic tab to see the dropdowns update
     setActiveTab(FilterTab.BASIC);
-
-    // Close the comparison modal so user sees results
     setShowComparison(false);
-
-    // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Filtering Logic
   const filteredLenses = useMemo(() => {
     return lenses.filter(lens => {
-      // Common logic: always match keyword if present in Advanced tab
       if (activeTab === FilterTab.ADVANCED && advFilters.keyword) {
         const kw = advFilters.keyword.toLowerCase();
         const match = lens.name.toLowerCase().includes(kw) || 
@@ -170,11 +193,7 @@ function App() {
         return true;
       } else {
         // Advanced Logic
-        
-        // Min Sphere Logic: The lens must start at (or below) the requested Min Sphere.
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
-
-        // Max Sphere Logic: The lens must end at (or above) the requested Max Sphere.
         if (lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
 
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
@@ -190,7 +209,6 @@ function App() {
     });
   }, [lenses, activeTab, basicFilters, advFilters]);
 
-  // Helper for rendering comparison modal
   const selectedLensesForComparison = useMemo(() => {
     return lenses.filter(l => selectedLensIds.has(l.id));
   }, [lenses, selectedLensIds]);
@@ -201,7 +219,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Hidden File Input */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -214,19 +231,15 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo Image: Attempts to load 'logo.png' from the public root */}
             <img 
               src="logo.png" 
               alt="Logo" 
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
-                // If logo fails to load (e.g. 404), hide img and show text
-                console.warn("Logo failed to load. Check 'public/logo.png' exists.");
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            {/* Fallback title - shown if logo fails */}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
@@ -265,6 +278,25 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
+        {/* OFFLINE MODE WARNING BANNER */}
+        {isOfflineMode && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg shadow-sm animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <WifiOff className="h-5 w-5 text-amber-500" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-amber-800 font-medium">
+                  Offline Mode Active
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Unable to connect to the live database. Displaying local example data (limited set).
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 mb-8 max-w-md mx-auto relative">
           <button
