@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, Globe } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, Globe, Layers } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
@@ -399,6 +399,20 @@ function App() {
           )}
         </div>
 
+        {/* Results Header / Counter */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-slate-400" />
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-widest">
+              Available Lenses
+            </h2>
+            <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-blue-200">
+              {filteredLenses.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Results Grid */}
         {filteredLenses.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
             <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
