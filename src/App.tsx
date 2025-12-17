@@ -6,44 +6,56 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, RotateCcw } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
-// Fixed URL: Removed 'refs/heads/' which causes 404 errors on raw.githubusercontent.com
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
-  const [isOfflineMode, setIsOfflineMode] = useState(false); // Estado para controlar el modo offline
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
   const UNLOCK_PASSWORD = "1234!"; 
   const [passwordInput, setPasswordInput] = useState('');
-  
   const isAdvancedUnlocked = passwordInput === UNLOCK_PASSWORD;
 
   // Comparison State
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
   const [showComparison, setShowComparison] = useState(false);
 
-  // Filters State
-  const [basicFilters, setBasicFilters] = useState<BasicFilters>({
+  // Default Filter States
+  const initialBasicFilters: BasicFilters = {
     manufacturer: 'all',
     opticConcept: 'all',
     toric: 'all'
-  });
+  };
 
-  const [advFilters, setAdvFilters] = useState<AdvancedFilters>({
+  const initialAdvFilters: AdvancedFilters = {
     filterMinSphere: 10,
     filterMaxSphere: 30,
     isPreloaded: false,
     isYellowFilter: false,
     hydroType: 'all',
     keyword: ''
-  });
+  };
+
+  // Filters State
+  const [basicFilters, setBasicFilters] = useState<BasicFilters>(initialBasicFilters);
+  const [advFilters, setAdvFilters] = useState<AdvancedFilters>(initialAdvFilters);
+
+  // Function to reset everything
+  const resetAll = () => {
+    setSelectedLensIds(new Set());
+    setBasicFilters(initialBasicFilters);
+    setAdvFilters(initialAdvFilters);
+    setShowComparison(false);
+    // Optional: if keyword was being used, we might want to clear it explicitly
+    // as part of advFilters it's already covered.
+  };
 
   // Extract unique values for dropdowns
   const uniqueManufacturers = useMemo(() => 
@@ -59,45 +71,29 @@ function App() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 1. Intentar descargar datos externos
-        // Add timestamp to prevent caching
         const response = await fetch(`${EXTERNAL_DB_URL}?t=${new Date().getTime()}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch external DB: ${response.status} ${response.statusText}`);
-        }
-
+        if (!response.ok) throw new Error(`Failed to fetch external DB: ${response.status}`);
         const text = await response.text();
         const parsedData = parseIOLData(text);
-
-        if (parsedData.length === 0) {
-            throw new Error("External data parsed but returned 0 lenses");
-        }
-
+        if (parsedData.length === 0) throw new Error("Parsed 0 lenses");
         setLenses(parsedData);
-        setIsOfflineMode(false); // Conexión exitosa
-        console.log(`Loaded ${parsedData.length} lenses from GitHub.`);
-
+        setIsOfflineMode(false);
       } catch (error) {
-        console.warn("Could not load external database. Falling back to local data.", error);
-        
-        // 2. Fallback a datos locales si falla la red
+        console.warn("Falling back to local data.", error);
         try {
           const localData = parseIOLData(IOL_XML_DATA);
           setLenses(localData);
-          setIsOfflineMode(true); // Activar modo offline
+          setIsOfflineMode(true);
         } catch (localError) {
-          console.error("Critical: Failed to parse local fallback data", localError);
+          console.error("Critical: Failed to parse local data", localError);
         }
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // Effect to switch back to Basic tab if password becomes invalid while on Advanced tab
   useEffect(() => {
     if (activeTab === FilterTab.ADVANCED && !isAdvancedUnlocked) {
       setActiveTab(FilterTab.BASIC);
@@ -107,7 +103,6 @@ function App() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setLoading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -116,13 +111,11 @@ function App() {
         try {
           const parsedData = parseIOLData(text);
           setLenses(parsedData);
-          // Reset selection on new file load
           setSelectedLensIds(new Set());
-          setIsOfflineMode(false); // Si el usuario sube un archivo, ya no estamos en "modo fallo"
+          setIsOfflineMode(false);
           alert(`Successfully loaded ${parsedData.length} lenses.`);
         } catch (err) {
-          alert('Error parsing XML file. Please check the format.');
-          console.error(err);
+          alert('Error parsing XML file.');
         }
       }
       setLoading(false);
@@ -154,36 +147,28 @@ function App() {
 
   const clearSelection = () => setSelectedLensIds(new Set());
 
-  // Logic to find similar Zeiss lenses based on a specific target lens
   const handleFindZeissSimilar = (targetLens: Lens) => {
     const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
-
     if (!zeissName) {
-      alert("No Zeiss lenses found in the current database.");
+      alert("No Zeiss lenses found.");
       return;
     }
-
     setBasicFilters({
       manufacturer: zeissName,
       opticConcept: targetLens.specifications.opticConcept,
       toric: targetLens.specifications.toric ? 'yes' : 'no'
     });
-
     setActiveTab(FilterTab.BASIC);
     setShowComparison(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Filtering Logic
   const filteredLenses = useMemo(() => {
     return lenses.filter(lens => {
       if (activeTab === FilterTab.ADVANCED && advFilters.keyword) {
         const kw = advFilters.keyword.toLowerCase();
-        const match = lens.name.toLowerCase().includes(kw) || 
-                      lens.manufacturer.toLowerCase().includes(kw);
-        if (!match) return false;
+        if (!(lens.name.toLowerCase().includes(kw) || lens.manufacturer.toLowerCase().includes(kw))) return false;
       }
-
       if (activeTab === FilterTab.BASIC) {
         if (basicFilters.manufacturer !== 'all' && lens.manufacturer !== basicFilters.manufacturer) return false;
         if (basicFilters.opticConcept !== 'all' && lens.specifications.opticConcept !== basicFilters.opticConcept) return false;
@@ -194,10 +179,8 @@ function App() {
         }
         return true;
       } else {
-        // Advanced Logic
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
         if (lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
-
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
         if (advFilters.isYellowFilter) {
            const filterStr = lens.specifications.filter.toLowerCase();
@@ -221,15 +204,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileUpload} 
-        accept=".xml" 
-        className="hidden" 
-      />
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".xml" className="hidden" />
 
-      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -246,13 +222,8 @@ function App() {
           </div>
           
           <div className="flex items-center gap-3 md:gap-6">
-             {/* Admin Password Input */}
              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                {isAdvancedUnlocked ? (
-                  <Unlock className="w-4 h-4 text-emerald-500" />
-                ) : (
-                  <KeyRound className="w-4 h-4 text-slate-400" />
-                )}
+                {isAdvancedUnlocked ? <Unlock className="w-4 h-4 text-emerald-500" /> : <KeyRound className="w-4 h-4 text-slate-400" />}
                 <input 
                   type="password" 
                   value={passwordInput}
@@ -261,12 +232,8 @@ function App() {
                   className="bg-transparent border-none text-sm w-24 focus:ring-0 focus:outline-none placeholder-slate-400 text-slate-700"
                 />
              </div>
-
              <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
-
-             <div className="text-sm text-slate-500 hidden md:block">
-              {filteredLenses.length} lenses
-             </div>
+             <div className="text-sm text-slate-500 hidden md:block">{filteredLenses.length} lenses</div>
              <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
@@ -279,53 +246,47 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* OFFLINE MODE WARNING BANNER */}
         {isOfflineMode && (
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg shadow-sm">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <WifiOff className="h-5 w-5 text-amber-500" aria-hidden="true" />
-              </div>
+              <WifiOff className="h-5 w-5 text-amber-500 flex-shrink-0" />
               <div className="ml-3">
-                <p className="text-sm text-amber-800 font-medium">
-                  Offline / Fallback Mode Active
-                </p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  Could not download the latest database from GitHub. Showing local example data only.
-                </p>
+                <p className="text-sm text-amber-800 font-medium">Offline / Fallback Mode Active</p>
+                <p className="text-xs text-amber-700 mt-0.5">Could not download database from GitHub. Showing local data.</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 mb-8 max-w-md mx-auto relative">
-          <button
-            onClick={() => setActiveTab(FilterTab.BASIC)}
-            className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out
-              ${activeTab === FilterTab.BASIC 
-                ? 'bg-white text-blue-700 shadow' 
-                : 'text-slate-600 hover:bg-white/[0.12] hover:text-blue-800'}`}
-          >
-            Basic Filters
-          </button>
+        {/* Tab Header with Reset Button */}
+        <div className="relative mb-8 flex items-center justify-center">
+          <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 w-full max-w-md shadow-inner">
+            <button
+              onClick={() => setActiveTab(FilterTab.BASIC)}
+              className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out
+                ${activeTab === FilterTab.BASIC ? 'bg-white text-blue-700 shadow' : 'text-slate-600 hover:bg-white/50'}`}
+            >
+              Basic Filters
+            </button>
+            <button
+              onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.ADVANCED)}
+              disabled={!isAdvancedUnlocked}
+              className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
+                ${activeTab === FilterTab.ADVANCED ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
+            >
+              Advanced Search
+              {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
+            </button>
+          </div>
           
-          <button
-            onClick={() => {
-              if (isAdvancedUnlocked) setActiveTab(FilterTab.ADVANCED);
-            }}
-            disabled={!isAdvancedUnlocked}
-            className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
-              ${activeTab === FilterTab.ADVANCED 
-                ? 'bg-white text-blue-700 shadow' 
-                : isAdvancedUnlocked 
-                  ? 'text-slate-600 hover:bg-white/[0.12] hover:text-blue-800'
-                  : 'text-slate-400 opacity-60 cursor-not-allowed'
-              }`}
+          {/* RESET BUTTON */}
+          <button 
+            onClick={resetAll}
+            className="absolute right-0 flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium text-sm group"
+            title="Reset all filters and selections"
           >
-            Advanced Search
-            {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
+            <RotateCcw className="w-4 h-4 transition-transform group-hover:rotate-[-90deg]" />
+            <span className="hidden md:inline">Reset All</span>
           </button>
         </div>
 
@@ -334,10 +295,7 @@ function App() {
           {activeTab === FilterTab.BASIC ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                  Manufacturer
-                  <Tooltip content="The company that manufactures the intraocular lens." />
-                </label>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Manufacturer <Tooltip content="The company that manufactures the lens." /></label>
                 <div className="relative">
                   <select 
                     className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
@@ -347,17 +305,12 @@ function App() {
                     <option value="all">All Manufacturers</option>
                     {uniqueManufacturers.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                  Optic Concept
-                  <Tooltip content="The optical design principle (e.g., Monofocal for single distance, Multifocal for multiple ranges, EDoF for extended depth)." />
-                </label>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Optic Concept <Tooltip content="Optical design principle." /></label>
                 <div className="relative">
                   <select 
                     className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
@@ -367,17 +320,12 @@ function App() {
                     <option value="all">All Concepts</option>
                     {uniqueConcepts.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                  Toric
-                  <Tooltip content="Toric lenses correct astigmatism (irregular curvature of the cornea)." />
-                </label>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Toric <Tooltip content="Corrects astigmatism." /></label>
                 <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200">
                   {['all', 'yes', 'no'].map((opt) => (
                      <button
@@ -394,11 +342,8 @@ function App() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Keyword Search */}
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
                 <input 
                   type="text" 
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -409,31 +354,16 @@ function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 {/* Unified Diopter Range Slider */}
                  <div className="md:col-span-2 px-2">
-                    <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                       Availability Range Requirement
-                       <Tooltip content="Adjust the sliders to define the diopter range the lens MUST cover. Left handle is the required start (min), right handle is the required end (max)." />
-                    </label>
+                    <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Availability Range Requirement <Tooltip content="Define required diopter coverage." /></label>
                     <DualRangeSlider 
-                      min={-10}
-                      max={60}
-                      minValue={advFilters.filterMinSphere}
-                      maxValue={advFilters.filterMaxSphere}
-                      onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})}
-                      unit="D"
+                      min={-10} max={60} minValue={advFilters.filterMinSphere} maxValue={advFilters.filterMaxSphere}
+                      onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})} unit="D"
                     />
-                     <p className="text-xs text-slate-400 mt-1">
-                        Find lenses covering <strong>{advFilters.filterMinSphere}D</strong> to <strong>{advFilters.filterMaxSphere}D</strong>.
-                     </p>
+                     <p className="text-xs text-slate-400 mt-1">Lenses covering <strong>{advFilters.filterMinSphere}D</strong> to <strong>{advFilters.filterMaxSphere}D</strong>.</p>
                  </div>
-
-                 {/* Material Type */}
                  <div>
-                    <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                      Material Type
-                      <Tooltip content="Hydrophobic (repels water) or Hydrophilic (attracts water) acrylic material." />
-                    </label>
+                    <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Material Type <Tooltip content="Acrylic material type." /></label>
                     <select 
                       className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-blue-500"
                       value={advFilters.hydroType}
@@ -444,33 +374,14 @@ function App() {
                       <option value="hydrophilic">Hydrophilic</option>
                     </select>
                  </div>
-
-                 {/* Toggles */}
                  <div className="flex flex-col justify-center gap-3">
                     <label className="flex items-center space-x-3 cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        checked={advFilters.isPreloaded}
-                        onChange={(e) => setAdvFilters({...advFilters, isPreloaded: e.target.checked})}
-                      />
-                      <span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">
-                        Preloaded Only
-                        <Tooltip content="Lenses that come pre-loaded in an injector system." />
-                      </span>
+                      <input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isPreloaded} onChange={(e) => setAdvFilters({...advFilters, isPreloaded: e.target.checked})} />
+                      <span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Preloaded Only <Tooltip content="In injector system." /></span>
                     </label>
-
-                     <label className="flex items-center space-x-3 cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        checked={advFilters.isYellowFilter}
-                        onChange={(e) => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})}
-                      />
-                      <span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">
-                        Yellow/Blue Filter
-                        <Tooltip content="Lenses with a blue-light filtering (yellow) chromophore." />
-                      </span>
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isYellowFilter} onChange={(e) => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})} />
+                      <span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Yellow/Blue Filter <Tooltip content="Blue-light filtering." /></span>
                     </label>
                  </div>
               </div>
@@ -478,7 +389,6 @@ function App() {
           )}
         </div>
 
-        {/* Results */}
         {filteredLenses.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
             <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -488,47 +398,29 @@ function App() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredLenses.map(lens => (
-              <LensCard 
-                key={lens.id} 
-                lens={lens} 
-                isSelected={selectedLensIds.has(lens.id)}
-                onToggleSelect={toggleLensSelection}
-              />
+              <LensCard key={lens.id} lens={lens} isSelected={selectedLensIds.has(lens.id)} onToggleSelect={toggleLensSelection} />
             ))}
           </div>
         )}
       </main>
 
-      {/* Comparison Floating Bar */}
       {selectedLensIds.size > 0 && (
-        <div className="fixed bottom-0 inset-x-0 p-4 bg-white border-t border-slate-200 shadow-lg z-30 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-0 inset-x-0 p-4 bg-white border-t border-slate-200 shadow-lg z-30">
            <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3">
-                 <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
-                   {selectedLensIds.size}
-                 </div>
+                 <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">{selectedLensIds.size}</div>
                  <span className="text-slate-700 font-medium">Lenses Selected</span>
                  <button onClick={clearSelection} className="text-xs text-red-500 hover:text-red-700 ml-2 font-medium">Clear</button>
               </div>
-              <button 
-                onClick={() => setShowComparison(true)}
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors"
-              >
-                <ArrowLeftRight className="w-5 h-5" />
-                Compare Lenses
+              <button onClick={() => setShowComparison(true)} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors">
+                <ArrowLeftRight className="w-5 h-5" /> Compare Lenses
               </button>
            </div>
         </div>
       )}
 
-      {/* Comparison Modal */}
       {showComparison && (
-        <ComparisonView 
-          lenses={selectedLensesForComparison} 
-          onClose={() => setShowComparison(false)}
-          onRemove={removeLensFromComparison}
-          onFindSimilar={handleFindZeissSimilar}
-        />
+        <ComparisonView lenses={selectedLensesForComparison} onClose={() => setShowComparison(false)} onRemove={removeLensFromComparison} onFindSimilar={handleFindZeissSimilar} />
       )}
     </div>
   );
