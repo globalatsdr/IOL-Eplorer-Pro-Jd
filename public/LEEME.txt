@@ -1,1 +1,12 @@
 v1.001
+Lenguaje Principal: TypeScript (TSX).
+Es la versión profesional y "tipada" de JavaScript. Se usa en aplicaciones críticas (como herramientas médicas) porque evita errores de lógica antes de que ocurran, asegurando que los cálculos de dioptrías y constantes sean exactos.
+Framework: React (v18/19).
+Es la biblioteca de interfaz más utilizada en el mundo (creada por Meta/Facebook). Es lo que permite que la búsqueda sea instantánea: cuando mueves un filtro, la pantalla se actualiza sin recargar la página.
+Estilos: Tailwind CSS.
+Un framework de diseño moderno que permite que la app sea responsiva (que se vea perfecta tanto en un monitor de hospital como en un iPhone o tablet).
+3. Herramientas adicionales ("Stack"):
+Vite: Es el motor de construcción (bundler) que hace que la aplicación cargue en milisegundos.
+Lucide React: La librería de iconos vectoriales que usamos (los iconos de ojo, regla, red, etc.).
+GitHub Actions: La aplicación tiene un sistema de "Despliegue Continuo", lo que significa que cada vez que se actualiza el código o la base de datos en GitHub, la web se actualiza sola automáticamente.
+En resumen: Es una herramienta de ingeniería frontend moderna que combina la robustez de TypeScript con la agilidad de React para manejar datos médicos complejos de forma sencilla.
