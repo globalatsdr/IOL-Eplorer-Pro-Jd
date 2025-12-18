@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, Globe, Layers } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, KeyRound, WifiOff, Globe, Layers, Calculator } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/main/IOLexport.xml";
@@ -46,6 +46,19 @@ function App() {
   // Filters State
   const [basicFilters, setBasicFilters] = useState<BasicFilters>(initialBasicFilters);
   const [advFilters, setAdvFilters] = useState<AdvancedFilters>(initialAdvFilters);
+  
+  // Calculator State
+  const [calculatorInputs, setCalculatorInputs] = useState({
+    age: '',
+    axialLength: '',
+    refractiveState: 'emetrope',
+  });
+
+  const handleCalculatorChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCalculatorInputs(prev => ({ ...prev, [name]: value }));
+  };
+
 
   // Function to reset everything
   const resetAll = () => {
@@ -93,7 +106,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === FilterTab.ADVANCED && !isAdvancedUnlocked) {
+    if ((activeTab === FilterTab.ADVANCED || activeTab === FilterTab.CALCULATOR) && !isAdvancedUnlocked) {
       setActiveTab(FilterTab.BASIC);
     }
   }, [isAdvancedUnlocked, activeTab]);
@@ -271,7 +284,7 @@ function App() {
 
         {/* Tab Header with Reset Button */}
         <div className="relative mb-8 flex items-center justify-center">
-          <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 w-full max-w-md shadow-inner">
+          <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 w-full max-w-xl shadow-inner">
             <button
               onClick={() => setActiveTab(FilterTab.BASIC)}
               className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out
@@ -286,6 +299,15 @@ function App() {
                 ${activeTab === FilterTab.ADVANCED ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
             >
               Advanced Search
+              {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
+            </button>
+             <button
+              onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.CALCULATOR)}
+              disabled={!isAdvancedUnlocked}
+              className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
+                ${activeTab === FilterTab.CALCULATOR ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
+            >
+              Calculator
               {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
             </button>
           </div>
@@ -350,7 +372,7 @@ function App() {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === FilterTab.ADVANCED ? (
             <div className="space-y-6">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
@@ -394,6 +416,59 @@ function App() {
                       <span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Yellow/Blue Filter <Tooltip content="Blue-light filtering." /></span>
                     </label>
                  </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                  Edad
+                  <Tooltip content="Edad del paciente en años." />
+                </label>
+                <input
+                  type="number"
+                  name="age"
+                  value={calculatorInputs.age}
+                  onChange={handleCalculatorChange}
+                  placeholder="e.g., 65"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                  Longitud Axial (mm)
+                  <Tooltip content="Longitud axial del ojo en milímetros." />
+                </label>
+                <input
+                  type="number"
+                  name="axialLength"
+                  step="0.01"
+                  value={calculatorInputs.axialLength}
+                  onChange={handleCalculatorChange}
+                  placeholder="e.g., 23.5"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                  Estado Refractivo
+                  <Tooltip content="Estado refractivo previo del ojo." />
+                </label>
+                <div className="relative">
+                  <select
+                    name="refractiveState"
+                    value={calculatorInputs.refractiveState}
+                    onChange={handleCalculatorChange}
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                  >
+                    <option value="emetrope">Emétrope</option>
+                    <option value="myopic">Miópico</option>
+                    <option value="hyperopic">Hipermétropico</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
               </div>
             </div>
           )}
