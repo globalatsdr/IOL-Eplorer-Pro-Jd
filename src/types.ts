@@ -64,7 +64,7 @@ export interface Lens {
 export enum FilterTab {
   BASIC = 'BASIC',
   ADVANCED = 'ADVANCED',
-  CALCULATOR = 'CALCULATOR'
+  SELECT_IOL = 'SELECT_IOL'
 }
 
 export interface BasicFilters {

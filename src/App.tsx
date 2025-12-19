@@ -106,7 +106,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if ((activeTab === FilterTab.ADVANCED || activeTab === FilterTab.CALCULATOR) && !isAdvancedUnlocked) {
+    if ((activeTab === FilterTab.ADVANCED || activeTab === FilterTab.SELECT_IOL) && !isAdvancedUnlocked) {
       setActiveTab(FilterTab.BASIC);
     }
   }, [isAdvancedUnlocked, activeTab]);
@@ -302,13 +302,13 @@ function App() {
               {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
             </button>
              <button
-              onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.CALCULATOR)}
+              onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.SELECT_IOL)}
               disabled={!isAdvancedUnlocked}
               className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
-                ${activeTab === FilterTab.CALCULATOR ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
+                ${activeTab === FilterTab.SELECT_IOL ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
             >
               <Calculator className="w-4 h-4" />
-              Calculator
+              Select IOL
               {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
             </button>
           </div>
