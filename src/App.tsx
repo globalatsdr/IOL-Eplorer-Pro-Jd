@@ -307,6 +307,7 @@ function App() {
               className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
                 ${activeTab === FilterTab.CALCULATOR ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-60'}`}
             >
+              <Calculator className="w-4 h-4" />
               Calculator
               {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
             </button>
