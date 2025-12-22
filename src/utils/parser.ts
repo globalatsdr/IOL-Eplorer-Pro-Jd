@@ -10,8 +10,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
   Array.from(lensNodes).forEach((lensNode) => {
     try {
       const getVal = (tag: string, parent: Element = lensNode): string => {
-        // Handle namespaced tags or case insensitivity issues by checking variations if needed
-        // but getElementsByTagName is case sensitive in XML.
         const node = parent.getElementsByTagName(tag)[0];
         return node ? node.textContent?.trim() || "" : "";
       };
@@ -23,7 +21,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         return isNaN(parsed) ? null : parsed;
       };
 
-      // Helper to check multiple tag variations
       const getFloatAny = (tags: string[], parent: Element): number | null => {
         for (const tag of tags) {
             const val = getFloat(tag, parent);
@@ -35,7 +32,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
       const specNode = lensNode.getElementsByTagName("Specifications")[0];
       const availNode = lensNode.getElementsByTagName("Availability")[0];
       
-      // Parse Specifications
       const specifications: Specifications = {
         singlePiece: getVal("SinglePiece", specNode).toLowerCase() === "yes",
         opticMaterial: getVal("OpticMaterial", specNode),
@@ -60,14 +56,12 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         toric: getVal("Toric", specNode).toLowerCase() === "yes",
       };
 
-      // Parse Availability
       const sphereRanges: SphereRange[] = [];
       let minSphere = 1000;
       let maxSphere = -1000;
       const additions: number[] = [];
 
       if (availNode) {
-        // Spheres
         const sphereNodes = availNode.getElementsByTagName("Sphere");
         Array.from(sphereNodes).forEach((sNode) => {
           const fromVal = parseFloat(getVal("From", sNode));
@@ -81,7 +75,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
           }
         });
 
-        // Additions
         const addNodes = availNode.getElementsByTagName("Addition");
         Array.from(addNodes).forEach((aNode) => {
            const val = parseFloat(aNode.textContent || "");
@@ -89,7 +82,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         });
       }
 
-      // Handle case where no availability data was found
       if (minSphere === 1000) minSphere = 0;
       if (maxSphere === -1000) maxSphere = 0;
 
@@ -103,7 +95,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         totalDiopterRange,
       };
 
-      // Parse Constants (Nominal and Optimized)
       const constants: Constants = {
         nominal: {},
         optimized: {}
@@ -112,7 +103,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
       const constNodes = lensNode.getElementsByTagName("Constants");
       Array.from(constNodes).forEach((cNode) => {
          const type = cNode.getAttribute("type")?.toLowerCase();
-         // Extended list of possible tags for better compatibility with various XML formats
          const vals: ConstantValues = {
             ultrasound: getFloatAny(["Ultrasound", "A-Constant", "A_Constant", "AConstant"], cNode),
             srkt: getFloatAny(["SRKt", "SRK_T", "A-Constant", "A_Constant", "AConstant"], cNode),
@@ -121,7 +111,9 @@ export const parseIOLData = (xmlString: string): Lens[] => {
             haigis_a2: getFloatAny(["Haigis_a2", "a2", "A2"], cNode),
             hoffer_q: getFloatAny(["pACD", "PACD", "Hoffer_Q", "HofferQ", "ACD"], cNode),
             holladay_1: getFloatAny(["sf", "SF", "Holladay_1", "Holladay1", "SurgeonFactor"], cNode),
-            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode)
+            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode),
+            olsen: getFloatAny(["Olsen"], cNode),
+            castrop: getFloatAny(["Castrop"], cNode),
          };
 
          if (type === 'nominal') {
