@@ -45,6 +45,8 @@ export interface ConstantValues {
   hoffer_q?: number | null;
   holladay_1?: number | null;
   barrett?: number | null;
+  olsen?: number | null;
+  castrop?: number | null;
 }
 
 export interface Constants {
