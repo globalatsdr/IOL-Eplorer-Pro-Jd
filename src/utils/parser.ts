@@ -96,9 +96,13 @@ export const parseIOLData = (xmlString: string): Lens[] => {
       };
 
       const constants: Constants = {
-        nominal: {},
+        sourceType: null,
+        source: {},
         optimized: {}
       };
+
+      let nominalData: ConstantValues | undefined;
+      let ulibData: ConstantValues | undefined;
 
       const constNodes = lensNode.getElementsByTagName("Constants");
       Array.from(constNodes).forEach((cNode) => {
@@ -111,17 +115,25 @@ export const parseIOLData = (xmlString: string): Lens[] => {
             haigis_a2: getFloatAny(["Haigis_a2", "a2", "A2"], cNode),
             hoffer_q: getFloatAny(["pACD", "PACD", "Hoffer_Q", "HofferQ", "ACD"], cNode),
             holladay_1: getFloatAny(["sf", "SF", "Holladay_1", "Holladay1", "SurgeonFactor"], cNode),
-            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode),
-            olsen: getFloatAny(["Olsen"], cNode),
-            castrop: getFloatAny(["Castrop"], cNode),
+            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode)
          };
 
          if (type === 'nominal') {
-            constants.nominal = vals;
+            nominalData = vals;
+         } else if (type === 'ulib') {
+            ulibData = vals;
          } else if (type === 'optimized') {
             constants.optimized = vals;
          }
       });
+
+      if (ulibData) {
+        constants.source = ulibData;
+        constants.sourceType = 'ulib';
+      } else if (nominalData) {
+        constants.source = nominalData;
+        constants.sourceType = 'nominal';
+      }
 
       lenses.push({
         id: lensNode.getAttribute("id") || Math.random().toString(),
