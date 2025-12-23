@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe } from 'lucide-react';
 
 const CLINICAL_CONCEPTS = [
   "Partial Range of Field-Narrow",
@@ -300,6 +300,17 @@ function App() {
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload XML</span>
              </button>
+
+             {/* IOLcon Link */}
+             <a 
+                href="https://iolcon.org/lensesTable.php" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium transition-colors"
+             >
+                <Globe className="w-4 h-4" />
+                <span className="hidden sm:inline">IOLcon</span>
+             </a>
           </div>
         </div>
       </header>
