@@ -70,14 +70,14 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getSortValue: (l: Lens) => l.specifications.filter 
     },
     { 
-      label: 'Nominal A-Constant (Ultra)', 
-      getValue: (l: Lens) => l.constants.nominal.ultrasound || '-', 
-      getSortValue: (l: Lens) => l.constants.nominal.ultrasound || -1 
+      label: 'Source A-Constant (Ultra)', 
+      getValue: (l: Lens) => l.constants.source.ultrasound || '-', 
+      getSortValue: (l: Lens) => l.constants.source.ultrasound || -1 
     },
     { 
-      label: 'Nominal A-Constant (SRK/T)', 
-      getValue: (l: Lens) => l.constants.nominal.srkt || '-', 
-      getSortValue: (l: Lens) => l.constants.nominal.srkt || -1 
+      label: 'Source A-Constant (SRK/T)', 
+      getValue: (l: Lens) => l.constants.source.srkt || '-', 
+      getSortValue: (l: Lens) => l.constants.source.srkt || -1 
     },
     { 
       label: 'Optimized SRK/T', 
@@ -143,7 +143,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       
       if (valA === valB) return 0;
       
-      // Handle nulls always last
       if (valA === -1 || valA === -999 || valA === '') return 1;
       if (valB === -1 || valB === -999 || valB === '') return -1;
 
@@ -159,7 +158,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50">
           <h2 className="text-xl font-bold text-gray-800">Compare Lenses</h2>
           
@@ -198,7 +196,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
           </div>
         </div>
 
-        {/* Table Content */}
         <div className="overflow-auto flex-1 p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
@@ -218,9 +215,15 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                          <X className="w-5 h-5" />
                        </button>
                     </div>
-                    <div className="text-xs text-gray-500 font-normal mt-1 mb-3">{lens.manufacturer}</div>
+                    <div className="text-xs text-gray-500 font-normal mt-1 mb-3">
+                      {lens.manufacturer}
+                      {lens.constants.sourceType && (
+                        <span className="ml-2 bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border border-slate-200">
+                          {lens.constants.sourceType}
+                        </span>
+                      )}
+                    </div>
                     
-                    {/* Find Similar Button */}
                     <button 
                       onClick={() => onFindSimilar(lens)}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-md border border-slate-200 transition-colors"

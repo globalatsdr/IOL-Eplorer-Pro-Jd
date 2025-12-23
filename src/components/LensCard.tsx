@@ -32,8 +32,10 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   };
   
   const hasConstants = (key: keyof ConstantValues) => {
-    return (lens.constants.nominal && lens.constants.nominal[key] != null) || (lens.constants.optimized && lens.constants.optimized[key] != null);
+    return (lens.constants.source && lens.constants.source[key] != null) || (lens.constants.optimized && lens.constants.optimized[key] != null);
   }
+
+  const sourceTypeDisplay = lens.constants.sourceType ? lens.constants.sourceType.charAt(0).toUpperCase() + lens.constants.sourceType.slice(1) : 'Source';
 
   return (
     <div 
@@ -64,11 +66,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
              {lens.specifications.hydro}
           </span>
-          {lens.specifications.hapticDesign && (
-             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-              {lens.specifications.hapticDesign}
-            </span>
-          )}
            {lens.specifications.toric && (
             <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded border border-amber-200">
               Toric
@@ -89,7 +86,7 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         <div className="flex items-center text-gray-600 col-span-2">
            <Activity className="w-4 h-4 mr-2 text-gray-400" />
            <span className="flex items-center">
-             A-Const: {renderVal(lens.constants.nominal.ultrasound || lens.constants.nominal.srkt)}
+             A-Const: {renderVal(lens.constants.source.ultrasound || lens.constants.source.srkt)}
            </span>
         </div>
       </div>
@@ -148,7 +145,7 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
                     <thead className="bg-gray-100 text-gray-600 font-semibold">
                         <tr>
                             <th className="px-3 py-2 border-b border-gray-200">Formula</th>
-                            <th className="px-3 py-2 border-b border-gray-200">Nominal</th>
+                            <th className="px-3 py-2 border-b border-gray-200">{sourceTypeDisplay}</th>
                             <th className="px-3 py-2 border-b border-gray-200">Optimized</th>
                         </tr>
                     </thead>
@@ -156,61 +153,47 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
                         {hasConstants('ultrasound') && (
                             <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">Ultrasound (A)</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.ultrasound)}</td>
+                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.source?.ultrasound)}</td>
                                 <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.ultrasound)}</td>
                             </tr>
                         )}
                         {hasConstants('srkt') && (
                             <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">SRK/T (A)</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.srkt)}</td>
+                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.source?.srkt)}</td>
                                 <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.srkt)}</td>
                             </tr>
                         )}
                         {hasConstants('hoffer_q') && (
                             <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">Hoffer Q (pACD)</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.hoffer_q)}</td>
+                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.source?.hoffer_q)}</td>
                                 <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.hoffer_q)}</td>
                             </tr>
                         )}
                         {hasConstants('holladay_1') && (
                              <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">Holladay 1 (sf)</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.holladay_1)}</td>
+                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.source?.holladay_1)}</td>
                                 <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.holladay_1)}</td>
                             </tr>
                         )}
                         {hasConstants('barrett') && (
                              <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">Barrett (LF)</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.barrett)}</td>
+                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.source?.barrett)}</td>
                                 <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.barrett)}</td>
                             </tr>
                         )}
-                        {hasConstants('olsen') && (
-                             <tr>
-                                <td className="px-3 py-1.5 font-medium text-gray-500">Olsen</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.olsen)}</td>
-                                <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.olsen)}</td>
-                            </tr>
-                        )}
-                        {hasConstants('castrop') && (
-                             <tr>
-                                <td className="px-3 py-1.5 font-medium text-gray-500">Castrop</td>
-                                <td className="px-3 py-1.5 text-gray-900">{renderVal(lens.constants.nominal?.castrop)}</td>
-                                <td className="px-3 py-1.5 text-blue-600 font-medium">{renderVal(lens.constants.optimized?.castrop)}</td>
-                            </tr>
-                        )}
-                        {hasHaigis(lens.constants.nominal) || hasHaigis(lens.constants.optimized) ? (
+                        {hasHaigis(lens.constants.source) || hasHaigis(lens.constants.optimized) ? (
                             <tr>
                                 <td className="px-3 py-1.5 font-medium text-gray-500">Haigis</td>
                                 <td className="px-3 py-1.5 text-gray-900">
-                                    {hasHaigis(lens.constants.nominal) ? (
+                                    {hasHaigis(lens.constants.source) ? (
                                         <div className="flex flex-col gap-0.5">
-                                            <span>a0: {lens.constants.nominal.haigis_a0}</span>
-                                            <span>a1: {lens.constants.nominal.haigis_a1}</span>
-                                            <span>a2: {lens.constants.nominal.haigis_a2}</span>
+                                            <span>a0: {lens.constants.source.haigis_a0}</span>
+                                            <span>a1: {lens.constants.source.haigis_a1}</span>
+                                            <span>a2: {lens.constants.source.haigis_a2}</span>
                                         </div>
                                     ) : '-'}
                                 </td>
