@@ -167,8 +167,8 @@ function App() {
     else if (val === "Partial Range of Field-Enhance") mappedOpticConcept = "monofocal";
     else if (val === "Partial Range of Field-Extend") mappedOpticConcept = "EDoF";
     else if (val === "Full Range of Field-Steep") mappedOpticConcept = "bifocal";
-    else if (val === "Full Range of Field-Smooth") mappedOpticConcept = "trifocal";
-    else if (val === "Full Range of Field-Continuous") mappedOpticConcept = "trifocal";
+    else if (val === "Full Range of Field-Smooth") mappedOpticConcept = "multifocal";
+    else if (val === "Full Range of Field-Continuous") mappedOpticConcept = "multifocal";
     else if (val === "all") mappedOpticConcept = "all";
 
     setBasicFilters({
@@ -398,7 +398,7 @@ function App() {
                   >
                     <option value="all">All Concepts</option>
                     {/* Combine existing concepts with dynamically mapped ones if not present in XML */}
-                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (
+                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
