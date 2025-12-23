@@ -45,12 +45,11 @@ export interface ConstantValues {
   hoffer_q?: number | null;
   holladay_1?: number | null;
   barrett?: number | null;
-  olsen?: number | null;
-  castrop?: number | null;
 }
 
 export interface Constants {
-  nominal: ConstantValues;
+  sourceType: 'nominal' | 'ulib' | null;
+  source: ConstantValues;
   optimized: ConstantValues;
 }
 
