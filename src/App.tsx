@@ -1,31 +1,26 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { IOL_XML_DATA } from './constants';
+import { IOL_XML_DATA, CLINICAL_CONCEPTS } from './constants';
 import { parseIOLData } from './utils/parser';
 import { Lens, FilterTab, BasicFilters, AdvancedFilters } from './types';
 import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, WifiOff, RefreshCw } from 'lucide-react';
 
-const CLINICAL_CONCEPTS = [
-  "Partial Range of Field-Narrow",
-  "Partial Range of Field-Enhance",
-  "Partial Range of Field-Extend",
-  "Full Range of Field-Steep",
-  "Full Range of Field-Smooth",
-  "Full Range of Field-Continuous"
-];
+// --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
+// URL directa al archivo RAW en GitHub
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
+const STORAGE_KEY = 'iol_data_cache_v2';
 
 function App() {
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
-  // Change this value to modify the required password.
-  // Requirement: 4 numbers and a special character (e.g., '1234!')
   const UNLOCK_PASSWORD = "1234!"; 
   const [passwordInput, setPasswordInput] = useState('');
   
@@ -61,20 +56,66 @@ function App() {
     Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
   , [lenses]);
 
-  // Load Data
+  // Load Data Logic
   useEffect(() => {
-    // Initial load with default data
-    try {
-      const data = parseIOLData(IOL_XML_DATA);
-      setLenses(data);
-    } catch (e) {
-      console.error("Failed to parse default data", e);
-    } finally {
-      setLoading(false);
-    }
+    const initData = async () => {
+      setLoading(true);
+      
+      // 1. Try to load from LocalStorage first (Fast load / Offline support)
+      const cachedXML = localStorage.getItem(STORAGE_KEY);
+      let dataLoaded = false;
+
+      if (cachedXML) {
+        try {
+          const data = parseIOLData(cachedXML);
+          if (data.length > 0) {
+            setLenses(data);
+            dataLoaded = true;
+            console.log("Loaded from local cache");
+          }
+        } catch (e) {
+          console.error("Cache corrupted", e);
+        }
+      }
+
+      // 2. If no cache, load default constants temporarily
+      if (!dataLoaded) {
+        try {
+          const defaultData = parseIOLData(IOL_XML_DATA);
+          setLenses(defaultData);
+        } catch (e) {
+          console.error("Default data error", e);
+        }
+      }
+
+      // 3. Fetch fresh data from GitHub (Background update)
+      try {
+        const response = await fetch(EXTERNAL_DB_URL);
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const text = await response.text();
+        
+        // Parse and verify before saving
+        const newData = parseIOLData(text);
+        if (newData.length > 0) {
+          setLenses(newData);
+          // Save to local storage for next time
+          localStorage.setItem(STORAGE_KEY, text);
+          setIsOfflineMode(false);
+          console.log("Updated from GitHub");
+        }
+      } catch (error) {
+        console.warn("Could not fetch remote data, using cached/default data.", error);
+        setIsOfflineMode(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
   }, []);
 
-  // Effect to switch back to Basic tab if password becomes invalid while on Advanced tab
+  // Effect to switch back to Basic tab if password becomes invalid
   useEffect(() => {
     if (activeTab === FilterTab.ADVANCED && !isAdvancedUnlocked) {
       setActiveTab(FilterTab.BASIC);
@@ -93,9 +134,11 @@ function App() {
         try {
           const parsedData = parseIOLData(text);
           setLenses(parsedData);
-          // Reset selection on new file load
+          // Save manual upload to cache so it persists
+          localStorage.setItem(STORAGE_KEY, text);
           setSelectedLensIds(new Set());
-          alert(`Successfully loaded ${parsedData.length} lenses.`);
+          setIsOfflineMode(true); // Technically offline relative to the cloud DB
+          alert(`Successfully loaded and saved ${parsedData.length} lenses.`);
         } catch (err) {
           alert('Error parsing XML file. Please check the format.');
           console.error(err);
@@ -104,7 +147,6 @@ function App() {
       setLoading(false);
     };
     reader.readAsText(file);
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -131,35 +173,23 @@ function App() {
 
   const clearSelection = () => setSelectedLensIds(new Set());
 
-  // Logic to find similar Zeiss lenses based on a specific target lens
   const handleFindZeissSimilar = (targetLens: Lens) => {
-    // Find the exact "Zeiss" string used in the database (e.g., "ZEISS", "Carl Zeiss", etc.)
     const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
-
     if (!zeissName) {
       alert("No Zeiss lenses found in the current database.");
       return;
     }
-
-    // Apply filters matching the target lens
     setBasicFilters({
       manufacturer: zeissName,
       clinicalConcept: 'all',
       opticConcept: targetLens.specifications.opticConcept,
       toric: targetLens.specifications.toric ? 'yes' : 'no'
     });
-
-    // Switch to basic tab to see the dropdowns update
     setActiveTab(FilterTab.BASIC);
-
-    // Close the comparison modal so user sees results
     setShowComparison(false);
-
-    // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Logic to handle Clinical Concept changes and auto-map to Optic Concept
   const handleClinicalConceptChange = (val: string) => {
     let mappedOpticConcept = basicFilters.opticConcept;
 
@@ -178,10 +208,8 @@ function App() {
     });
   };
 
-  // Filtering Logic
   const filteredLenses = useMemo(() => {
     return lenses.filter(lens => {
-      // Common logic: always match keyword if present in Advanced tab
       if (activeTab === FilterTab.ADVANCED && advFilters.keyword) {
         const kw = advFilters.keyword.toLowerCase();
         const match = lens.name.toLowerCase().includes(kw) || 
@@ -191,19 +219,11 @@ function App() {
 
       if (activeTab === FilterTab.BASIC) {
         if (basicFilters.manufacturer !== 'all' && lens.manufacturer !== basicFilters.manufacturer) return false;
-        
-        // Note: Clinical Concept is purely a UI helper to set Optic Concept, 
-        // but we don't strictly filter by 'clinicalConcept' property on the lens 
-        // because that property doesn't exist in the XML. 
-        // The filtering happens via the 'opticConcept' which is auto-set by the dropdown.
-
         if (basicFilters.opticConcept !== 'all') {
-           // Case-insensitive check to handle 'EDoF' vs 'EDOF' or 'Monofocal' vs 'monofocal'
            const lensConcept = lens.specifications.opticConcept.toLowerCase();
            const filterConcept = basicFilters.opticConcept.toLowerCase();
            if (lensConcept !== filterConcept) return false;
         }
-
         if (basicFilters.toric !== 'all') {
           const isToric = lens.specifications.toric;
           if (basicFilters.toric === 'yes' && !isToric) return false;
@@ -211,14 +231,8 @@ function App() {
         }
         return true;
       } else {
-        // Advanced Logic
-        
-        // Min Sphere Logic: The lens must start at (or below) the requested Min Sphere.
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
-
-        // Max Sphere Logic: The lens must end at (or above) the requested Max Sphere.
         if (lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
-
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
         if (advFilters.isYellowFilter) {
            const filterStr = lens.specifications.filter.toLowerCase();
@@ -232,7 +246,6 @@ function App() {
     });
   }, [lenses, activeTab, basicFilters, advFilters]);
 
-  // Helper for rendering comparison modal
   const selectedLensesForComparison = useMemo(() => {
     return lenses.filter(l => selectedLensIds.has(l.id));
   }, [lenses, selectedLensIds]);
@@ -243,7 +256,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Hidden File Input */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -252,27 +264,22 @@ function App() {
         className="hidden" 
       />
 
-      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo Image: Ensure a file named 'logo.png' exists in the root/public folder */}
             <img 
               src="logo.png" 
               alt="Logo" 
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
-                // Fallback to text if image is missing
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            {/* Fallback title is hidden on small screens if logo is present, logic handled by CSS or just keep title visible */}
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
           <div className="flex items-center gap-3 md:gap-6">
-             {/* Admin Password Input */}
              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                 {isAdvancedUnlocked ? (
                   <Unlock className="w-4 h-4 text-emerald-500" />
@@ -290,9 +297,15 @@ function App() {
 
              <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
-             <div className="text-sm text-slate-500 hidden md:block">
-              {filteredLenses.length} lenses
+             <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 hidden md:block">{filteredLenses.length} lenses</span>
+                {isOfflineMode ? (
+                    <Tooltip content="Using cached data. Cannot connect to GitHub." />
+                ) : (
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" title="Live data from GitHub" />
+                )}
              </div>
+
              <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
@@ -301,7 +314,6 @@ function App() {
                 <span className="hidden sm:inline">Upload XML</span>
              </button>
 
-             {/* IOLcon Link */}
              <a 
                 href="https://iolcon.org/lensesTable.php" 
                 target="_blank" 
@@ -408,7 +420,6 @@ function App() {
                     onChange={(e) => setBasicFilters({...basicFilters, opticConcept: e.target.value, clinicalConcept: 'all'})}
                   >
                     <option value="all">All Concepts</option>
-                    {/* Combine existing concepts with dynamically mapped ones if not present in XML */}
                     {Array.from(new Set([...uniqueConcepts, 'monofocal', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -441,7 +452,6 @@ function App() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Keyword Search */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-gray-400" />
@@ -456,7 +466,6 @@ function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 {/* Unified Diopter Range Slider */}
                  <div className="md:col-span-2 px-2">
                     <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
                        Availability Range Requirement
@@ -475,7 +484,6 @@ function App() {
                      </p>
                  </div>
 
-                 {/* Material Type */}
                  <div>
                     <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
                       Material Type
@@ -492,7 +500,6 @@ function App() {
                     </select>
                  </div>
 
-                 {/* Toggles */}
                  <div className="flex flex-col justify-center gap-3">
                     <label className="flex items-center space-x-3 cursor-pointer group">
                       <input 

@@ -1,6 +1,15 @@
 // In a real app, this would be fetched from an API or file upload.
 // Embedding the provided XML data here for immediate functionality.
 
+export const CLINICAL_CONCEPTS = [
+  "Partial Range of Field-Narrow",
+  "Partial Range of Field-Enhance",
+  "Partial Range of Field-Extend",
+  "Full Range of Field-Steep",
+  "Full Range of Field-Smooth",
+  "Full Range of Field-Continuous"
+];
+
 export const IOL_XML_DATA = `<?xml version="1.0" encoding="UTF-8" ?>
 <IOLCon fileVersion="2.0" downloaded="2025-11-27">
 	<Lens id="2299">
