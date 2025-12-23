@@ -70,6 +70,7 @@ export enum FilterTab {
 
 export interface BasicFilters {
   manufacturer: string;
+  clinicalConcept: string; // New field
   opticConcept: string;
   toric: string; // 'all', 'yes', 'no'
 }
