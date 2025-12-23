@@ -64,6 +64,11 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
              {lens.specifications.hydro}
           </span>
+          {lens.specifications.hapticDesign && (
+             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+              {lens.specifications.hapticDesign}
+            </span>
+          )}
            {lens.specifications.toric && (
             <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded border border-amber-200">
               Toric
