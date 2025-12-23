@@ -6,13 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, FileText, ArrowLeftRight, X, Lock, Unlock, KeyRound, Sparkles, Eye, Stethoscope } from 'lucide-react';
-
-// --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
-// 1. Ve a tu repositorio IOLs-Database -> Abre el archivo XML -> Click en botón "Raw".
-// 2. Copia esa URL y pégala aquí abajo.
-// NOTA: El repositorio debe ser PÚBLICO.
-const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope } from 'lucide-react';
 
 const CLINICAL_CONCEPTS = [
   "Partial Range of Field-Narrow",
