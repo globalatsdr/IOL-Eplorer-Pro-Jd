@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -172,6 +172,23 @@ function App() {
   };
 
   const clearSelection = () => setSelectedLensIds(new Set());
+
+  const handleResetFilters = () => {
+    setBasicFilters({
+      manufacturer: 'all',
+      clinicalConcept: 'all',
+      opticConcept: 'all',
+      toric: 'all'
+    });
+    setAdvFilters({
+      filterMinSphere: 10,
+      filterMaxSphere: 30,
+      isPreloaded: false,
+      isYellowFilter: false,
+      hydroType: 'all',
+      keyword: ''
+    });
+  };
 
   const handleFindZeissSimilar = (targetLens: Lens) => {
     const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
@@ -360,7 +377,19 @@ function App() {
         </div>
 
         {/* Filter Panels */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8 relative">
+          
+          {/* Reset Filters Button (Top Right of Filter Panel) */}
+          <div className="flex justify-end mb-4">
+             <button 
+                onClick={handleResetFilters}
+                className="text-xs font-medium text-slate-500 hover:text-blue-600 flex items-center gap-1.5 transition-colors px-2 py-1 rounded hover:bg-slate-50"
+             >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset Filters
+             </button>
+          </div>
+
           {activeTab === FilterTab.BASIC ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
