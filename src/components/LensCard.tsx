@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lens, ConstantValues } from '../types';
 import Tooltip from './Tooltip';
-import { ChevronDown, ChevronUp, Eye, Ruler, Activity, CheckCircle, Circle, Table } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Ruler, Activity, CheckCircle, Circle, Table, Search } from 'lucide-react';
 
 interface Props {
   lens: Lens;
@@ -36,6 +36,13 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   }
 
   const sourceTypeDisplay = lens.constants.sourceType ? lens.constants.sourceType.charAt(0).toUpperCase() + lens.constants.sourceType.slice(1) : 'Source';
+
+  const handleGoogleSearch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Search for Manufacturer + Name + "IOL" to get specific results
+    const query = encodeURIComponent(`${lens.manufacturer} ${lens.name} IOL`);
+    window.open(`https://www.google.com/search?q=${query}`, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div 
@@ -244,16 +251,26 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         </div>
       </div>
 
-      <button 
-        onClick={() => setExpanded(!expanded)}
-        className="w-full py-2 bg-gray-50 border-t border-gray-100 text-gray-500 hover:text-gray-800 hover:bg-gray-100 flex justify-center items-center text-xs font-medium transition-colors"
-      >
-        {expanded ? (
-          <>Less Details <ChevronUp className="w-3 h-3 ml-1" /></>
-        ) : (
-          <>Full Specifications & Constants <ChevronDown className="w-3 h-3 ml-1" /></>
-        )}
-      </button>
+      <div className="flex border-t border-gray-100">
+        <button 
+            onClick={handleGoogleSearch}
+            className="flex-1 py-2.5 bg-white text-slate-500 hover:text-blue-600 hover:bg-blue-50 flex justify-center items-center text-xs font-medium transition-colors border-r border-gray-100 group"
+            title="Search for this lens on Google"
+        >
+            <Search className="w-3.5 h-3.5 mr-2 text-slate-400 group-hover:text-blue-600" />
+            Web Search
+        </button>
+        <button 
+            onClick={() => setExpanded(!expanded)}
+            className="flex-[2] py-2.5 bg-gray-50 text-gray-500 hover:text-gray-800 hover:bg-gray-100 flex justify-center items-center text-xs font-medium transition-colors"
+        >
+            {expanded ? (
+            <>Less Details <ChevronUp className="w-3.5 h-3.5 ml-1.5" /></>
+            ) : (
+            <>Full Specifications <ChevronDown className="w-3.5 h-3.5 ml-1.5" /></>
+            )}
+        </button>
+      </div>
     </div>
   );
 };
