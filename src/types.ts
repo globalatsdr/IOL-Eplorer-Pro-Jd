@@ -65,7 +65,7 @@ export interface Lens {
 export enum FilterTab {
   BASIC = 'BASIC',
   ADVANCED = 'ADVANCED',
-  SELECT_IOL = 'SELECT_IOL'
+  DR_ALFONSO = 'DR_ALFONSO'
 }
 
 export interface BasicFilters {
@@ -82,4 +82,14 @@ export interface AdvancedFilters {
   isYellowFilter: boolean;
   hydroType: string; // 'all', 'hydrophilic', 'hydrophobic'
   keyword: string;
+}
+
+export interface DrAlfonsoInputs {
+  age: string;
+  axialLength: string;
+  lensStatus: 'transparente' | 'disfuncional' | 'catarata' | 'otro';
+  angleToAngle: string;
+  refraction: 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
+  lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
+  udva: string;
 }
