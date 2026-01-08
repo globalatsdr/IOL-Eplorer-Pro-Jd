@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, UserMd } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -381,6 +381,7 @@ function App() {
             className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2
               ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white text-teal-700 shadow' : isDrAlfonsoUnlocked ? 'text-slate-600 hover:bg-white/[0.12] hover:text-teal-800' : 'text-slate-400 opacity-60 cursor-not-allowed'}`}
           >
+            <User className="w-4 h-4" />
             Dr. Alfonso
             {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}
           </button>
