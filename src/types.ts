@@ -84,6 +84,8 @@ export interface AdvancedFilters {
   keyword: string;
 }
 
+export type LVCType = 'sin_lvc' | 'hipermetropico_menor_4' | 'hipermetropico_mayor_4' | 'miopico' | 'miopico_estafiloma';
+
 export interface DrAlfonsoInputs {
   age: string;
   axialLength: string;
@@ -92,4 +94,5 @@ export interface DrAlfonsoInputs {
   refraction: 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
   udva: string;
+  lvcType: LVCType;
 }

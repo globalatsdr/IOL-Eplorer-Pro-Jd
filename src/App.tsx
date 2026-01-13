@@ -56,7 +56,8 @@ function App() {
     angleToAngle: '',
     refraction: 'emetrope',
     lensMaterial: 'any',
-    udva: ''
+    udva: '',
+    lvcType: 'sin_lvc',
   });
 
   // Extract unique values for dropdowns
@@ -67,6 +68,14 @@ function App() {
   const uniqueConcepts = useMemo(() => 
     Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
   , [lenses]);
+
+  const lvcOptions = {
+    'sin_lvc': 'Sin LVC Previo',
+    'hipermetropico_menor_4': 'LVC Hipermetrópico <4D',
+    'hipermetropico_mayor_4': 'LVC Hipermetópico >=4D',
+    'miopico': 'LVC Miópico',
+    'miopico_estafiloma': 'LVC Miópico con Estafiloma',
+  };
 
   // Load Data Logic
   useEffect(() => {
@@ -453,16 +462,30 @@ function App() {
           ) : ( // Dr. Alfonso Tab
             <div className="pt-6">
               <h3 className="text-lg font-bold text-teal-800 mb-4">Parámetros del Paciente</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
-                  <div><label className="block text-sm font-semibold text-slate-700 mb-1">AngleToAngle</label><input type="number" value={drAlfonsoInputs.angleToAngle} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, angleToAngle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
-                  <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA</label><input type="text" value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
-
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="transparente">Transparente</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Refracción</label><select value={drAlfonsoInputs.refraction} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, refraction: e.target.value as DrAlfonsoInputs['refraction']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="hipermetrope_extremo">Hipermetrope extremo</option><option value="hipermetrope_alto">Hipermetrope Alto</option><option value="emetrope">Emetrope +/-</option><option value="miope_alto">Miope Alto</option><option value="miope_extremo">Miope Extremo</option></select></div>
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Material Lente</label><select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="hidrofilico">Hidrofílico</option><option value="hidrofobico">Hidrofóbico</option></select></div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">LVC Previo</label>
+                    <select value={drAlfonsoInputs.lvcType} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvcType: e.target.value as DrAlfonsoInputs['lvcType']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                      {Object.entries(lvcOptions).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
               </div>
+
+              <div className="mt-8">
+                <h4 className="text-md font-bold text-gray-700 mb-4 border-t border-slate-200 pt-4">Datos Opcionales</h4>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-1">AngleToAngle</label><input type="number" value={drAlfonsoInputs.angleToAngle} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, angleToAngle: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA (0.0 - 1.5)</label><input type="number" min="0.0" max="1.5" step="0.1" value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
+                </div>
+              </div>
+
             </div>
           )}
         </div>
