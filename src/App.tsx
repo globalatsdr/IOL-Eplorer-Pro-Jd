@@ -6,7 +6,8 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User } from 'lucide-react';
+import { getLensRecommendation } from './services/recommendationService';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, Calculator } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -59,6 +60,14 @@ function App() {
     udva: '',
     lvcType: 'sin_lvc',
   });
+
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+
+  // Effect to clear recommendation when inputs change
+  useEffect(() => {
+    setRecommendation(null);
+  }, [drAlfonsoInputs]);
+
 
   // Extract unique values for dropdowns
   const uniqueManufacturers = useMemo(() => 
@@ -239,6 +248,11 @@ function App() {
       clinicalConcept: val,
       opticConcept: mappedOpticConcept
     });
+  };
+
+  const handleGetRecommendation = () => {
+    const result = getLensRecommendation(drAlfonsoInputs);
+    setRecommendation(result);
   };
 
   const filteredLenses = useMemo(() => {
@@ -485,6 +499,23 @@ function App() {
                     <div><label className="block text-sm font-semibold text-slate-700 mb-1">Material Lente</label><select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="hidrofilico">Hidrofílico</option><option value="hidrofobico">Hidrofóbico</option></select></div>
                 </div>
               </div>
+
+              <div className="mt-8 border-t border-slate-200 pt-6">
+                 <button 
+                    onClick={handleGetRecommendation}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold shadow-sm transition-colors"
+                  >
+                    <Calculator className="w-5 h-5" />
+                    Calcular Recomendación
+                  </button>
+              </div>
+
+              {recommendation && (
+                <div className="mt-6 p-4 bg-teal-50/50 border border-teal-200 rounded-lg animate-in fade-in duration-300">
+                  <h4 className="text-sm font-bold text-teal-900 mb-2">Resultado del Asistente</h4>
+                  <pre className="text-sm text-teal-800 whitespace-pre-wrap font-sans bg-transparent border-none p-0">{recommendation}</pre>
+                </div>
+              )}
 
             </div>
           )}
