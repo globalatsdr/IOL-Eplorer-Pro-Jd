@@ -89,10 +89,11 @@ export type LVCType = 'sin_lvc' | 'hipermetropico_menor_4' | 'hipermetropico_may
 export interface DrAlfonsoInputs {
   age: string;
   axialLength: string;
-  lensStatus: 'transparente' | 'disfuncional' | 'catarata' | 'otro';
+  lensStatus: 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
   angleToAngle: string;
   refraction: 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
   udva: string;
   lvcType: LVCType;
+  lvcDiopters: string;
 }

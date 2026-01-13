@@ -59,6 +59,7 @@ function App() {
     lensMaterial: 'any',
     udva: '',
     lvcType: 'sin_lvc',
+    lvcDiopters: '',
   });
 
   const [recommendation, setRecommendation] = useState<string | null>(null);
@@ -479,7 +480,7 @@ function App() {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" /></div>
-                  <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="transparente">Transparente</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
+                  <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="transparente">Transparente</option><option value="presbicia">Presbicia</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
                   <div><label className="block text-sm font-semibold text-slate-700 mb-1">Refracción</label><select value={drAlfonsoInputs.refraction} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, refraction: e.target.value as DrAlfonsoInputs['refraction']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="hipermetrope_extremo">Hipermetrope extremo</option><option value="hipermetrope_alto">Hipermetrope Alto</option><option value="emetrope">Emetrope +/-</option><option value="miope_alto">Miope Alto</option><option value="miope_extremo">Miope Extremo</option></select></div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">LVC Previo</label>
@@ -489,6 +490,18 @@ function App() {
                       ))}
                     </select>
                   </div>
+                   {drAlfonsoInputs.lvcType === 'miopico' && (
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Potencia LVC Miópico (D)</label>
+                        <input 
+                          type="number" 
+                          value={drAlfonsoInputs.lvcDiopters} 
+                          onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvcDiopters: e.target.value})} 
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"
+                          placeholder="-2.0"
+                        />
+                      </div>
+                   )}
               </div>
 
               <div className="mt-8">
@@ -512,8 +525,8 @@ function App() {
 
               {recommendation && (
                 <div className="mt-6 p-4 bg-teal-50/50 border border-teal-200 rounded-lg animate-in fade-in duration-300">
-                  <h4 className="text-sm font-bold text-teal-900 mb-2">Resultado del Asistente</h4>
-                  <pre className="text-sm text-teal-800 whitespace-pre-wrap font-sans bg-transparent border-none p-0">{recommendation}</pre>
+                  <h4 className="text-sm font-bold text-teal-900 mb-2">Concepto Clínico Recomendado</h4>
+                  <p className="text-lg font-semibold text-teal-800 whitespace-pre-wrap font-sans">{recommendation}</p>
                 </div>
               )}
 
