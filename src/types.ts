@@ -84,16 +84,11 @@ export interface AdvancedFilters {
   keyword: string;
 }
 
-export type LVCType = 'sin_lvc' | 'hipermetropico_menor_4' | 'hipermetropico_mayor_4' | 'miopico' | 'miopico_estafiloma';
-
 export interface DrAlfonsoInputs {
   age: string;
   axialLength: string;
-  lensStatus: 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
-  angleToAngle: string;
-  refraction: 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
+  lensStatus: 'any' | 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
+  refraction: 'any' | 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
-  udva: string;
-  lvcType: LVCType;
-  lvcDiopters: string;
+  specialConditions: string[]; // e.g., ['lvc_hiper_mayor_4', 'camara_estrecha']
 }
