@@ -264,19 +264,24 @@ function App() {
   const mapClinicalToOptic = (clinicalConcepts: string[]): string[] => {
     const opticConcepts = new Set<string>();
     clinicalConcepts.forEach(val => {
-      if (val === "Partial Range of Field-Narrow") opticConcepts.add("monofocal");
-      else if (val === "Partial Range of Field-Enhance") opticConcepts.add("monofocal");
-      else if (val === "Partial Range of Field-Extend") opticConcepts.add("edof");
-      else if (val === "Full Range of Field-Steep") opticConcepts.add("bifocal");
-      else if (val === "Full Range of Field-Smooth") opticConcepts.add("multifocal");
-      else if (val === "Full Range of Field-Continuous") opticConcepts.add("multifocal");
+      if (val.toLowerCase().includes("narrow")) opticConcepts.add("monofocal");
+      else if (val.toLowerCase().includes("enhance")) opticConcepts.add("monofocal");
+      else if (val.toLowerCase().includes("extend")) opticConcepts.add("edof");
+      else if (val.toLowerCase().includes("steep")) opticConcepts.add("bifocal");
+      else if (val.toLowerCase().includes("smooth")) opticConcepts.add("multifocal");
+      // FIX: The `Set.add` method only accepts one argument. Split into two separate calls to add both 'trifocal' and 'multifocal'.
+      else if (val.toLowerCase().includes("continuous")) {
+ opticConcepts.add("trifocal"); opticConcepts.add("multifocal");
+}
     });
     return Array.from(opticConcepts);
   }
 
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
-      if (recommendedConcepts.length === 0) return [];
+      // Don't show any lenses until at least one primary parameter is entered
+      const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
+      if (!hasBlock1Input || recommendedConcepts.length === 0) return [];
 
       const targetOpticConcepts = mapClinicalToOptic(recommendedConcepts);
       
@@ -286,7 +291,8 @@ function App() {
         if (!matchesConcept) return false;
 
         if (drAlfonsoInputs.lensMaterial !== 'any') {
-          if (!lens.specifications.hydro.toLowerCase().includes(drAlfonsoInputs.lensMaterial)) return false;
+          const lensMaterialLower = lens.specifications.hydro.toLowerCase();
+          if (!lensMaterialLower.includes(drAlfonsoInputs.lensMaterial)) return false;
         }
 
         return true;
@@ -328,15 +334,54 @@ function App() {
         return true;
       }
     });
-  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs.lensMaterial, recommendedConcepts]);
+  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedConcepts]);
 
   const selectedLensesForComparison = useMemo(() => {
     return lenses.filter(l => selectedLensIds.has(l.id));
   }, [lenses, selectedLensIds]);
 
+  const noLensesMessage = useMemo(() => {
+    if (activeTab === FilterTab.DR_ALFONSO) {
+        const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
+        
+        if (!hasBlock1Input) {
+            return "Introduzca los parámetros principales del paciente para iniciar la recomendación.";
+        }
+        if (recommendedConcepts.length === 0) {
+            return "No se ha podido determinar un concepto clínico con los datos actuales. Pruebe a ajustar los parámetros.";
+        }
+        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material).";
+    }
+    return "Pruebe a ajustar los filtros para ver más resultados.";
+  }, [activeTab, drAlfonsoInputs, recommendedConcepts.length]);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Processing IOL Database...</div>;
   }
+  
+  const renderResults = () => {
+     if (filteredLenses.length === 0) {
+       return (
+         <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-slate-900">No se encontraron lentes</h3>
+            <p className="text-slate-500 mt-1 max-w-md mx-auto">{noLensesMessage}</p>
+         </div>
+       );
+     }
+     return (
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+         {filteredLenses.map(lens => (
+           <LensCard 
+             key={lens.id} 
+             lens={lens} 
+             isSelected={selectedLensIds.has(lens.id)}
+             onToggleSelect={toggleLensSelection}
+           />
+         ))}
+       </div>
+     );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -486,7 +531,7 @@ function App() {
                 <div className="relative">
                   <select className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.opticConcept} onChange={(e) => setBasicFilters({...basicFilters, opticConcept: e.target.value, clinicalConcept: 'all'})}>
                     <option value="all">All Concepts</option>
-                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (<option key={c} value={c}>{c}</option>))}
+                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (<option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
                 </div>
@@ -508,95 +553,71 @@ function App() {
                  <div className="flex flex-col justify-center gap-3"><label className="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isPreloaded} onChange={(e) => setAdvFilters({...advFilters, isPreloaded: e.target.checked})} /><span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Preloaded Only</span></label><label className="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isYellowFilter} onChange={(e) => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})} /><span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Yellow/Blue Filter</span></label></div>
               </div>
             </div>
-          ) : ( // Dr. Alfonso Tab
-            <div className="pt-6 space-y-8">
-              {/* Block 1 */}
-              <div>
-                  <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><ListTree className="w-5 h-5" />Bloque 1: Parámetros Principales</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
-                      <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 58" /></div>
-                      <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 23.5" /></div>
-                      <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="transparente">Transparente</option><option value="presbicia">Presbicia</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
-                      <div><label className="block text-sm font-semibold text-slate-700 mb-1">Refracción</label><select value={drAlfonsoInputs.refraction} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, refraction: e.target.value as DrAlfonsoInputs['refraction']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="hipermetrope_extremo">Hipermetrope extremo</option><option value="hipermetrope_alto">Hipermetrope Alto</option><option value="emetrope">Emetrope +/-</option><option value="miope_alto">Miope Alto</option><option value="miope_extremo">Miope Extremo</option></select></div>
-                  </div>
+          ) : ( 
+            <>
+              <div className="pt-6 space-y-8">
+                <div>
+                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><ListTree className="w-5 h-5" />Bloque 1: Parámetros Principales</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 58" /></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 23.5" /></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="transparente">Transparente</option><option value="presbicia">Presbicia</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Refracción</label><select value={drAlfonsoInputs.refraction} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, refraction: e.target.value as DrAlfonsoInputs['refraction']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="hipermetrope_extremo">Hipermetrope extremo</option><option value="hipermetrope_alto">Hipermetrope Alto</option><option value="emetrope">Emetrope +/-</option><option value="miope_alto">Miope Alto</option><option value="miope_extremo">Miope Extremo</option></select></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><CheckSquare className="w-5 h-5" />Bloque 2: Condiciones Adicionales</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {Object.entries(specialConditionsOptions).map(([key, label]) => (
+                          <label key={key} className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${drAlfonsoInputs.specialConditions.includes(key) ? 'bg-teal-50 border-teal-300 ring-2 ring-teal-200' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                            <input type="checkbox" checked={drAlfonsoInputs.specialConditions.includes(key)} onChange={() => handleSpecialConditionToggle(key)} className="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500" />
+                            <span className="text-sm font-medium text-slate-700">{label}</span>
+                          </label>
+                        ))}
+                     </div>
+                </div>
+                
+                 <div className="bg-slate-50/70 p-5 rounded-xl border border-slate-200">
+                    <h3 className="text-lg font-bold text-teal-800 mb-3 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" />Bloque 3: Conceptos Clínicos Compatibles</h3>
+                    {recommendedConcepts.length > 0 ? (
+                        <div className="flex flex-wrap gap-3">
+                            {recommendedConcepts.map(concept => (
+                              <span key={concept} className="px-4 py-2 rounded-full text-sm font-bold bg-teal-100 text-teal-900 border border-teal-200 shadow-sm animate-in fade-in duration-300">
+                                {concept}
+                              </span>
+                            ))}
+                        </div>
+                    ) : (
+                      <p className="text-slate-500">Introduzca datos en el Bloque 1 para ver los conceptos recomendados.</p>
+                    )}
+                 </div>
+                 
+                 <div>
+                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
+                    <div className="max-w-xs">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
+                        <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                            <option value="any">Cualquiera</option>
+                            <option value="hidrofilico">Hidrofílico</option>
+                            <option value="hidrofobico">Hidrofóbico</option>
+                        </select>
+                    </div>
+                 </div>
               </div>
-              
-              {/* Block 2 */}
-              <div>
-                  <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><CheckSquare className="w-5 h-5" />Bloque 2: Condiciones Adicionales</h3>
-                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {Object.entries(specialConditionsOptions).map(([key, label]) => (
-                        <label key={key} className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${drAlfonsoInputs.specialConditions.includes(key) ? 'bg-teal-50 border-teal-300 ring-2 ring-teal-200' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                          <input type="checkbox" checked={drAlfonsoInputs.specialConditions.includes(key)} onChange={() => handleSpecialConditionToggle(key)} className="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500" />
-                          <span className="text-sm font-medium text-slate-700">{label}</span>
-                        </label>
-                      ))}
-                   </div>
+
+              <div className="border-t border-slate-200 -mx-6 mt-8 mb-6"></div>
+              <div className="px-0">
+                 <h2 className="text-2xl font-bold text-slate-800 mb-6">
+                    Resultados de la Recomendación
+                 </h2>
+                 {renderResults()}
               </div>
-              
-               {/* Block 3 */}
-               <div className="bg-slate-50/70 p-5 rounded-xl border border-slate-200">
-                  <h3 className="text-lg font-bold text-teal-800 mb-3 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" />Bloque 3: Conceptos Clínicos Compatibles</h3>
-                  {recommendedConcepts.length > 0 ? (
-                      <div className="flex flex-wrap gap-3">
-                          {recommendedConcepts.map(concept => (
-                            <span key={concept} className="px-4 py-2 rounded-full text-sm font-bold bg-teal-100 text-teal-900 border border-teal-200 shadow-sm animate-in fade-in duration-300">
-                              {concept}
-                            </span>
-                          ))}
-                      </div>
-                  ) : (
-                    <p className="text-slate-500">No hay un concepto clínico específico para los filtros actuales. Introduzca más datos para acotar la búsqueda.</p>
-                  )}
-               </div>
-               
-               {/* Block 4 */}
-               <div>
-                  <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
-                  <div className="max-w-xs">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
-                      <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
-                          <option value="any">Cualquiera</option>
-                          <option value="hidrofilico">Hidrofílico</option>
-                          <option value="hidrofobico">Hidrofóbico</option>
-                      </select>
-                  </div>
-               </div>
-            </div>
+            </>
           )}
         </div>
         
-        {/* Lenses Results (for all tabs) */}
-        {filteredLenses.length > 0 && activeTab === FilterTab.DR_ALFONSO && (
-          <h2 className="text-2xl font-bold text-slate-800 mb-6 mt-12 border-t border-slate-200 pt-8">
-            {filteredLenses.length} Lentes Recomendadas
-          </h2>
-        )}
-
-        {activeTab !== FilterTab.DR_ALFONSO || (activeTab === FilterTab.DR_ALFONSO && recommendedConcepts.length > 0) ? (
-          <>
-            {filteredLenses.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
-                <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-slate-900">No se encontraron lentes</h3>
-                <p className="text-slate-500">
-                  {activeTab === FilterTab.DR_ALFONSO ? 'Pruebe a modificar los parámetros o condiciones para encontrar lentes compatibles.' : 'Pruebe a ajustar los filtros para ver más resultados.'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredLenses.map(lens => (
-                  <LensCard 
-                    key={lens.id} 
-                    lens={lens} 
-                    isSelected={selectedLensIds.has(lens.id)}
-                    onToggleSelect={toggleLensSelection}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        ) : null}
+        {activeTab !== FilterTab.DR_ALFONSO && renderResults()}
 
       </main>
 
