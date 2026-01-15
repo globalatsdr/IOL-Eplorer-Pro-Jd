@@ -14,6 +14,26 @@ export interface Rule {
   };
 }
 
+// --- Mappings for UI generation ---
+export const AGE_RANGES: { [key: number]: string } = {
+  1: '35-44',
+  2: '45-54',
+  3: '55-64',
+  4: '65-74',
+  5: '75-85',
+};
+
+export const LA_RANGES: { [key: number]: string } = {
+  1: '14-18.5',
+  2: '>18.5-22',
+  3: '>22-24.5',
+  4: '>24.5-29',
+  5: '>29-35',
+};
+
+export const LENS_STATUS_OPTIONS: LensStatus[] = ['transparente', 'presbicia', 'disfuncional', 'catarata'];
+
+
 // --- List of all recommendation rules ---
 export const ALL_RULES: Rule[] = [
   // Rule 3 (was)
@@ -281,19 +301,16 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
     }
     if (cond.lensStatus && inputs.lensStatus !== 'any') {
       const currentStatus = inputs.lensStatus as LensStatus;
-      // The rule applies if its status array includes the selected status
       if (!cond.lensStatus.includes(currentStatus)) {
         return false;
       }
     }
     if (cond.specialConditions) {
-        // Must have ALL specified conditions
         if (!cond.specialConditions.every(sc => inputs.specialConditions.includes(sc))) {
             return false;
         }
     }
     if(cond.negatedConditions) {
-        // Must have NONE of the specified conditions
         if (cond.negatedConditions.some(sc => inputs.specialConditions.includes(sc))) {
             return false;
         }
@@ -301,7 +318,6 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
     return true;
   });
 
-  // Use a Set to get unique results, as multiple rules might yield the same concept
   const uniqueConcepts = new Set(matchingRules.map(rule => rule.result));
   
   return Array.from(uniqueConcepts);
