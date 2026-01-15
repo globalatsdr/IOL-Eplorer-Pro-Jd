@@ -1,7 +1,162 @@
 import { DrAlfonsoInputs } from '../types';
 
-// --- Helper functions to categorize inputs ---
+// --- Type Definitions for Rules ---
+type LensStatus = 'transparente' | 'presbicia' | 'disfuncional' | 'catarata';
 
+interface Rule {
+  result: string;
+  conditions: {
+    ageGroup?: number[];
+    laGroup?: number[];
+    lensStatus?: LensStatus[];
+    specialConditions?: string[]; // Must match all specified conditions
+    negatedConditions?: string[]; // Must NOT match any specified conditions
+  };
+}
+
+// --- List of all recommendation rules ---
+const ALL_RULES: Rule[] = [
+  // Rule 3 (was)
+  {
+    result: "Partial Range of Field - Narrow",
+    conditions: {
+      ageGroup: [2],
+      laGroup: [2],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional'],
+      specialConditions: ['lvc_hiper_mayor_4']
+    }
+  },
+  // Rule 5 (was)
+  {
+    result: "Full Range of Field - Smooth",
+    conditions: {
+      ageGroup: [2],
+      laGroup: [2],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional'],
+      specialConditions: ['lvc_hiper_menor_4']
+    }
+  },
+  // Rule 4 (was)
+  {
+    result: "Partial Range of Field - Enhance",
+    conditions: {
+      ageGroup: [2],
+      laGroup: [2],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional'],
+      specialConditions: ['camara_estrecha']
+    }
+  },
+  // Rule 2 (was) - More general
+  {
+    result: "Partial Range of Field - Enhance",
+    conditions: {
+      ageGroup: [2],
+      laGroup: [2],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional'],
+    }
+  },
+  // Rule 1 (was)
+  {
+    result: "Partial Range of Field - Narrow",
+    conditions: {
+      ageGroup: [1],
+      laGroup: [1],
+      lensStatus: ['transparente', 'presbicia']
+    }
+  },
+  // Rule 6 (was)
+  {
+    result: "Full Range of Field - Smooth",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [3],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      specialConditions: ['udva_menor_07']
+    }
+  },
+  // Rule 7 (was)
+  {
+    result: "Full Range of Field - Continuous",
+    conditions: {
+      ageGroup: [4],
+      laGroup: [3],
+      lensStatus: ['disfuncional', 'catarata'],
+      specialConditions: ['udva_menor_07']
+    }
+  },
+  // Rule 8 (was)
+  {
+    result: "Partial Range of Field - Extend",
+    conditions: {
+      ageGroup: [5],
+      laGroup: [3],
+      lensStatus: ['disfuncional', 'catarata'],
+      specialConditions: ['udva_menor_07']
+    }
+  },
+  // Rule 9 (was)
+  {
+    result: "Partial Range of Field - Enhance",
+    conditions: {
+      ageGroup: [2],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia'],
+      specialConditions: ['udva_menor_07']
+    }
+  },
+  // Rule 14 (was)
+  {
+    result: "Partial Range of Field - Narrow",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      specialConditions: ['lvc_miopico_8_10']
+    }
+  },
+  // Rule 13 (was)
+  {
+    result: "Full Range of Field - Steep",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      specialConditions: ['lvc_miopico_5_7']
+    }
+  },
+  // Rule 12 (was)
+  {
+    result: "Full Range of Field - Smooth",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      specialConditions: ['lvc_miopico_2_4']
+    }
+  },
+  // Rule 11 (was)
+  {
+    result: "Full Range of Field - Steep",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      specialConditions: ['estafiloma']
+    }
+  },
+  // Rule 10 (was) - More general
+  {
+    result: "Full Range of Field - Smooth",
+    conditions: {
+      ageGroup: [3],
+      laGroup: [4],
+      lensStatus: ['transparente', 'presbicia', 'disfuncional', 'catarata'],
+      negatedConditions: ['estafiloma']
+    }
+  }
+];
+
+// --- Helper functions to categorize inputs ---
 const getAgeGroup = (age: number): number | null => {
   if (age >= 35 && age <= 44) return 1;
   if (age >= 45 && age <= 54) return 2;
@@ -20,104 +175,59 @@ const getAxialLengthGroup = (la: number): number | null => {
   return null;
 };
 
-// We define a narrow chamber as an Angle-to-Angle between 11 and 12mm.
-const isNarrowAnteriorChamber = (a2a: number): boolean => {
-  return a2a >= 11 && a2a <= 12;
-}
-
+// --- Options for the UI ---
+export const specialConditionsOptions: { [key: string]: string } = {
+  'lvc_hiper_mayor_4': 'LVC Hipermetrópico >= 4D',
+  'lvc_hiper_menor_4': 'LVC Hipermetrópico < 4D',
+  'lvc_miopico_2_4': 'LVC Miópico (-2 a -4D)',
+  'lvc_miopico_5_7': 'LVC Miópico (-5 a -7D)',
+  'lvc_miopico_8_10': 'LVC Miópico (-8 a -10D)',
+  'camara_estrecha': 'Cámara Ant. Estrecha',
+  'estafiloma': 'Estafiloma',
+  'udva_menor_07': 'UDVA < 0.7',
+};
 
 /**
- * Genera una recomendación de concepto clínico de LIO basada en un conjunto de reglas.
- * @param inputs - Objeto con los datos del paciente del formulario del Dr. Alfonso.
- * @returns Una cadena de texto con el concepto clínico recomendado o un mensaje de aviso.
+ * Genera una lista de conceptos clínicos recomendados basados en filtros progresivos.
+ * @param inputs - Objeto con los datos del paciente.
+ * @returns Un array de strings con los conceptos clínicos únicos que coinciden.
  */
-export const getLensRecommendation = (inputs: DrAlfonsoInputs): string => {
-  // --- 1. Parse all inputs from form strings to numbers ---
+export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   const age = inputs.age ? parseInt(inputs.age, 10) : 0;
   const axialLength = inputs.axialLength ? parseFloat(inputs.axialLength) : 0;
-  const angleToAngle = inputs.angleToAngle ? parseFloat(inputs.angleToAngle) : 0;
-  // Default to a high value if not set, so UDVA < 0.7 condition is false unless specified
-  const udva = inputs.udva ? parseFloat(inputs.udva) : 2.0; 
-  const lvcDiopters = inputs.lvcDiopters ? parseFloat(inputs.lvcDiopters) : 0;
 
-  // --- 2. Determine groups and specific conditions ---
-  const ageGroup = getAgeGroup(age);
-  const laGroup = getAxialLengthGroup(axialLength);
-  const hasEstafiloma = inputs.lvcType === 'miopico_estafiloma';
-  const isCamaraEstrecha = isNarrowAnteriorChamber(angleToAngle);
+  const ageGroup = age > 0 ? getAgeGroup(age) : null;
+  const laGroup = axialLength > 0 ? getAxialLengthGroup(axialLength) : null;
 
-  // --- 3. Rule Evaluation (Order is critical for overrides) ---
+  const matchingRules = ALL_RULES.filter(rule => {
+    const cond = rule.conditions;
 
-  // Rule 3: Age G2, LA G2, Status (T/P/D), LVC Hiper >=4D -> Narrow
-  if (ageGroup === 2 && laGroup === 2 && ['transparente', 'presbicia', 'disfuncional'].includes(inputs.lensStatus) && inputs.lvcType === 'hipermetropico_mayor_4') {
-    return "Partial Range of Field - Narrow";
-  }
-
-  // Rule 5: Age G2, LA G2, Status (T/P/D), LVC Hiper <4D -> Smooth
-  if (ageGroup === 2 && laGroup === 2 && ['transparente', 'presbicia', 'disfuncional'].includes(inputs.lensStatus) && inputs.lvcType === 'hipermetropico_menor_4') {
-    return "Full Range of Field - Smooth";
-  }
-  
-  // Rule 4: Age G2, LA G2, Status (T/P/D), Camara Estrecha -> Enhance
-  if (ageGroup === 2 && laGroup === 2 && ['transparente', 'presbicia', 'disfuncional'].includes(inputs.lensStatus) && isCamaraEstrecha) {
-    return "Partial Range of Field - Enhance";
-  }
-  
-  // Rule 2: Age G2, LA G2, Status (T/P/D) -> Enhance (more general)
-  if (ageGroup === 2 && laGroup === 2 && ['transparente', 'presbicia', 'disfuncional'].includes(inputs.lensStatus)) {
-    return "Partial Range of Field - Enhance";
-  }
-
-  // Rule 1: Age G1, LA G1, Status (T/P) -> Narrow
-  if (ageGroup === 1 && laGroup === 1 && ['transparente', 'presbicia'].includes(inputs.lensStatus)) {
-    return "Partial Range of Field - Narrow";
-  }
-  
-  // Rule 6: Age G3, LA G3, Status (T/P/D/C), UDVA < 0.7 -> Smooth
-  if (ageGroup === 3 && laGroup === 3 && ['transparente', 'presbicia', 'disfuncional', 'catarata'].includes(inputs.lensStatus) && udva < 0.7) {
-    return "Full Range of Field - Smooth";
-  }
-  
-  // Rule 7: Age G4, LA G3, Status (D/C), UDVA < 0.7 -> Continuous
-  if (ageGroup === 4 && laGroup === 3 && ['disfuncional', 'catarata'].includes(inputs.lensStatus) && udva < 0.7) {
-    return "Full Range of Field - Continuous";
-  }
-  
-  // Rule 8: Age G5, LA G3, Status (D/C), UDVA < 0.7 -> Extend
-  if (ageGroup === 5 && laGroup === 3 && ['disfuncional', 'catarata'].includes(inputs.lensStatus) && udva < 0.7) {
-    return "Partial Range of Field - Extend";
-  }
-
-  // Rule 9: Age G2, LA G4, Status (T/P), UDVA < 0.7 -> Enhance
-  if (ageGroup === 2 && laGroup === 4 && ['transparente', 'presbicia'].includes(inputs.lensStatus) && udva < 0.7) {
-    return "Partial Range of Field - Enhance";
-  }
-
-  // LVC Miopico rules (Rules 12, 13, 14)
-  const commonConditionsForLVCRules = ageGroup === 3 && laGroup === 4 && ['transparente', 'presbicia', 'disfuncional', 'catarata'].includes(inputs.lensStatus) && inputs.lvcType === 'miopico';
-
-  if (commonConditionsForLVCRules) {
-    if (lvcDiopters >= -10 && lvcDiopters <= -8) {
-      return "Partial Range of Field - Narrow"; // Rule 14
+    if (cond.ageGroup && (!ageGroup || !cond.ageGroup.includes(ageGroup))) {
+      return false;
     }
-    if (lvcDiopters >= -7 && lvcDiopters <= -5) {
-      return "Full Range of Field - Steep"; // Rule 13
+    if (cond.laGroup && (!laGroup || !cond.laGroup.includes(laGroup))) {
+      return false;
     }
-    if (lvcDiopters >= -4 && lvcDiopters <= -2) {
-      return "Full Range of Field - Smooth"; // Rule 12
+    if (cond.lensStatus && (inputs.lensStatus === 'any' || !cond.lensStatus.includes(inputs.lensStatus as LensStatus))) {
+      return false;
     }
-  }
+    if (cond.specialConditions) {
+        // Must have ALL specified conditions
+        if (!cond.specialConditions.every(sc => inputs.specialConditions.includes(sc))) {
+            return false;
+        }
+    }
+    if(cond.negatedConditions) {
+        // Must have NONE of the specified conditions
+        if (cond.negatedConditions.some(sc => inputs.specialConditions.includes(sc))) {
+            return false;
+        }
+    }
+    return true;
+  });
 
-  // Rule 11: Age G3, LA G4, Status (T/P/D/C), Estafiloma -> Steep
-  if (ageGroup === 3 && laGroup === 4 && ['transparente', 'presbicia', 'disfuncional', 'catarata'].includes(inputs.lensStatus) && hasEstafiloma) {
-    return "Full Range of Field - Steep";
-  }
+  // Use a Set to get unique results, as multiple rules might yield the same concept
+  const uniqueConcepts = new Set(matchingRules.map(rule => rule.result));
   
-  // Rule 10: Age G3, LA G4, Status (T/P/D/C), NO Estafiloma -> Smooth (more general)
-  if (ageGroup === 3 && laGroup === 4 && ['transparente', 'presbicia', 'disfuncional', 'catarata'].includes(inputs.lensStatus) && !hasEstafiloma) {
-    return "Full Range of Field - Smooth";
-  }
-
-  // --- 4. If no rule matches ---
-  return "No hay resultado para los parámetros introducidos. Por favor, revise los datos o consulte a un especialista.";
+  return Array.from(uniqueConcepts);
 };
