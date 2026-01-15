@@ -6,8 +6,9 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { getLensRecommendations, specialConditionsOptions } from './services/recommendationService';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter } from 'lucide-react';
+import { getLensRecommendations, specialConditionsOptions, ALL_RULES } from './services/recommendationService';
+import RulesManager from './components/RulesManager'; // Import the new component
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -32,6 +33,9 @@ function App() {
   // Comparison State
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
   const [showComparison, setShowComparison] = useState(false);
+
+  // New state for the Rules Manager modal
+  const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
 
   // Filters State
   const [basicFilters, setBasicFilters] = useState<BasicFilters>({
@@ -269,17 +273,16 @@ function App() {
       else if (val.toLowerCase().includes("extend")) opticConcepts.add("edof");
       else if (val.toLowerCase().includes("steep")) opticConcepts.add("bifocal");
       else if (val.toLowerCase().includes("smooth")) opticConcepts.add("multifocal");
-      // FIX: The `Set.add` method only accepts one argument. Split into two separate calls to add both 'trifocal' and 'multifocal'.
       else if (val.toLowerCase().includes("continuous")) {
- opticConcepts.add("trifocal"); opticConcepts.add("multifocal");
-}
+        opticConcepts.add("trifocal");
+        opticConcepts.add("multifocal");
+      }
     });
     return Array.from(opticConcepts);
   }
 
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
-      // Don't show any lenses until at least one primary parameter is entered
       const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
       if (!hasBlock1Input || recommendedConcepts.length === 0) return [];
 
@@ -294,6 +297,9 @@ function App() {
           const lensMaterialLower = lens.specifications.hydro.toLowerCase();
           if (!lensMaterialLower.includes(drAlfonsoInputs.lensMaterial)) return false;
         }
+
+        // Apply special condition logic for lenses themselves (if needed in future)
+        // For now, it only filters concepts.
 
         return true;
       });
@@ -557,7 +563,19 @@ function App() {
             <>
               <div className="pt-6 space-y-8">
                 <div>
-                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><ListTree className="w-5 h-5" />Bloque 1: Parámetros Principales</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-bold text-teal-800 flex items-center gap-2"><ListTree className="w-5 h-5" />Bloque 1: Parámetros Principales</h3>
+                      {isDrAlfonsoUnlocked && (
+                         <button 
+                           onClick={() => setIsRulesManagerOpen(true)}
+                           className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+                           title="Gestionar Reglas Clínicas"
+                         >
+                           <Database className="w-4 h-4" />
+                           Gestionar Reglas
+                         </button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 58" /></div>
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 23.5" /></div>
@@ -648,6 +666,13 @@ function App() {
           onClose={() => setShowComparison(false)}
           onRemove={removeLensFromComparison}
           onFindSimilar={handleFindZeissSimilar}
+        />
+      )}
+
+      {isRulesManagerOpen && (
+        <RulesManager 
+          rules={ALL_RULES}
+          onClose={() => setIsRulesManagerOpen(false)}
         />
       )}
     </div>

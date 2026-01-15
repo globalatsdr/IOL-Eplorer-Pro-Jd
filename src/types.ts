@@ -92,3 +92,6 @@ export interface DrAlfonsoInputs {
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
   specialConditions: string[]; // e.g., ['lvc_hiper_mayor_4', 'camara_estrecha']
 }
+
+// Export Rule type for use in components
+export type { Rule } from './services/recommendationService';
