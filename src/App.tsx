@@ -61,6 +61,7 @@ function App() {
     refraction: 'any',
     lensMaterial: 'any',
     hapticDesign: 'any',
+    opticConcept: 'any',
     toric: 'any',
     lvc: 'any',
     udva: 'any',
@@ -221,6 +222,7 @@ function App() {
       refraction: 'any',
       lensMaterial: 'any',
       hapticDesign: 'any',
+      opticConcept: 'any',
       toric: 'any',
       lvc: 'any',
       udva: 'any',
@@ -297,6 +299,10 @@ function App() {
   }, [lenses, activeTab, drAlfonsoInputs, recommendedConcepts]);
 
   // Step 2: Derive available options for Block 4 from the base recommendations
+  const availableOpticConcepts = useMemo(() => 
+      Array.from(new Set(recommendedLensesBase.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
+  , [recommendedLensesBase]);
+  
   const availableHapticDesigns = useMemo(() => 
       Array.from(new Set(recommendedLensesBase.map(l => l.specifications.hapticDesign).filter(Boolean))).sort()
   , [recommendedLensesBase]);
@@ -315,17 +321,17 @@ function App() {
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
         return recommendedLensesBase.filter(lens => {
-            // Block 4 filters
+            if (drAlfonsoInputs.opticConcept !== 'any') {
+                if (lens.specifications.opticConcept !== drAlfonsoInputs.opticConcept) return false;
+            }
             if (drAlfonsoInputs.lensMaterial !== 'any') {
                 const lensMaterialLower = lens.specifications.hydro.toLowerCase();
                 if (drAlfonsoInputs.lensMaterial === 'hidrofilico' && !lensMaterialLower.includes('hydrophilic')) return false;
                 if (drAlfonsoInputs.lensMaterial === 'hidrofobico' && !lensMaterialLower.includes('hydrophobic')) return false;
             }
-            
             if (drAlfonsoInputs.hapticDesign !== 'any') {
                 if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) return false;
             }
-
             if (drAlfonsoInputs.toric !== 'any') {
                 const isToric = lens.specifications.toric;
                 if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
@@ -376,9 +382,12 @@ function App() {
     if (activeTab !== FilterTab.DR_ALFONSO) return null;
 
     const parts = [];
-    if (recommendedConcepts.length > 0) {
+    if (drAlfonsoInputs.opticConcept !== 'any') {
+        parts.push(drAlfonsoInputs.opticConcept);
+    } else if (recommendedConcepts.length > 0) {
         parts.push(recommendedConcepts.join(' / '));
     }
+
     if (drAlfonsoInputs.lensMaterial !== 'any') {
         parts.push(drAlfonsoInputs.lensMaterial === 'hidrofilico' ? 'Hidrofílico' : 'Hidrofóbico');
     }
@@ -687,7 +696,16 @@ function App() {
                  
                  <div>
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 items-center">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Concepto Óptico</label>
+                            <select value={drAlfonsoInputs.opticConcept} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, opticConcept: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
+                                <option value="any">Cualquiera</option>
+                                {availableOpticConcepts.map(concept => (
+                                    <option key={concept} value={concept}>{concept}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
                             <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
