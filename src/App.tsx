@@ -6,7 +6,7 @@ import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
-import { getLensRecommendations, specialConditionsOptions, ALL_RULES } from './services/recommendationService';
+import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager'; // Import the new component
 import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database } from 'lucide-react';
 
