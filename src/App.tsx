@@ -86,10 +86,6 @@ function App() {
   const uniqueConcepts = useMemo(() => 
     Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
   , [lenses]);
-  
-  const uniqueHapticDesigns = useMemo(() => 
-    Array.from(new Set(lenses.map(l => l.specifications.hapticDesign).filter(Boolean))).sort()
-  , [lenses]);
 
   // Load Data Logic
   useEffect(() => {
@@ -284,36 +280,59 @@ function App() {
     });
     return Array.from(opticConcepts);
   }
+  
+  // Step 1: Get base recommendations from Blocks 1-3
+  const recommendedLensesBase = useMemo(() => {
+    if (activeTab !== FilterTab.DR_ALFONSO) return [];
+    
+    const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
+    if (!hasBlock1Input || recommendedConcepts.length === 0) return [];
 
+    const targetOpticConcepts = mapClinicalToOptic(recommendedConcepts);
+    
+    return lenses.filter(lens => {
+        const opticConceptLower = lens.specifications.opticConcept.toLowerCase();
+        return targetOpticConcepts.some(c => opticConceptLower.includes(c));
+    });
+  }, [lenses, activeTab, drAlfonsoInputs, recommendedConcepts]);
+
+  // Step 2: Derive available options for Block 4 from the base recommendations
+  const availableHapticDesigns = useMemo(() => 
+      Array.from(new Set(recommendedLensesBase.map(l => l.specifications.hapticDesign).filter(Boolean))).sort()
+  , [recommendedLensesBase]);
+
+  const availableMaterials = useMemo(() => {
+      const materials = new Set<string>();
+      recommendedLensesBase.forEach(lens => {
+          const hydro = lens.specifications.hydro.toLowerCase();
+          if (hydro.includes('hydrophilic')) materials.add('hidrofilico');
+          if (hydro.includes('hydrophobic')) materials.add('hidrofobico');
+      });
+      return Array.from(materials).sort();
+  }, [recommendedLensesBase]);
+
+  // Step 3: Final filtering applies Block 4 filters to the base recommendations
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
-      const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
-      if (!hasBlock1Input || recommendedConcepts.length === 0) return [];
+        return recommendedLensesBase.filter(lens => {
+            // Block 4 filters
+            if (drAlfonsoInputs.lensMaterial !== 'any') {
+                const lensMaterialLower = lens.specifications.hydro.toLowerCase();
+                if (drAlfonsoInputs.lensMaterial === 'hidrofilico' && !lensMaterialLower.includes('hydrophilic')) return false;
+                if (drAlfonsoInputs.lensMaterial === 'hidrofobico' && !lensMaterialLower.includes('hydrophobic')) return false;
+            }
+            
+            if (drAlfonsoInputs.hapticDesign !== 'any') {
+                if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) return false;
+            }
 
-      const targetOpticConcepts = mapClinicalToOptic(recommendedConcepts);
-      
-      return lenses.filter(lens => {
-        const opticConceptLower = lens.specifications.opticConcept.toLowerCase();
-        const matchesConcept = targetOpticConcepts.some(c => opticConceptLower.includes(c));
-        if (!matchesConcept) return false;
-
-        if (drAlfonsoInputs.lensMaterial !== 'any') {
-          const lensMaterialLower = lens.specifications.hydro.toLowerCase();
-          if (!lensMaterialLower.includes(drAlfonsoInputs.lensMaterial)) return false;
-        }
-        
-        if (drAlfonsoInputs.hapticDesign !== 'any') {
-            if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) return false;
-        }
-
-        if (drAlfonsoInputs.toric !== 'any') {
-            const isToric = lens.specifications.toric;
-            if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
-            if (drAlfonsoInputs.toric === 'no' && isToric) return false;
-        }
-
-        return true;
-      });
+            if (drAlfonsoInputs.toric !== 'any') {
+                const isToric = lens.specifications.toric;
+                if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
+                if (drAlfonsoInputs.toric === 'no' && isToric) return false;
+            }
+            return true;
+        });
     }
     
     return lenses.filter(lens => {
@@ -351,7 +370,7 @@ function App() {
         return true;
       }
     });
-  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedConcepts]);
+  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedLensesBase, recommendedConcepts]);
 
   const recommendationSummary = useMemo(() => {
     if (activeTab !== FilterTab.DR_ALFONSO) return null;
@@ -673,15 +692,16 @@ function App() {
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
                             <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
                                 <option value="any">Cualquiera</option>
-                                <option value="hidrofilico">Hidrofílico</option>
-                                <option value="hidrofobico">Hidrofóbico</option>
+                                {availableMaterials.map(material => (
+                                    <option key={material} value={material}>{material.charAt(0).toUpperCase() + material.slice(1)}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Diseño del Háptico</label>
                             <select value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
                                 <option value="any">Cualquiera</option>
-                                {uniqueHapticDesigns.map(design => (
+                                {availableHapticDesigns.map(design => (
                                     <option key={design} value={design}>{design}</option>
                                 ))}
                             </select>
