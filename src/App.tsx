@@ -8,7 +8,7 @@ import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager'; // Import the new component
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -61,6 +61,7 @@ function App() {
     refraction: 'any',
     lensMaterial: 'any',
     hapticDesign: 'any',
+    toric: 'any',
     lvc: 'any',
     ucva: 'any',
     contactLenses: 'any',
@@ -224,6 +225,7 @@ function App() {
       refraction: 'any',
       lensMaterial: 'any',
       hapticDesign: 'any',
+      toric: 'any',
       lvc: 'any',
       ucva: 'any',
       contactLenses: 'any',
@@ -301,9 +303,13 @@ function App() {
         }
         
         if (drAlfonsoInputs.hapticDesign !== 'any') {
-            if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) {
-              return false;
-            }
+            if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) return false;
+        }
+
+        if (drAlfonsoInputs.toric !== 'any') {
+            const isToric = lens.specifications.toric;
+            if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
+            if (drAlfonsoInputs.toric === 'no' && isToric) return false;
         }
 
         return true;
@@ -347,6 +353,31 @@ function App() {
     });
   }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedConcepts]);
 
+  const recommendationSummary = useMemo(() => {
+    if (activeTab !== FilterTab.DR_ALFONSO) return null;
+
+    const parts = [];
+    if (recommendedConcepts.length > 0) {
+        parts.push(recommendedConcepts.join(' / '));
+    }
+    if (drAlfonsoInputs.lensMaterial !== 'any') {
+        parts.push(drAlfonsoInputs.lensMaterial === 'hidrofilico' ? 'Hidrofílico' : 'Hidrofóbico');
+    }
+    if (drAlfonsoInputs.hapticDesign !== 'any') {
+        parts.push(`Diseño ${drAlfonsoInputs.hapticDesign}`);
+    }
+    if (drAlfonsoInputs.toric !== 'any') {
+        parts.push(drAlfonsoInputs.toric === 'yes' ? 'Tórica' : 'No Tórica');
+    }
+
+    if (parts.length === 0) return null;
+
+    if (parts.length === 1) return parts[0];
+    
+    const last = parts.pop();
+    return `${parts.join(', ')} y ${last}`;
+  }, [recommendedConcepts, drAlfonsoInputs, activeTab]);
+
   const selectedLensesForComparison = useMemo(() => {
     return lenses.filter(l => selectedLensIds.has(l.id));
   }, [lenses, selectedLensIds]);
@@ -361,7 +392,7 @@ function App() {
         if (recommendedConcepts.length === 0) {
             return "No se ha podido determinar un concepto clínico con los datos actuales. Pruebe a ajustar los parámetros.";
         }
-        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material y diseño de háptico).";
+        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material, diseño y toricidad).";
     }
     return "Pruebe a ajustar los filtros para ver más resultados.";
   }, [activeTab, drAlfonsoInputs, recommendedConcepts.length]);
@@ -637,10 +668,10 @@ function App() {
                  
                  <div>
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 max-w-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 items-center">
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
-                            <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                            <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
                                 <option value="any">Cualquiera</option>
                                 <option value="hidrofilico">Hidrofílico</option>
                                 <option value="hidrofobico">Hidrofóbico</option>
@@ -648,12 +679,18 @@ function App() {
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Diseño del Háptico</label>
-                            <select value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                            <select value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
                                 <option value="any">Cualquiera</option>
                                 {uniqueHapticDesigns.map(design => (
                                     <option key={design} value={design}>{design}</option>
                                 ))}
                             </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Tórica</label>
+                            <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200 h-[44px] items-center">
+                                {(['any', 'yes', 'no'] as const).map((opt) => (<button key={opt} onClick={() => setDrAlfonsoInputs({...drAlfonsoInputs, toric: opt})} className={`flex-1 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${drAlfonsoInputs.toric === opt ? 'bg-white text-teal-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}>{opt === 'any' ? 'Todas' : opt}</button>))}
+                            </div>
                         </div>
                     </div>
                  </div>
@@ -661,9 +698,24 @@ function App() {
 
               <div className="border-t border-slate-200 -mx-6 mt-8 mb-6"></div>
               <div className="px-0">
-                 <h2 className="text-2xl font-bold text-slate-800 mb-6">
+                 <h2 className="text-2xl font-bold text-slate-800 mb-4">
                     Resultados de la Recomendación
                  </h2>
+                 
+                 {recommendationSummary && filteredLenses.length > 0 && (
+                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 flex items-start gap-3">
+                        <Info className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                           <p className="text-sm font-semibold text-slate-800">
+                               Mostrando {filteredLenses.length} lente(s) que cumplen:
+                           </p>
+                           <p className="text-sm text-slate-600 italic mt-1">
+                               {recommendationSummary}
+                           </p>
+                        </div>
+                    </div>
+                 )}
+                 
                  {renderResults()}
               </div>
             </>

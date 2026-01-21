@@ -90,8 +90,8 @@ export interface DrAlfonsoInputs {
   lensStatus: 'any' | 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
   refraction: 'any' | 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
-  // FIX: Add missing hapticDesign property
   hapticDesign: string;
+  toric: 'any' | 'yes' | 'no';
   
   // New grouped conditions
   lvc: string;
