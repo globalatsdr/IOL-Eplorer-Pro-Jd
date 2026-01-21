@@ -270,8 +270,6 @@ export const specialConditionsOptions: { [key: string]: string } = {
   'kr': 'KR',
   'lvc_miopico_asociado_estafiloma': 'LVC Miópico asociado estafiloma',
   // Agudeza Visual
-  'ucva_menor_07': 'UCVA < 0.7',
-  'ucva_mayor_07': 'UCVA > 0.7',
   'udva_menor_07': 'UDVA < 0.7',
   'ucda_menor_07': 'UCDA < 0.7',
   // Lentes de contacto
@@ -300,7 +298,7 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   // Build a set of the patient's positive conditions from the new grouped inputs
   const patientPositiveConditions = new Set<string>();
   if (inputs.lvc !== 'any') patientPositiveConditions.add(inputs.lvc);
-  if (inputs.ucva !== 'any') patientPositiveConditions.add(inputs.ucva);
+  if (inputs.udva !== 'any') patientPositiveConditions.add(inputs.udva);
   if (inputs.contactLenses !== 'any') patientPositiveConditions.add(inputs.contactLenses);
   if (inputs.anteriorChamber !== 'any') patientPositiveConditions.add(inputs.anteriorChamber);
   if (inputs.estafiloma === 'yes') patientPositiveConditions.add('estafiloma');
