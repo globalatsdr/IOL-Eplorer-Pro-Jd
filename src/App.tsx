@@ -63,7 +63,7 @@ function App() {
     hapticDesign: 'any',
     toric: 'any',
     lvc: 'any',
-    ucva: 'any',
+    udva: 'any',
     contactLenses: 'any',
     anteriorChamber: 'any',
     estafiloma: 'any',
@@ -227,7 +227,7 @@ function App() {
       hapticDesign: 'any',
       toric: 'any',
       lvc: 'any',
-      ucva: 'any',
+      udva: 'any',
       contactLenses: 'any',
       anteriorChamber: 'any',
       estafiloma: 'any',
@@ -435,7 +435,7 @@ function App() {
       'lvc_miopico_8_10': 'Miópico (-8 a -10D)',
       'kr': 'KR'
   };
-  const ucvaOptions = { 'any': 'Cualquiera', 'ucva_menor_07': '< 0.7', 'ucva_mayor_07': '> 0.7' };
+  const udvaOptions = { 'any': 'Cualquiera', 'udva_menor_07': '< 0.7' };
   const contactLensOptions = { 'any': 'Cualquiera', 'no_usa_lc': 'No Usa LC', 'apenas_tolera_lc': 'Apenas Tolera LC', 'tolera_lc': 'Tolera LC' };
   const anteriorChamberOptions = { 'any': 'Cualquiera', 'camara_estrecha': 'Estrecha', 'camara_normal': 'Normal' };
 
@@ -639,7 +639,7 @@ function App() {
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><CheckSquare className="w-5 h-5" />Bloque 2: Condiciones Adicionales</h3>
                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-4 items-end">
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">LVC</label><select value={drAlfonsoInputs.lvc} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(lvcOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
-                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">UCVA</label><select value={drAlfonsoInputs.ucva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, ucva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(ucvaOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA</label><select value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(udvaOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Lentes de Contacto</label><select value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(contactLensOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cámara Anterior</label><select value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(anteriorChamberOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div>

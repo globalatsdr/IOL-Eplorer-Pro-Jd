@@ -95,7 +95,7 @@ export interface DrAlfonsoInputs {
   
   // New grouped conditions
   lvc: string;
-  ucva: string;
+  udva: string;
   contactLenses: string;
   anteriorChamber: string;
   estafiloma: 'any' | 'yes' | 'no';
