@@ -60,6 +60,7 @@ function App() {
     lensStatus: 'any',
     refraction: 'any',
     lensMaterial: 'any',
+    hapticDesign: 'any',
     lvc: 'any',
     ucva: 'any',
     contactLenses: 'any',
@@ -83,6 +84,10 @@ function App() {
 
   const uniqueConcepts = useMemo(() => 
     Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
+  , [lenses]);
+  
+  const uniqueHapticDesigns = useMemo(() => 
+    Array.from(new Set(lenses.map(l => l.specifications.hapticDesign).filter(Boolean))).sort()
   , [lenses]);
 
   // Load Data Logic
@@ -218,6 +223,7 @@ function App() {
       lensStatus: 'any',
       refraction: 'any',
       lensMaterial: 'any',
+      hapticDesign: 'any',
       lvc: 'any',
       ucva: 'any',
       contactLenses: 'any',
@@ -293,6 +299,12 @@ function App() {
           const lensMaterialLower = lens.specifications.hydro.toLowerCase();
           if (!lensMaterialLower.includes(drAlfonsoInputs.lensMaterial)) return false;
         }
+        
+        if (drAlfonsoInputs.hapticDesign !== 'any') {
+            if (lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) {
+              return false;
+            }
+        }
 
         return true;
       });
@@ -349,7 +361,7 @@ function App() {
         if (recommendedConcepts.length === 0) {
             return "No se ha podido determinar un concepto clínico con los datos actuales. Pruebe a ajustar los parámetros.";
         }
-        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material).";
+        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material y diseño de háptico).";
     }
     return "Pruebe a ajustar los filtros para ver más resultados.";
   }, [activeTab, drAlfonsoInputs, recommendedConcepts.length]);
@@ -625,13 +637,24 @@ function App() {
                  
                  <div>
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
-                    <div className="max-w-xs">
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
-                        <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
-                            <option value="any">Cualquiera</option>
-                            <option value="hidrofilico">Hidrofílico</option>
-                            <option value="hidrofobico">Hidrofóbico</option>
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 max-w-lg">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
+                            <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                                <option value="any">Cualquiera</option>
+                                <option value="hidrofilico">Hidrofílico</option>
+                                <option value="hidrofobico">Hidrofóbico</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Diseño del Háptico</label>
+                            <select value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">
+                                <option value="any">Cualquiera</option>
+                                {uniqueHapticDesigns.map(design => (
+                                    <option key={design} value={design}>{design}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                  </div>
               </div>
@@ -691,4 +714,130 @@ function App() {
   );
 }
 
-export default App;
+export default App;--- START OF FILE src/components/DualRangeSlider.tsx ---
+
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+
+interface Props {
+  min: number;
+  max: number;
+  step?: number;
+  minValue: number;
+  maxValue: number;
+  onChange: (min: number, max: number) => void;
+  unit?: string;
+}
+
+const DualRangeSlider: React.FC<Props> = ({ 
+  min, 
+  max, 
+  step = 0.5, 
+  minValue, 
+  maxValue, 
+  onChange,
+  unit = 'D'
+}) => {
+  const [minVal, setMinVal] = useState(minValue);
+  const [maxVal, setMaxVal] = useState(maxValue);
+  const minValRef = useRef(minValue);
+  const maxValRef = useRef(maxValue);
+  const range = useRef<HTMLDivElement>(null);
+
+  const getPercent = useCallback(
+    (value: number) => Math.round(((value - min) / (max - min)) * 100),
+    [min, max]
+  );
+
+  useEffect(() => {
+    setMinVal(minValue);
+    setMaxVal(maxValue);
+  }, [minValue, maxValue]);
+
+  useEffect(() => {
+    const minPercent = getPercent(minVal);
+    const maxPercent = getPercent(maxValRef.current);
+
+    if (range.current) {
+      range.current.style.left = `${minPercent}%`;
+      range.current.style.width = `${maxPercent - minPercent}%`;
+    }
+  }, [minVal, getPercent]);
+
+  useEffect(() => {
+    const minPercent = getPercent(minValRef.current);
+    const maxPercent = getPercent(maxVal);
+
+    if (range.current) {
+      range.current.style.width = `${maxPercent - minPercent}%`;
+    }
+  }, [maxVal, getPercent]);
+
+  const handleMinChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(Number(event.target.value), maxVal - step);
+    setMinVal(value);
+    minValRef.current = value;
+    onChange(value, maxVal);
+  };
+
+  const handleMaxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(Number(event.target.value), minVal + step);
+    setMaxVal(value);
+    maxValRef.current = value;
+    onChange(minVal, value);
+  };
+
+  return (
+    <div className="w-full pb-6 pt-2">
+       <style>{`
+        .thumb { pointer-events: none; position: absolute; height: 0; width: 100%; outline: none; z-index: 30; }
+        .thumb::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: all; width: 18px; height: 18px; border-radius: 50%; background-color: #2563eb; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; margin-top: 1px; }
+        .thumb::-moz-range-thumb { pointer-events: all; width: 18px; height: 18px; border-radius: 50%; background-color: #2563eb; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; }
+      `}</style>
+
+      <div className="flex justify-between items-center mb-3">
+         <div className="flex flex-col items-start">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Start (Min)</span>
+            <span className="text-sm font-bold text-slate-700">{minVal > 0 ? '+' : ''}{minVal}{unit}</span>
+         </div>
+         <div className="flex flex-col items-end">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">End (Max)</span>
+            <span className="text-sm font-bold text-slate-700">{maxVal > 0 ? '+' : ''}{maxVal}{unit}</span>
+         </div>
+      </div>
+
+      <div className="relative w-full h-8">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={minVal}
+          onChange={handleMinChange}
+          className="thumb appearance-none bg-transparent pointer-events-none absolute w-full h-2 top-0 z-30"
+          style={{ zIndex: minVal > max - 10 ? 50 : 30 }} 
+        />
+        
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={maxVal}
+          onChange={handleMaxChange}
+          className="thumb appearance-none bg-transparent pointer-events-none absolute w-full h-2 top-0 z-40"
+        />
+
+        <div className="slider relative w-full h-2 rounded-md bg-slate-200 z-10 top-0.5">
+          <div ref={range} className="absolute h-2 bg-blue-600 rounded-md z-20" />
+        </div>
+        
+        <div className="flex justify-between mt-3 text-[10px] text-slate-400 px-1 font-medium">
+            <span>{min}{unit}</span>
+            <span>{max}{unit}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DualRangeSlider;
