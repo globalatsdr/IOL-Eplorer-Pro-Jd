@@ -90,7 +90,13 @@ export interface DrAlfonsoInputs {
   lensStatus: 'any' | 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
   refraction: 'any' | 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
-  specialConditions: string[]; // e.g., ['lvc_hiper_mayor_4', 'camara_estrecha']
+  
+  // New grouped conditions
+  lvc: string;
+  ucva: string;
+  contactLenses: string;
+  anteriorChamber: string;
+  estafiloma: 'any' | 'yes' | 'no';
 }
 
 // Export Rule type for use in components
