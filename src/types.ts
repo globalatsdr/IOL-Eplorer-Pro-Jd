@@ -91,7 +91,6 @@ export interface DrAlfonsoInputs {
   refraction: 'any' | 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
   hapticDesign: string;
-  // FIX: Add missing opticConcept property
   opticConcept: string;
   toric: 'any' | 'yes' | 'no';
   

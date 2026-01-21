@@ -7,7 +7,7 @@ import ComparisonView from './components/ComparisonView';
 import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
-import RulesManager from './components/RulesManager'; // Import the new component
+import RulesManager from './components/RulesManager';
 import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
@@ -376,7 +376,7 @@ function App() {
         return true;
       }
     });
-  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedLensesBase, recommendedConcepts]);
+  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedLensesBase]);
 
   const recommendationSummary = useMemo(() => {
     if (activeTab !== FilterTab.DR_ALFONSO) return null;
