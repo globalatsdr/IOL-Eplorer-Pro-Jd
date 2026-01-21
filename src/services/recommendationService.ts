@@ -261,21 +261,28 @@ const getAxialLengthGroup = (la: number): number | null => {
 
 // --- Options for the UI ---
 export const specialConditionsOptions: { [key: string]: string } = {
+  // LVC
   'lvc_hiper_mayor_4': 'LVC Hipermetrópico >= 4D',
   'lvc_hiper_menor_4': 'LVC Hipermetrópico < 4D',
   'lvc_miopico_2_4': 'LVC Miópico (-2 a -4D)',
   'lvc_miopico_5_7': 'LVC Miópico (-5 a -7D)',
   'lvc_miopico_8_10': 'LVC Miópico (-8 a -10D)',
-  'lvc_miopico_asociado_estafiloma': 'LVC Miópico asociado estafiloma',
-  'camara_estrecha': 'Cámara Ant. Estrecha',
-  'estafiloma': 'Estafiloma',
-  'udva_menor_07': 'UDVA < 0.7',
-  'ucva_menor_07': 'UCVA < 0.7',
-  'ucda_menor_07': 'UCDA < 0.7',
   'kr': 'KR',
-  'apenas_tolera_lc': 'Apenas tolera lentes de contacto',
+  'lvc_miopico_asociado_estafiloma': 'LVC Miópico asociado estafiloma',
+  // Agudeza Visual
+  'ucva_menor_07': 'UCVA < 0.7',
+  'ucva_mayor_07': 'UCVA > 0.7',
+  'udva_menor_07': 'UDVA < 0.7',
+  'ucda_menor_07': 'UCDA < 0.7',
+  // Lentes de contacto
   'no_usa_lc': 'No usa lentes de contacto',
-  'tolera_lc': 'Tolera lentes de contacto'
+  'apenas_tolera_lc': 'Apenas tolera lentes de contacto',
+  'tolera_lc': 'Tolera lentes de contacto',
+  // Cámara Anterior
+  'camara_estrecha': 'Cámara Ant. Estrecha',
+  'camara_normal': 'Cámara Ant. Normal',
+  // Otros
+  'estafiloma': 'Estafiloma',
 };
 
 /**
@@ -289,6 +296,14 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
 
   const ageGroup = age > 0 ? getAgeGroup(age) : null;
   const laGroup = axialLength > 0 ? getAxialLengthGroup(axialLength) : null;
+
+  // Build a set of the patient's positive conditions from the new grouped inputs
+  const patientPositiveConditions = new Set<string>();
+  if (inputs.lvc !== 'any') patientPositiveConditions.add(inputs.lvc);
+  if (inputs.ucva !== 'any') patientPositiveConditions.add(inputs.ucva);
+  if (inputs.contactLenses !== 'any') patientPositiveConditions.add(inputs.contactLenses);
+  if (inputs.anteriorChamber !== 'any') patientPositiveConditions.add(inputs.anteriorChamber);
+  if (inputs.estafiloma === 'yes') patientPositiveConditions.add('estafiloma');
 
   const matchingRules = ALL_RULES.filter(rule => {
     const cond = rule.conditions;
@@ -305,16 +320,25 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
         return false;
       }
     }
+    
+    // Check if patient has all conditions required by the rule
     if (cond.specialConditions) {
-        if (!cond.specialConditions.every(sc => inputs.specialConditions.includes(sc))) {
-            return false;
-        }
+      if (!cond.specialConditions.every(sc => patientPositiveConditions.has(sc))) {
+        return false;
+      }
     }
-    if(cond.negatedConditions) {
-        if (cond.negatedConditions.some(sc => inputs.specialConditions.includes(sc))) {
-            return false;
-        }
+
+    // Check if patient has any condition negated by the rule
+    if (cond.negatedConditions) {
+       if (cond.negatedConditions.some(sc => patientPositiveConditions.has(sc))) {
+         return false; // Patient has a condition that the rule forbids.
+       }
+       // Specific check for "no" case. Rule is valid if it requires NO estafiloma and patient has NONE.
+       if (cond.negatedConditions.includes('estafiloma') && inputs.estafiloma === 'yes') {
+          return false;
+       }
     }
+    
     return true;
   });
 
