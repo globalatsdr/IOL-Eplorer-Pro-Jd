@@ -73,6 +73,7 @@ export interface BasicFilters {
   clinicalConcept: string; // New field
   opticConcept: string;
   toric: string; // 'all', 'yes', 'no'
+  technology: string;
 }
 
 export interface AdvancedFilters {
