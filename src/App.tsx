@@ -42,7 +42,8 @@ function App() {
     manufacturer: 'all',
     clinicalConcept: 'all',
     opticConcept: 'all',
-    toric: 'all'
+    toric: 'all',
+    technology: 'all'
   });
 
   const [advFilters, setAdvFilters] = useState<AdvancedFilters>({
@@ -205,7 +206,8 @@ function App() {
       manufacturer: 'all',
       clinicalConcept: 'all',
       opticConcept: 'all',
-      toric: 'all'
+      toric: 'all',
+      technology: 'all'
     });
     setAdvFilters({
       filterMinSphere: 10,
@@ -242,7 +244,8 @@ function App() {
       manufacturer: zeissName,
       clinicalConcept: 'all',
       opticConcept: targetLens.specifications.opticConcept,
-      toric: targetLens.specifications.toric ? 'yes' : 'no'
+      toric: targetLens.specifications.toric ? 'yes' : 'no',
+      technology: 'all'
     });
     setActiveTab(FilterTab.BASIC);
     setShowComparison(false);
@@ -361,6 +364,7 @@ function App() {
           if (basicFilters.toric === 'yes' && !isToric) return false;
           if (basicFilters.toric === 'no' && isToric) return false;
         }
+        // NOTE: Technology filter logic is not implemented yet as per user request.
         return true;
       } else { // ADVANCED
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
@@ -588,7 +592,7 @@ function App() {
           </div>
 
           {activeTab === FilterTab.BASIC ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 pt-6">
               <div>
                 <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Manufacturer</label>
                 <div className="relative">
@@ -600,6 +604,23 @@ function App() {
                 </div>
               </div>
               
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Tecnología</label>
+                <div className="relative">
+                  <select
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                    value={basicFilters.technology}
+                    onChange={(e) => setBasicFilters({ ...basicFilters, technology: e.target.value })}
+                  >
+                    <option value="all">Todas</option>
+                    <option value="Refractiva">Refractiva</option>
+                    <option value="Difractiva">Difractiva</option>
+                    <option value="Híbrida">Híbrida</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
+              </div>
+
               <div>
                 <label className="flex items-center text-sm font-semibold text-slate-700 mb-2 text-blue-800"><Stethoscope className="w-3.5 h-3.5 mr-1.5" />Clinical Concept</label>
                 <div className="relative">
@@ -736,9 +757,14 @@ function App() {
 
               <div className="border-t border-slate-200 -mx-6 mt-8 mb-6"></div>
               <div className="px-0">
-                 <h2 className="text-2xl font-bold text-slate-800 mb-4">
-                    Resultados de la Recomendación
-                 </h2>
+                 <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-slate-800">
+                      Resultados de la Recomendación
+                    </h2>
+                    <span className="text-sm font-medium bg-teal-100 text-teal-800 px-3 py-1 rounded-full">
+                      {filteredLenses.length} lente(s) encontrada(s)
+                    </span>
+                 </div>
                  
                  {recommendationSummary && filteredLenses.length > 0 && (
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 flex items-start gap-3">
@@ -760,7 +786,19 @@ function App() {
           )}
         </div>
         
-        {activeTab !== FilterTab.DR_ALFONSO && renderResults()}
+        {activeTab !== FilterTab.DR_ALFONSO && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">
+                Lentes Encontradas
+              </h2>
+              <span className="text-sm font-medium bg-slate-100 text-slate-700 px-3 py-1 rounded-full">
+                Mostrando {filteredLenses.length} de {lenses.length} lentes
+              </span>
+            </div>
+            {renderResults()}
+          </>
+        )}
 
       </main>
 
