@@ -8,19 +8,33 @@ import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info, FilePlus } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
-const STORAGE_KEY = 'iol_data_cache_v2';
+const STORAGE_KEY_XML = 'iol_data_cache_v2';
+const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v1';
+
+// Deep merge utility function
+const deepMerge = (target: any, source: any) => {
+  for (const key in source) {
+    if (source[key] instanceof Object && key in target) {
+      Object.assign(source[key], deepMerge(target[key], source[key]));
+    }
+  }
+  Object.assign(target || {}, source);
+  return target;
+};
 
 function App() {
-  const [lenses, setLenses] = useState<Lens[]>([]);
+  const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
+  const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlFileInputRef = useRef<HTMLInputElement>(null);
+  const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PASSWORD CONFIGURATION ---
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
@@ -72,13 +86,27 @@ function App() {
   });
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
+  
+  // Final merged lens list
+  const lenses = useMemo(() => {
+    if (Object.keys(overrideData).length === 0) {
+      return baseLenses;
+    }
+    return baseLenses.map(lens => {
+      if (overrideData[lens.id]) {
+        // Create a deep clone to avoid mutating the base state
+        const clonedLens = JSON.parse(JSON.stringify(lens));
+        return deepMerge(clonedLens, overrideData[lens.id]);
+      }
+      return lens;
+    });
+  }, [baseLenses, overrideData]);
 
   // Effect to update recommendations when inputs change
   useEffect(() => {
     const concepts = getLensRecommendations(drAlfonsoInputs);
     setRecommendedConcepts(concepts);
   }, [drAlfonsoInputs]);
-
 
   // Extract unique values for dropdowns
   const uniqueManufacturers = useMemo(() => 
@@ -93,15 +121,25 @@ function App() {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
+
+      // Load overrides first
+      const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
+      if (cachedOverrides) {
+        try {
+          setOverrideData(JSON.parse(cachedOverrides));
+        } catch (e) {
+          console.error("Override cache corrupted", e);
+        }
+      }
       
-      const cachedXML = localStorage.getItem(STORAGE_KEY);
+      const cachedXML = localStorage.getItem(STORAGE_KEY_XML);
       let dataLoaded = false;
 
       if (cachedXML) {
         try {
           const data = parseIOLData(cachedXML);
           if (data.length > 0) {
-            setLenses(data);
+            setBaseLenses(data);
             dataLoaded = true;
           }
         } catch (e) {
@@ -112,7 +150,7 @@ function App() {
       if (!dataLoaded) {
         try {
           const defaultData = parseIOLData(IOL_XML_DATA);
-          setLenses(defaultData);
+          setBaseLenses(defaultData);
         } catch (e) {
           console.error("Default data error", e);
         }
@@ -126,8 +164,8 @@ function App() {
         const newData = parseIOLData(text);
 
         if (newData.length > 0) {
-          setLenses(newData);
-          localStorage.setItem(STORAGE_KEY, text);
+          setBaseLenses(newData);
+          localStorage.setItem(STORAGE_KEY_XML, text);
           setIsOfflineMode(false);
         }
       } catch (error) {
@@ -151,7 +189,7 @@ function App() {
     }
   }, [isAdvancedUnlocked, isDrAlfonsoUnlocked, activeTab]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleXMLUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -162,8 +200,8 @@ function App() {
       if (text) {
         try {
           const parsedData = parseIOLData(text);
-          setLenses(parsedData);
-          localStorage.setItem(STORAGE_KEY, text);
+          setBaseLenses(parsedData);
+          localStorage.setItem(STORAGE_KEY_XML, text);
           setSelectedLensIds(new Set());
           setIsOfflineMode(true); 
           alert(`Successfully loaded and saved ${parsedData.length} lenses.`);
@@ -175,8 +213,32 @@ function App() {
       setLoading(false);
     };
     reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
   };
+
+  const handleOverrideUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        try {
+          const jsonData = JSON.parse(text);
+          setOverrideData(jsonData);
+          localStorage.setItem(STORAGE_KEY_OVERRIDES, text);
+          alert(`Successfully loaded ${Object.keys(jsonData).length} lens modifications.`);
+        } catch (err) {
+          alert('Error parsing JSON file. Please check the format.');
+          console.error(err);
+        }
+      }
+    };
+    reader.readAsText(file);
+     if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
+  };
+
 
   const toggleLensSelection = (lens: Lens) => {
     const newSelection = new Set(selectedLensIds);
@@ -286,7 +348,6 @@ function App() {
     return Array.from(opticConcepts);
   }
   
-  // Step 1: Get base recommendations from Blocks 1-3
   const recommendedLensesBase = useMemo(() => {
     if (activeTab !== FilterTab.DR_ALFONSO) return [];
     
@@ -301,7 +362,6 @@ function App() {
     });
   }, [lenses, activeTab, drAlfonsoInputs, recommendedConcepts]);
 
-  // Step 2: Derive available options for Block 4 from the base recommendations
   const availableOpticConcepts = useMemo(() => 
       Array.from(new Set(recommendedLensesBase.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
   , [recommendedLensesBase]);
@@ -320,7 +380,6 @@ function App() {
       return Array.from(materials).sort();
   }, [recommendedLensesBase]);
 
-  // Step 3: Final filtering applies Block 4 filters to the base recommendations
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
         return recommendedLensesBase.filter(lens => {
@@ -364,7 +423,6 @@ function App() {
           if (basicFilters.toric === 'yes' && !isToric) return false;
           if (basicFilters.toric === 'no' && isToric) return false;
         }
-        // NOTE: Technology filter logic is not implemented yet as per user request.
         return true;
       } else { // ADVANCED
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
@@ -457,7 +515,6 @@ function App() {
      );
   };
   
-  // Grouped options for the new dropdowns
   const lvcOptions = {
       'any': 'Cualquiera',
       'lvc_hiper_mayor_4': 'Hipermetrópico >= 4D',
@@ -476,9 +533,16 @@ function App() {
     <div className="min-h-screen bg-slate-50 pb-20">
       <input 
         type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileUpload} 
+        ref={xmlFileInputRef} 
+        onChange={handleXMLUpload} 
         accept=".xml" 
+        className="hidden" 
+      />
+      <input 
+        type="file" 
+        ref={overrideFileInputRef} 
+        onChange={handleOverrideUpload} 
+        accept=".json" 
         className="hidden" 
       />
 
@@ -491,14 +555,13 @@ function App() {
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                const nextEl = e.currentTarget.nextElementSibling;
-                if(nextEl) nextEl.classList.remove('hidden');
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
               }}
             />
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
           </div>
           
-          <div className="flex items-center gap-3 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-4">
              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                 {isAdvancedUnlocked || isDrAlfonsoUnlocked ? (
                   <Unlock className="w-4 h-4 text-emerald-500" />
@@ -524,10 +587,20 @@ function App() {
                     <div className="w-2 h-2 rounded-full bg-emerald-500" title="Live data from GitHub" />
                 )}
              </div>
+             
+             <button 
+                onClick={() => overrideFileInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                title="Cargar archivo de modificaciones (.json)"
+             >
+                <FilePlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Complementar Datos</span>
+             </button>
 
              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                onClick={() => xmlFileInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                title="Cargar base de datos principal (.xml)"
              >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload XML</span>
@@ -537,7 +610,7 @@ function App() {
                 href="https://iolcon.org/lensesTable.php" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium transition-colors"
              >
                 <Globe className="w-4 h-4" />
                 <span className="hidden sm:inline">IOLcon</span>
