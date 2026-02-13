@@ -8,7 +8,7 @@ import Tooltip from './components/Tooltip';
 import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info, FilePlus } from 'lucide-react';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info, FilePlus, Trash2 } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
 // URL directa al archivo RAW en GitHub
@@ -239,6 +239,13 @@ function App() {
      if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
   };
 
+  const handleClearOverrides = () => {
+    if (window.confirm("Are you sure you want to clear all loaded modifications? This will revert to the original data.")) {
+      localStorage.removeItem(STORAGE_KEY_OVERRIDES);
+      setOverrideData({});
+      alert("Modifications cleared.");
+    }
+  };
 
   const toggleLensSelection = (lens: Lens) => {
     const newSelection = new Set(selectedLensIds);
@@ -587,6 +594,17 @@ function App() {
                     <div className="w-2 h-2 rounded-full bg-emerald-500" title="Live data from GitHub" />
                 )}
              </div>
+
+             {Object.keys(overrideData).length > 0 && (
+                <button 
+                  onClick={handleClearOverrides}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                  title="Limpiar modificaciones"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Limpiar</span>
+                </button>
+             )}
              
              <button 
                 onClick={() => overrideFileInputRef.current?.click()}
@@ -594,7 +612,7 @@ function App() {
                 title="Cargar archivo de modificaciones (.json)"
              >
                 <FilePlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Complementar Datos</span>
+                <span className="hidden sm:inline">Complementar</span>
              </button>
 
              <button 
@@ -603,7 +621,7 @@ function App() {
                 title="Cargar base de datos principal (.xml)"
              >
                 <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">Upload XML</span>
+                <span className="hidden sm:inline">Upload</span>
              </button>
 
              <a 
@@ -914,5 +932,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
