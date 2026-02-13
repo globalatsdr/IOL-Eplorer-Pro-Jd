@@ -15,6 +15,11 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
 
   const features = useMemo(() => [
     { 
+      label: 'Lens ID', 
+      getValue: (l: Lens) => l.id, 
+      getSortValue: (l: Lens) => parseInt(l.id, 10) || 0
+    },
+    { 
       label: 'Manufacturer', 
       getValue: (l: Lens) => l.manufacturer, 
       getSortValue: (l: Lens) => l.manufacturer 
