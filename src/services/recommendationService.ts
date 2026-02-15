@@ -36,6 +36,7 @@ export const LENS_STATUS_OPTIONS: LensStatus[] = ['transparente', 'presbicia', '
 
 // --- List of all recommendation rules ---
 export const ALL_RULES: Rule[] = [
+ 
   // Rule 3 (was)
   {
     result: "Partial Range of Field - Narrow",
@@ -176,7 +177,7 @@ export const ALL_RULES: Rule[] = [
   },
   // New Rules from Image
   {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [1], // 35-45
         laGroup: [5], // 30-35
@@ -185,7 +186,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
   {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [2], // 45-55
         laGroup: [5], // 30-35
@@ -194,7 +195,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [3], // 55-65
         laGroup: [5], // 30-35
@@ -203,7 +204,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [4], // 65-75
         laGroup: [5], // 30-35
@@ -212,7 +213,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [5], // 75-85
         laGroup: [5], // 30-35
@@ -221,7 +222,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [3], // 55-65
         laGroup: [4], // 25-29
@@ -230,7 +231,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
   {
-    result: "Narrow",
+    result: "Full Range of Field - Narrow",
     conditions: {
         ageGroup: [4], // 65-75
         laGroup: [4], // 25-29
@@ -238,6 +239,25 @@ export const ALL_RULES: Rule[] = [
         specialConditions: ['lvc_miopico_asociado_estafiloma']
     }
   },
+   {
+  result: "Full Range of Field-Continuous",
+  conditions: {
+    ageGroup: [
+      1
+    ],
+    laGroup: [
+      2
+    ],
+    lensStatus: [
+      "transparente",
+      "presbicia"
+    ],
+    specialConditions: [
+      "lvc_miopico_2_4",
+      "vitrectomia"
+    ]
+  }
+},
 ];
 
 // --- Helper functions to categorize inputs ---
