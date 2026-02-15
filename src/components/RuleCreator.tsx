@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CLINICAL_CONCEPTS } from '../constants';
-import { specialConditionsOptions, AGE_RANGES, LA_RANGES, LENS_STATUS_OPTIONS } from '../services/recommendationService';
+import { CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
+import { AGE_RANGES, LA_RANGES, LENS_STATUS_OPTIONS } from '../services/recommendationService';
 import { Clipboard, Check, ArrowLeft, Lightbulb } from 'lucide-react';
 
 interface Props {
@@ -12,8 +12,13 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
   const [ageGroups, setAgeGroups] = useState<string[]>([]);
   const [laGroups, setLaGroups] = useState<string[]>([]);
   const [lensStatuses, setLensStatuses] = useState<string[]>([]);
-  const [requiredConditions, setRequiredConditions] = useState<string[]>([]);
-  const [negatedConditions, setNegatedConditions] = useState<string[]>([]);
+  
+  // New state for dropdowns
+  const [lvc, setLvc] = useState('any');
+  const [udva, setUdva] = useState('any');
+  const [contactLenses, setContactLenses] = useState('any');
+  const [anteriorChamber, setAnteriorChamber] = useState('any');
+  const [retina, setRetina] = useState('any');
 
   const [generatedCode, setGeneratedCode] = useState('');
   const [copied, setCopied] = useState(false);
@@ -27,6 +32,13 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
         alert("Por favor, introduzca un 'Resultado del Concepto Clínico'.");
         return;
     }
+
+    const specialConditions: string[] = [];
+    if (lvc !== 'any') specialConditions.push(lvc);
+    if (udva !== 'any') specialConditions.push(udva);
+    if (contactLenses !== 'any') specialConditions.push(contactLenses);
+    if (anteriorChamber !== 'any') specialConditions.push(anteriorChamber);
+    if (retina !== 'any') specialConditions.push(retina);
       
     const ruleObject: any = {
       result: result,
@@ -36,8 +48,7 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
     if (ageGroups.length > 0) ruleObject.conditions.ageGroup = ageGroups.map(Number);
     if (laGroups.length > 0) ruleObject.conditions.laGroup = laGroups.map(Number);
     if (lensStatuses.length > 0) ruleObject.conditions.lensStatus = lensStatuses;
-    if (requiredConditions.length > 0) ruleObject.conditions.specialConditions = requiredConditions;
-    if (negatedConditions.length > 0) ruleObject.conditions.negatedConditions = negatedConditions;
+    if (specialConditions.length > 0) ruleObject.conditions.specialConditions = specialConditions;
 
     const codeString = JSON.stringify(ruleObject, null, 2)
       .replace(/"(\w+)":/g, '$1:') // Remove quotes from keys
@@ -110,27 +121,41 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
                            ))}
                         </div>
                     </div>
-
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="font-semibold text-slate-800">5. Requiere (Opcional)</label>
-                            <p className="text-xs text-slate-500 mb-2">Deben cumplirse <strong className="text-green-700">TODAS</strong> estas condiciones.</p>
-                             {Object.entries(specialConditionsOptions).map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-2 text-sm mb-1.5">
-                                    <input type="checkbox" checked={requiredConditions.includes(key)} onChange={() => handleToggle(setRequiredConditions, key)} className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500" />
-                                    {label}
-                                </label>
-                            ))}
-                        </div>
-                         <div>
-                            <label className="font-semibold text-slate-800">6. Prohíbe (Opcional)</label>
-                            <p className="text-xs text-slate-500 mb-2">NO se debe cumplir <strong className="text-red-700">NINGUNA</strong> de estas.</p>
-                             {Object.entries(specialConditionsOptions).map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-2 text-sm mb-1.5">
-                                    <input type="checkbox" checked={negatedConditions.includes(key)} onChange={() => handleToggle(setNegatedConditions, key)} className="w-4 h-4 text-red-600 rounded focus:ring-red-500" />
-                                    {label}
-                                </label>
-                            ))}
+                    
+                    <div>
+                        <label className="font-semibold text-slate-800">5. Condiciones Adicionales (Opcional)</label>
+                        <p className="text-xs text-slate-500 mb-2">Seleccione las condiciones específicas que deben cumplirse.</p>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">LVC</label>
+                                <select value={lvc} onChange={e => setLvc(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                    {Object.entries(LVC_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">UDVA</label>
+                                <select value={udva} onChange={e => setUdva(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                    {Object.entries(UDVA_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Lentes de Contacto</label>
+                                <select value={contactLenses} onChange={e => setContactLenses(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                    {Object.entries(CONTACT_LENS_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                                </select>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Cámara Anterior</label>
+                                <select value={anteriorChamber} onChange={e => setAnteriorChamber(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                    {Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                                </select>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Retina</label>
+                                <select value={retina} onChange={e => setRetina(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                    {Object.entries(RETINA_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
