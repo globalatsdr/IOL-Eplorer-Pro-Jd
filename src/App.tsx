@@ -121,6 +121,21 @@ function App() {
     setRecommendedConcepts(concepts);
   }, [drAlfonsoInputs]);
 
+  // Effect to auto-select optic concept in Dr. Alfonso tab based on recommendations
+  useEffect(() => {
+    const hasEnhance = recommendedConcepts.some(c => c.includes('Enhance'));
+
+    if (activeTab === FilterTab.DR_ALFONSO && hasEnhance) {
+      // Only update if it's not already set, to prevent loops but allow auto-selection
+      setDrAlfonsoInputs(prev => {
+        if (prev.opticConcept !== 'Monofocal +') {
+          return { ...prev, opticConcept: 'Monofocal +' };
+        }
+        return prev;
+      });
+    }
+  }, [recommendedConcepts, activeTab]);
+
   // Extract unique values for dropdowns
   const uniqueManufacturers = useMemo(() => 
     Array.from(new Set(lenses.map(l => l.manufacturer))).sort()
@@ -355,12 +370,13 @@ function App() {
   const mapClinicalToOptic = (clinicalConcepts: string[]): string[] => {
     const opticConcepts = new Set<string>();
     clinicalConcepts.forEach(val => {
-      if (val.toLowerCase().includes("narrow")) opticConcepts.add("monofocal");
-      else if (val.toLowerCase().includes("enhance")) opticConcepts.add("monofocal");
-      else if (val.toLowerCase().includes("extend")) opticConcepts.add("edof");
-      else if (val.toLowerCase().includes("steep")) opticConcepts.add("bifocal");
-      else if (val.toLowerCase().includes("smooth")) opticConcepts.add("multifocal");
-      else if (val.toLowerCase().includes("continuous")) {
+      const v = val.toLowerCase();
+      if (v.includes("narrow")) opticConcepts.add("monofocal");
+      else if (v.includes("enhance")) opticConcepts.add("Monofocal +");
+      else if (v.includes("extend")) opticConcepts.add("EDoF");
+      else if (v.includes("steep")) opticConcepts.add("bifocal");
+      else if (v.includes("smooth")) opticConcepts.add("multifocal");
+      else if (v.includes("continuous")) {
         opticConcepts.add("trifocal");
         opticConcepts.add("multifocal");
       }
@@ -378,7 +394,7 @@ function App() {
     
     return lenses.filter(lens => {
         const opticConceptLower = lens.specifications.opticConcept.toLowerCase();
-        return targetOpticConcepts.some(c => opticConceptLower.includes(c));
+        return targetOpticConcepts.some(c => opticConceptLower === c.toLowerCase());
     });
   }, [lenses, activeTab, drAlfonsoInputs, recommendedConcepts]);
 
