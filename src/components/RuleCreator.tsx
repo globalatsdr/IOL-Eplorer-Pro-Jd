@@ -64,7 +64,7 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
   };
   
   return (
-    <div className="flex-1 flex flex-col h-full">
+    <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-6 overflow-y-auto flex-1">
             <div className="flex items-center gap-3 mb-6">
                 <button onClick={onBack} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
