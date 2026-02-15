@@ -338,7 +338,7 @@ function App() {
     let mappedOpticConcept = basicFilters.opticConcept;
 
     if (val === "Partial Range of Field-Narrow") mappedOpticConcept = "monofocal";
-    else if (val === "Partial Range of Field-Enhance") mappedOpticConcept = "monofocal";
+    else if (val === "Partial Range of Field-Enhance") mappedOpticConcept = "Monofocal +";
     else if (val === "Partial Range of Field-Extend") mappedOpticConcept = "EDoF";
     else if (val === "Full Range of Field-Steep") mappedOpticConcept = "bifocal";
     else if (val === "Full Range of Field-Smooth") mappedOpticConcept = "multifocal";
@@ -746,7 +746,7 @@ function App() {
                 <div className="relative">
                   <select className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.opticConcept} onChange={(e) => setBasicFilters({...basicFilters, opticConcept: e.target.value, clinicalConcept: 'all'})}>
                     <option value="all">All Concepts</option>
-                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (<option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>))}
+                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'Monofocal +', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (<option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
                 </div>
