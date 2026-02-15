@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Rule } from '../types';
 import { specialConditionsOptions, AGE_RANGES, LA_RANGES } from '../services/recommendationService';
 import RuleCreator from './RuleCreator'; // Import the new creator component
@@ -11,6 +11,24 @@ interface Props {
 
 const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
   const [showCreator, setShowCreator] = useState(false);
+
+  const sortedRules = useMemo(() => {
+    return [...rules].sort((a, b) => {
+      const getSortValue = (arr?: number[]) => (arr && arr.length > 0 ? arr[0] : Infinity);
+      
+      const ageA = getSortValue(a.conditions.ageGroup);
+      const ageB = getSortValue(b.conditions.ageGroup);
+
+      if (ageA !== ageB) {
+        return ageA - ageB;
+      }
+
+      const laA = getSortValue(a.conditions.laGroup);
+      const laB = getSortValue(b.conditions.laGroup);
+
+      return laA - laB;
+    });
+  }, [rules]);
 
   const mapAgeGroupToString = (group?: number[]): string => {
     if (!group || group.length === 0) return 'Cualquiera';
@@ -85,7 +103,7 @@ const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
           <>
             <div className="overflow-auto flex-1 p-6">
               <p className="text-sm text-slate-600 mb-4">
-                Actualmente hay <strong>{rules.length}</strong> reglas definidas. Estas determinan qué "Concepto Clínico" se recomienda.
+                Actualmente hay <strong>{rules.length}</strong> reglas definidas y ordenadas por Edad y LA. Estas determinan qué "Concepto Clínico" se recomienda.
               </p>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm text-left border-collapse">
@@ -99,7 +117,7 @@ const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {rules.map((rule, index) => (
+                    {sortedRules.map((rule, index) => (
                       <tr key={index} className="hover:bg-slate-50 transition-colors">
                         <td className="p-3 font-bold text-teal-800 align-top">{rule.result}</td>
                         <td className="p-3 align-top">{mapAgeGroupToString(rule.conditions.ageGroup)}</td>
