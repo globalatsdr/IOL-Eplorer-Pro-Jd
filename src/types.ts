@@ -100,7 +100,7 @@ export interface DrAlfonsoInputs {
   udva: string;
   contactLenses: string;
   anteriorChamber: string;
-  estafiloma: 'any' | 'yes' | 'no';
+  retina: string;
 }
 
 // Export Rule type for use in components

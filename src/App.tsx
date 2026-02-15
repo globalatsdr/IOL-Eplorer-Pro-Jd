@@ -82,7 +82,7 @@ function App() {
     udva: 'any',
     contactLenses: 'any',
     anteriorChamber: 'any',
-    estafiloma: 'any',
+    retina: 'any',
   });
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
@@ -299,7 +299,7 @@ function App() {
       udva: 'any',
       contactLenses: 'any',
       anteriorChamber: 'any',
-      estafiloma: 'any',
+      retina: 'any',
     });
   };
 
@@ -523,7 +523,7 @@ function App() {
   };
   
   const lvcOptions = {
-      'any': 'Cualquiera',
+      'any': 'N/A',
       'lvc_hiper_mayor_4': 'Hipermetrópico >= 4D',
       'lvc_hiper_menor_4': 'Hipermetrópico < 4D',
       'lvc_miopico_2_4': 'Miópico (-2 a -4D)',
@@ -531,10 +531,15 @@ function App() {
       'lvc_miopico_8_10': 'Miópico (-8 a -10D)',
       'kr': 'KR'
   };
-  const udvaOptions = { 'any': 'Cualquiera', 'udva_menor_07': '< 0.7' };
-  const contactLensOptions = { 'any': 'Cualquiera', 'no_usa_lc': 'No Usa LC', 'apenas_tolera_lc': 'Apenas Tolera LC', 'tolera_lc': 'Tolera LC' };
-  const anteriorChamberOptions = { 'any': 'Cualquiera', 'camara_estrecha': 'Estrecha', 'camara_normal': 'Normal' };
-
+  const udvaOptions = { 'any': 'N/A', 'udva_menor_07': '< 0.7' };
+  const contactLensOptions = { 'any': 'N/A', 'no_usa_lc': 'No Usa LC', 'apenas_tolera_lc': 'Apenas Tolera LC', 'tolera_lc': 'Tolera LC' };
+  const anteriorChamberOptions = { 'any': 'N/A', 'camara_estrecha': 'Estrecha', 'camara_normal': 'Normal' };
+  const retinaOptions = {
+    'any': 'N/A',
+    'con_estafiloma': 'Con Estafiloma',
+    'sin_estafiloma': 'Sin Estafiloma',
+    'vitrectomia': 'Vitrectomia'
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -783,10 +788,10 @@ function App() {
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Lentes de Contacto</label><select value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(contactLensOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cámara Anterior</label><select value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(anteriorChamberOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Estafiloma</label>
-                            <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200 h-[42px] items-center">
-                                {(['any', 'yes', 'no'] as const).map((opt) => (<button key={opt} onClick={() => setDrAlfonsoInputs({...drAlfonsoInputs, estafiloma: opt})} className={`flex-1 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${drAlfonsoInputs.estafiloma === opt ? 'bg-white text-teal-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}>{opt === 'any' ? 'N/A' : opt}</button>))}
-                            </div>
+                           <label className="block text-sm font-semibold text-slate-700 mb-1">Retina</label>
+                           <select value={drAlfonsoInputs.retina} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, retina: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[42px]">
+                              {Object.entries(retinaOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                           </select>
                         </div>
                      </div>
                 </div>
@@ -932,4 +937,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
