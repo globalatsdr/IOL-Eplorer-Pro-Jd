@@ -16,16 +16,30 @@ const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Data
 const STORAGE_KEY_XML = 'iol_data_cache_v2';
 const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v1';
 
-// Deep merge utility function
-const deepMerge = (target: any, source: any) => {
-  for (const key in source) {
-    if (source[key] instanceof Object && key in target) {
-      Object.assign(source[key], deepMerge(target[key], source[key]));
-    }
-  }
-  Object.assign(target || {}, source);
-  return target;
+// Helper to check if a value is a non-array object
+const isObject = (item: any) => {
+  return (item && typeof item === 'object' && !Array.isArray(item));
 };
+
+// A more robust, non-mutating deep merge function
+const deepMerge = (target: any, source: any): any => {
+  const output = { ...target };
+
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key]) && key in target && isObject(target[key])) {
+        // If both are objects, recurse
+        output[key] = deepMerge(target[key], source[key]);
+      } else {
+        // Otherwise, source value wins
+        output[key] = source[key];
+      }
+    });
+  }
+
+  return output;
+};
+
 
 function App() {
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
@@ -94,9 +108,8 @@ function App() {
     }
     return baseLenses.map(lens => {
       if (overrideData[lens.id]) {
-        // Create a deep clone to avoid mutating the base state
-        const clonedLens = JSON.parse(JSON.stringify(lens));
-        return deepMerge(clonedLens, overrideData[lens.id]);
+        // The new deepMerge is non-mutating and returns a new object.
+        return deepMerge(lens, overrideData[lens.id]);
       }
       return lens;
     });
