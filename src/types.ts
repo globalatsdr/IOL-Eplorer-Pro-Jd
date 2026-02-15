@@ -94,6 +94,7 @@ export interface DrAlfonsoInputs {
   hapticDesign: string;
   opticConcept: string;
   toric: 'any' | 'yes' | 'no';
+  technology: string;
   
   // New grouped conditions
   lvc: string;

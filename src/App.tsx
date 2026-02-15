@@ -92,6 +92,7 @@ function App() {
     hapticDesign: 'any',
     opticConcept: 'any',
     toric: 'any',
+    technology: 'any',
     lvc: 'any',
     udva: 'any',
     contactLenses: 'any',
@@ -323,6 +324,7 @@ function App() {
       hapticDesign: 'any',
       opticConcept: 'any',
       toric: 'any',
+      technology: 'any',
       lvc: 'any',
       udva: 'any',
       contactLenses: 'any',
@@ -842,7 +844,7 @@ function App() {
                  
                  <div>
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-4 items-center">
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Concepto Óptico</label>
                             <select value={drAlfonsoInputs.opticConcept} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, opticConcept: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
@@ -850,6 +852,19 @@ function App() {
                                 {availableOpticConcepts.map(concept => (
                                     <option key={concept} value={concept}>{concept}</option>
                                 ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Tecnología</label>
+                            <select 
+                                value={drAlfonsoInputs.technology} 
+                                onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, technology: e.target.value})} 
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]"
+                            >
+                                <option value="any">Cualquiera</option>
+                                <option value="Refractiva">Refractiva</option>
+                                <option value="Difractiva">Difractiva</option>
+                                <option value="Híbrida">Híbrida</option>
                             </select>
                         </div>
                         <div>
