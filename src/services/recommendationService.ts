@@ -176,7 +176,7 @@ export const ALL_RULES: Rule[] = [
   },
   // New Rules from Image
   {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [1], // 35-45
         laGroup: [5], // 30-35
@@ -185,7 +185,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
   {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [2], // 45-55
         laGroup: [5], // 30-35
@@ -194,7 +194,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [3], // 55-65
         laGroup: [5], // 30-35
@@ -203,7 +203,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [4], // 65-75
         laGroup: [5], // 30-35
@@ -212,7 +212,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [5], // 75-85
         laGroup: [5], // 30-35
@@ -221,7 +221,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
    {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [3], // 55-65
         laGroup: [4], // 25-29
@@ -230,7 +230,7 @@ export const ALL_RULES: Rule[] = [
     }
   },
   {
-    result: "Partial Range of Field - Narrow",
+    result: "Narrow",
     conditions: {
         ageGroup: [4], // 65-75
         laGroup: [4], // 25-29
@@ -279,8 +279,9 @@ export const specialConditionsOptions: { [key: string]: string } = {
   // Cámara Anterior
   'camara_estrecha': 'Cámara Ant. Estrecha',
   'camara_normal': 'Cámara Ant. Normal',
-  // Otros
-  'estafiloma': 'Estafiloma',
+  // Retina
+  'estafiloma': 'Con Estafiloma',
+  'vitrectomia': 'Vitrectomia',
 };
 
 /**
@@ -301,7 +302,15 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   if (inputs.udva !== 'any') patientPositiveConditions.add(inputs.udva);
   if (inputs.contactLenses !== 'any') patientPositiveConditions.add(inputs.contactLenses);
   if (inputs.anteriorChamber !== 'any') patientPositiveConditions.add(inputs.anteriorChamber);
-  if (inputs.estafiloma === 'yes') patientPositiveConditions.add('estafiloma');
+  
+  // Handle new retina input
+  if (inputs.retina === 'con_estafiloma') {
+    patientPositiveConditions.add('estafiloma');
+  }
+  if (inputs.retina === 'vitrectomia') {
+    patientPositiveConditions.add('vitrectomia');
+  }
+
 
   const matchingRules = ALL_RULES.filter(rule => {
     const cond = rule.conditions;
@@ -330,10 +339,6 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
     if (cond.negatedConditions) {
        if (cond.negatedConditions.some(sc => patientPositiveConditions.has(sc))) {
          return false; // Patient has a condition that the rule forbids.
-       }
-       // Specific check for "no" case. Rule is valid if it requires NO estafiloma and patient has NONE.
-       if (cond.negatedConditions.includes('estafiloma') && inputs.estafiloma === 'yes') {
-          return false;
        }
     }
     
