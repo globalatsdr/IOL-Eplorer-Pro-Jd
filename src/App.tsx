@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { IOL_XML_DATA, CLINICAL_CONCEPTS } from './constants';
+import { IOL_XML_DATA, CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from './constants';
 import { parseIOLData } from './utils/parser';
 import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs } from './types';
 import LensCard from './components/LensCard';
@@ -552,25 +552,6 @@ function App() {
        </div>
      );
   };
-  
-  const lvcOptions = {
-      'any': 'N/A',
-      'lvc_hiper_mayor_4': 'Hipermetrópico >= 4D',
-      'lvc_hiper_menor_4': 'Hipermetrópico < 4D',
-      'lvc_miopico_2_4': 'Miópico (-2 a -4D)',
-      'lvc_miopico_5_7': 'Miópico (-5 a -7D)',
-      'lvc_miopico_8_10': 'Miópico (-8 a -10D)',
-      'kr': 'KR'
-  };
-  const udvaOptions = { 'any': 'N/A', 'udva_menor_07': '< 0.7' };
-  const contactLensOptions = { 'any': 'N/A', 'no_usa_lc': 'No Usa LC', 'apenas_tolera_lc': 'Apenas Tolera LC', 'tolera_lc': 'Tolera LC' };
-  const anteriorChamberOptions = { 'any': 'N/A', 'camara_estrecha': 'Estrecha', 'camara_normal': 'Normal' };
-  const retinaOptions = {
-    'any': 'N/A',
-    'con_estafiloma': 'Con Estafiloma',
-    'sin_estafiloma': 'Sin Estafiloma',
-    'vitrectomia': 'Vitrectomia'
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -814,14 +795,14 @@ function App() {
                 <div>
                     <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><CheckSquare className="w-5 h-5" />Bloque 2: Condiciones Adicionales</h3>
                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-4 items-end">
-                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">LVC</label><select value={drAlfonsoInputs.lvc} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(lvcOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
-                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA</label><select value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(udvaOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
-                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Lentes de Contacto</label><select value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(contactLensOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
-                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cámara Anterior</label><select value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(anteriorChamberOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">LVC</label><select value={drAlfonsoInputs.lvc} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(LVC_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA</label><select value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(UDVA_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Lentes de Contacto</label><select value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(CONTACT_LENS_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cámara Anterior</label><select value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}</select></div>
                         <div>
                            <label className="block text-sm font-semibold text-slate-700 mb-1">Retina</label>
                            <select value={drAlfonsoInputs.retina} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, retina: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[42px]">
-                              {Object.entries(retinaOptions).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                              {Object.entries(RETINA_OPTIONS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
                            </select>
                         </div>
                      </div>

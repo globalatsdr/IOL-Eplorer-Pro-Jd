@@ -10,6 +10,42 @@ export const CLINICAL_CONCEPTS = [
   "Full Range of Field-Continuous"
 ];
 
+export const LVC_OPTIONS = {
+  'any': 'N/A',
+  'lvc_hiper_mayor_4': 'Hipermetrópico >= 4D',
+  'lvc_hiper_menor_4': 'Hipermetrópico < 4D',
+  'lvc_miopico_2_4': 'Miópico (-2 a -4D)',
+  'lvc_miopico_5_7': 'Miópico (-5 a -7D)',
+  'lvc_miopico_8_10': 'Miópico (-8 a -10D)',
+  'kr': 'KR'
+};
+
+export const UDVA_OPTIONS = { 
+  'any': 'N/A', 
+  'udva_menor_07': '< 0.7' 
+};
+
+export const CONTACT_LENS_OPTIONS = { 
+  'any': 'N/A', 
+  'no_usa_lc': 'No Usa LC', 
+  'apenas_tolera_lc': 'Apenas Tolera LC', 
+  'tolera_lc': 'Tolera LC' 
+};
+
+export const ANTERIOR_CHAMBER_OPTIONS = { 
+  'any': 'N/A', 
+  'camara_estrecha': 'Estrecha', 
+  'camara_normal': 'Normal' 
+};
+
+export const RETINA_OPTIONS = {
+  'any': 'N/A',
+  'con_estafiloma': 'Con Estafiloma',
+  'sin_estafiloma': 'Sin Estafiloma',
+  'vitrectomia': 'Vitrectomia'
+};
+
+
 export const IOL_XML_DATA = `<?xml version="1.0" encoding="UTF-8" ?>
 <IOLCon fileVersion="2.0" downloaded="2025-11-27">
 	<Lens id="2299">
