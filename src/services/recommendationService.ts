@@ -1,18 +1,4 @@
-import { DrAlfonsoInputs } from '../types';
-
-// --- Type Definitions for Rules ---
-type LensStatus = 'transparente' | 'presbicia' | 'disfuncional' | 'catarata';
-
-export interface Rule {
-  result: string;
-  conditions: {
-    ageGroup?: number[];
-    laGroup?: number[];
-    lensStatus?: LensStatus[];
-    specialConditions?: string[]; // Must match all specified conditions
-    negatedConditions?: string[]; // Must NOT match any specified conditions
-  };
-}
+import { DrAlfonsoInputs, Rule, LensStatus } from '../types';
 
 // --- Mappings for UI generation ---
 export const AGE_RANGES: { [key: number]: string } = {
