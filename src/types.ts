@@ -36,7 +36,8 @@ export interface Specifications {
   aberration: string;
   saCorrection: number | null;
   toric: boolean;
-  technology?: string; // New optional field
+  technology?: string;
+  nota?: string; // New optional field
 }
 
 export interface ConstantValues {
