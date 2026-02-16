@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lens, ConstantValues } from '../types';
 import Tooltip from './Tooltip';
-import { ChevronDown, ChevronUp, Eye, Ruler, Activity, CheckCircle, Circle, Table, Search, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Ruler, Activity, CheckCircle, Circle, Table, Search } from 'lucide-react';
 
 interface Props {
   lens: Lens;
@@ -85,20 +85,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
           )}
         </div>
       </div>
-      
-      {lens.specifications.nota && (
-        <div className="px-5 pt-4 border-b border-gray-100">
-          <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-md">
-            <div className="flex items-start gap-2.5">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-blue-800">Nota</p>
-                <p className="text-sm text-blue-900 leading-snug">{lens.specifications.nota}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="px-5 py-4 grid grid-cols-2 gap-4 text-sm">
         <div className="flex items-center text-gray-600">
