@@ -55,7 +55,6 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         saCorrection: getFloat("saCorrection", specNode),
         toric: getVal("Toric", specNode).toLowerCase() === "yes",
         technology: getVal("Technology", specNode) || undefined,
-        nota: getVal("Nota", specNode) || undefined,
       };
 
       const sphereRanges: SphereRange[] = [];
