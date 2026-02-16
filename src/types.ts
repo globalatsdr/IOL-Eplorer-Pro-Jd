@@ -1,17 +1,4 @@
-
-// --- Type Definitions for Rules ---
-export type LensStatus = 'transparente' | 'presbicia' | 'disfuncional' | 'catarata';
-
-export interface Rule {
-  result: string;
-  conditions: {
-    ageGroup?: number[];
-    laGroup?: number[];
-    lensStatus?: LensStatus[];
-    specialConditions?: string[]; // Must match all specified conditions
-    negatedConditions?: string[]; // Must NOT match any specified conditions
-  };
-}
+import { Rule } from './services/recommendationService';
 
 export interface SphereRange {
   from: number;
@@ -119,3 +106,6 @@ export interface DrAlfonsoInputs {
   anteriorChamber: string;
   retina: string;
 }
+
+// Export Rule type for use in components
+export type { Rule };
