@@ -73,9 +73,9 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
              {lens.specifications.hydro}
           </span>
-          {lens.specifications.hapticDesign && (
-             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100" title="Haptic Design">
-                {lens.specifications.hapticDesign}
+          {lens.specifications.technology && (
+             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-100" title="Tecnología">
+                {lens.specifications.technology}
              </span>
           )}
            {lens.specifications.toric && (

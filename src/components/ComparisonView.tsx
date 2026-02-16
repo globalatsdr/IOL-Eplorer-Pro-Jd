@@ -30,6 +30,11 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getSortValue: (l: Lens) => l.name 
     },
     { 
+      label: 'Tecnología', 
+      getValue: (l: Lens) => l.specifications.technology || '-', 
+      getSortValue: (l: Lens) => l.specifications.technology || '' 
+    },
+    { 
       label: 'Optic Material', 
       getValue: (l: Lens) => l.specifications.opticMaterial, 
       getSortValue: (l: Lens) => l.specifications.opticMaterial 
