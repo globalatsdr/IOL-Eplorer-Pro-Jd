@@ -373,4 +373,4 @@ export const IOL_XML_DATA = `<?xml version="1.0" encoding="UTF-8" ?>
             <SRKt>118.8</SRKt>
         </Constants>
 	</Lens>
-</IOLCon>`;
+</IOLCon>

@@ -420,6 +420,7 @@ function App() {
 
   const filteredLenses = useMemo(() => {
     if (activeTab === FilterTab.DR_ALFONSO) {
+        if (recommendedLensesBase.length === 0) return [];
         return recommendedLensesBase.filter(lens => {
             if (drAlfonsoInputs.opticConcept !== 'any') {
                 if (lens.specifications.opticConcept !== drAlfonsoInputs.opticConcept) return false;
@@ -461,6 +462,7 @@ function App() {
           if (basicFilters.toric === 'yes' && !isToric) return false;
           if (basicFilters.toric === 'no' && isToric) return false;
         }
+        if (basicFilters.technology !== 'all' && lens.specifications.technology !== basicFilters.technology) return false;
         return true;
       } else { // ADVANCED
         if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
@@ -517,13 +519,13 @@ function App() {
         if (!hasBlock1Input) {
             return "Introduzca los parámetros principales del paciente para iniciar la recomendación.";
         }
-        if (recommendedConcepts.length === 0) {
+        if (recommendedConcepts.length === 0 && recommendedLensesBase.length === 0) {
             return "No se ha podido determinar un concepto clínico con los datos actuales. Pruebe a ajustar los parámetros.";
         }
         return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material, diseño y toricidad).";
     }
     return "Pruebe a ajustar los filtros para ver más resultados.";
-  }, [activeTab, drAlfonsoInputs, recommendedConcepts.length]);
+  }, [activeTab, drAlfonsoInputs, recommendedConcepts.length, recommendedLensesBase.length]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Processing IOL Database...</div>;

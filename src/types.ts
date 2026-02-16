@@ -1,3 +1,5 @@
+import { Rule } from './services/recommendationService';
+
 export interface SphereRange {
   from: number;
   to: number;
@@ -34,6 +36,7 @@ export interface Specifications {
   aberration: string;
   saCorrection: number | null;
   toric: boolean;
+  technology?: string; // New optional field
 }
 
 export interface ConstantValues {
@@ -105,4 +108,4 @@ export interface DrAlfonsoInputs {
 }
 
 // Export Rule type for use in components
-export type { Rule } from './services/recommendationService';
+export type { Rule };
