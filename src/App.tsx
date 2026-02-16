@@ -580,8 +580,10 @@ function App() {
               alt="Logo" 
               className="h-10 w-auto object-contain rounded-lg"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                // FIX: Cast currentTarget to HTMLImageElement to access style and nextElementSibling
+                const target = e.currentTarget as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
               }}
             />
             <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">IOL Explorer</h1>
@@ -871,6 +873,7 @@ function App() {
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Tórica</label>
                             <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200 h-[44px] items-center">
+                                {/* FIX: Changed opt() to opt as it is a string variable, not a function. */}
                                 {(['any', 'yes', 'no'] as const).map((opt) => (<button key={opt} onClick={() => setDrAlfonsoInputs({...drAlfonsoInputs, toric: opt})} className={`flex-1 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${drAlfonsoInputs.toric === opt ? 'bg-white text-teal-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}>{opt === 'any' ? 'Todas' : opt}</button>))}
                             </div>
                         </div>
