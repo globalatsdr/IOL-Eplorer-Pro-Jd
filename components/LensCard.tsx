@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lens, SphereRange, ConstantValues } from '../types';
+import { Lens, SphereRange } from '../types';
 import { 
   ChevronDown, 
   ChevronUp, 
