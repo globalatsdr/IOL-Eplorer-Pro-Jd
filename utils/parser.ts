@@ -1,154 +1,81 @@
-import { Lens, SphereRange, Availability, Specifications, Constants, ConstantValues } from '../types';
+import { Lens, SphereRange } from '../types';
 
 export const parseIOLData = (xmlString: string): Lens[] => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
   const lensNodes = xmlDoc.getElementsByTagName("Lens");
-  
   const lenses: Lens[] = [];
 
-  Array.from(lensNodes).forEach((lensNode) => {
-    try {
-      const getVal = (tag: string, parent: Element = lensNode): string => {
-        const node = parent.getElementsByTagName(tag)[0];
-        return node ? node.textContent?.trim() || "" : "";
-      };
+  Array.from(lensNodes).forEach((node) => {
+    const getV = (tag: string, p: Element = node) => p.getElementsByTagName(tag)[0]?.textContent?.trim() || "";
+    const getF = (tag: string, p: Element = node) => {
+      const v = parseFloat(getV(tag, p));
+      return isNaN(v) ? null : v;
+    };
+    const sNode = node.getElementsByTagName("Specifications")[0];
+    const aNode = node.getElementsByTagName("Availability")[0];
+    
+    // Parsear rangos de esfera
+    const sphereNodes = Array.from(aNode?.getElementsByTagName("Sphere") || []);
+    let minS = 100, maxS = -100;
+    
+    const sphereRanges: SphereRange[] = sphereNodes.map(s => {
+      const f = parseFloat(getV("From", s));
+      const t = parseFloat(getV("To", s));
+      const inc = parseFloat(getV("Increment", s)) || 0.5;
+      if (f < minS) minS = f;
+      if (t > maxS) maxS = t;
+      return { from: f, to: t, increment: inc };
+    });
 
-      const getFloat = (tag: string, parent: Element = lensNode): number | null => {
-        const val = getVal(tag, parent);
-        if (!val) return null;
-        const parsed = parseFloat(val);
-        return isNaN(parsed) ? null : parsed;
-      };
+    // Parsear adiciones
+    const additionNodes = Array.from(aNode?.getElementsByTagName("Addition") || []);
+    const additions = additionNodes.map(add => parseFloat(add.textContent || "0")).filter(n => !isNaN(n));
 
-      const getFloatAny = (tags: string[], parent: Element): number | null => {
-        for (const tag of tags) {
-            const val = getFloat(tag, parent);
-            if (val !== null) return val;
-        }
-        return null;
-      };
-
-      const specNode = lensNode.getElementsByTagName("Specifications")[0];
-      const availNode = lensNode.getElementsByTagName("Availability")[0];
-      
-      const specifications: Specifications = {
-        singlePiece: getVal("SinglePiece", specNode).toLowerCase() === "yes",
-        opticMaterial: getVal("OpticMaterial", specNode),
-        hapticMaterial: getVal("HapticMaterial", specNode),
-        preloaded: getVal("Preloaded", specNode).toLowerCase() === "yes",
-        foldable: getVal("Foldable", specNode).toLowerCase() === "yes",
-        incisionWidth: getFloat("IncisionWidth", specNode),
-        injectorSize: getFloat("InjectorSize", specNode),
-        hydro: getVal("Hydro", specNode),
-        filter: getVal("Filter", specNode),
-        refractiveIndex: getFloat("RefractiveIndex", specNode),
-        abbeNumber: getFloat("AbbeNumber", specNode),
-        achromatic: getVal("Achromatic", specNode).toLowerCase() === "yes",
-        opticDiameter: getFloat("OpticDiameter", specNode),
-        hapticDiameter: getFloat("HapticDiameter", specNode),
-        opticConcept: getVal("OpticConcept", specNode) || "Unknown",
-        hapticDesign: getVal("HapticDesign", specNode),
-        intendedLocation: getVal("IntendedLocation", specNode),
-        opticDesign: getVal("OpticDesign", specNode),
-        aberration: getVal("Aberration", specNode),
-        saCorrection: getFloat("saCorrection", specNode),
-        toric: getVal("Toric", specNode).toLowerCase() === "yes",
-        technology: getVal("Technology", specNode) || undefined,
-      };
-
-      const sphereRanges: SphereRange[] = [];
-      let minSphere = 1000;
-      let maxSphere = -1000;
-      const additions: number[] = [];
-
-      if (availNode) {
-        const sphereNodes = availNode.getElementsByTagName("Sphere");
-        Array.from(sphereNodes).forEach((sNode) => {
-          const fromVal = parseFloat(getVal("From", sNode));
-          const toVal = parseFloat(getVal("To", sNode));
-          const incVal = parseFloat(getVal("Increment", sNode));
-          
-          if (!isNaN(fromVal) && !isNaN(toVal)) {
-            sphereRanges.push({ from: fromVal, to: toVal, increment: incVal });
-            if (fromVal < minSphere) minSphere = fromVal;
-            if (toVal > maxSphere) maxSphere = toVal;
-          }
-        });
-
-        const addNodes = availNode.getElementsByTagName("Addition");
-        Array.from(addNodes).forEach((aNode) => {
-           const val = parseFloat(aNode.textContent || "");
-           if(!isNaN(val)) additions.push(val);
-        });
-      }
-
-      if (minSphere === 1000) minSphere = 0;
-      if (maxSphere === -1000) maxSphere = 0;
-
-      const totalDiopterRange = (maxSphere - minSphere);
-
-      const availability: Availability = {
+    lenses.push({
+      id: node.getAttribute("id") || Math.random().toString(),
+      manufacturer: getV("Manufacturer"),
+      name: getV("Name"),
+      specifications: {
+        singlePiece: getV("SinglePiece", sNode) === "yes",
+        opticMaterial: getV("OpticMaterial", sNode),
+        hapticMaterial: getV("HapticMaterial", sNode),
+        preloaded: getV("Preloaded", sNode) === "yes",
+        foldable: getV("Foldable", sNode) === "yes",
+        incisionWidth: getF("IncisionWidth", sNode),
+        injectorSize: getF("InjectorSize", sNode),
+        hydro: getV("Hydro", sNode),
+        filter: getV("Filter", sNode),
+        refractiveIndex: getF("RefractiveIndex", sNode),
+        abbeNumber: getF("AbbeNumber", sNode),
+        achromatic: getV("Achromatic", sNode) === "yes",
+        opticDiameter: getF("OpticDiameter", sNode),
+        hapticDiameter: getF("HapticDiameter", sNode),
+        opticConcept: getV("OpticConcept", sNode) || "monofocal",
+        hapticDesign: getV("HapticDesign", sNode),
+        intendedLocation: getV("IntendedLocation", sNode),
+        opticDesign: getV("OpticDesign", sNode),
+        aberration: getV("Aberration", sNode),
+        saCorrection: getF("saCorrection", sNode),
+        toric: getV("Toric", sNode) === "yes",
+        technology: getV("Technology", sNode) || undefined,
+      },
+      availability: {
         sphereRanges,
         additions,
-        minSphere,
-        maxSphere,
-        totalDiopterRange,
-      };
-
-      const constants: Constants = {
-        sourceType: null,
-        source: {},
+        minSphere: minS === 100 ? 0 : minS,
+        maxSphere: maxS === -100 ? 0 : maxS,
+        totalDiopterRange: (maxS !== -100 && minS !== 100) ? (maxS - minS) : 0
+      },
+      constants: {
+        sourceType: 'nominal',
+        source: {
+          srkt: getF("SRKt", node.getElementsByTagName("Constants")[0]),
+          ultrasound: getF("Ultrasound", node.getElementsByTagName("Constants")[0])
+        },
         optimized: {}
-      };
-
-      let nominalData: ConstantValues | undefined;
-      let ulibData: ConstantValues | undefined;
-
-      const constNodes = lensNode.getElementsByTagName("Constants");
-      Array.from(constNodes).forEach((cNode) => {
-         const type = cNode.getAttribute("type")?.toLowerCase();
-         const vals: ConstantValues = {
-            ultrasound: getFloatAny(["Ultrasound", "A-Constant", "A_Constant", "AConstant"], cNode),
-            srkt: getFloatAny(["SRKt", "SRK_T", "A-Constant", "A_Constant", "AConstant"], cNode),
-            haigis_a0: getFloatAny(["Haigis_a0", "a0", "A0"], cNode),
-            haigis_a1: getFloatAny(["Haigis_a1", "a1", "A1"], cNode),
-            haigis_a2: getFloatAny(["Haigis_a2", "a2", "A2"], cNode),
-            hoffer_q: getFloatAny(["pACD", "PACD", "Hoffer_Q", "HofferQ", "ACD"], cNode),
-            holladay_1: getFloatAny(["sf", "SF", "Holladay_1", "Holladay1", "SurgeonFactor"], cNode),
-            barrett: getFloatAny(["Barrett", "BarrettLF", "LF"], cNode)
-         };
-
-         if (type === 'nominal') {
-            nominalData = vals;
-         } else if (type === 'ulib') {
-            ulibData = vals;
-         } else if (type === 'optimized') {
-            constants.optimized = vals;
-         }
-      });
-
-      if (ulibData) {
-        constants.source = ulibData;
-        constants.sourceType = 'ulib';
-      } else if (nominalData) {
-        constants.source = nominalData;
-        constants.sourceType = 'nominal';
       }
-
-      lenses.push({
-        id: lensNode.getAttribute("id") || Math.random().toString(),
-        manufacturer: getVal("Manufacturer"),
-        name: getVal("Name"),
-        specifications,
-        availability,
-        constants
-      });
-
-    } catch (e) {
-      console.error("Error parsing lens node", e);
-    }
+    });
   });
-
   return lenses;
 };
