@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Zap,
   Microscope,
-  Layers
+  Layers,
+  Settings
 } from 'lucide-react';
 
 interface Props {
@@ -41,7 +42,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   return (
     <div className={`relative bg-white rounded-[2rem] shadow-sm border overflow-hidden transition-all duration-300 group ${isSelected ? 'ring-4 ring-blue-500/20 border-blue-500 shadow-blue-900/5' : 'border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/5'}`}>
       
-      {/* Selector Checkmark */}
       <button 
         onClick={(e) => { e.stopPropagation(); onToggleSelect(lens); }} 
         className="absolute top-6 right-6 z-10 p-1"
@@ -55,7 +55,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         )}
       </button>
 
-      {/* Header Info */}
       <div className="p-8 pb-6">
         <div className="flex justify-between items-start mb-2">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{lens.manufacturer}</span>
@@ -80,7 +79,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         </div>
       </div>
 
-      {/* Core Technical Stats */}
       <div className="px-8 py-6 grid grid-cols-2 gap-6 bg-slate-50/50 border-y border-slate-100">
         <div className="flex items-center gap-4">
           <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100"><Ruler className="w-5 h-5 text-blue-500"/></div>
@@ -98,7 +96,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         </div>
       </div>
       
-      {/* Botón Expansión */}
       <button 
         onClick={() => setExpanded(!expanded)} 
         className="w-full py-4 text-[11px] font-black text-slate-500 hover:text-blue-600 hover:bg-slate-100 flex items-center justify-center gap-2 transition-all uppercase tracking-widest"
@@ -106,12 +103,44 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         {expanded ? <>Cerrar Detalles <ChevronUp className="w-4 h-4"/></> : <>Especificaciones Técnicas <ChevronDown className="w-4 h-4"/></>}
       </button>
       
-      {/* Área Expandida - Pasaporte Técnico */}
       {expanded && (
         <div className="px-8 pb-8 pt-2 bg-white animate-in slide-in-from-top-2 duration-300">
           <div className="space-y-8">
             
-            {/* Disponibilidad */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                <Settings className="w-3.5 h-3.5"/> Constantes de Cálculo
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Nominal / Ulib</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[11px] font-bold">
+                      <span className="text-slate-400">SRK/T:</span>
+                      <span className="text-slate-800">{lens.constants.source.srkt || '-'}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold">
+                      <span className="text-slate-400">Ultras.:</span>
+                      <span className="text-slate-800">{lens.constants.source.ultrasound || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                  <p className="text-[10px] font-black text-blue-400 uppercase mb-3 tracking-widest">Optimizado</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[11px] font-bold">
+                      <span className="text-blue-400">SRK/T:</span>
+                      <span className="text-blue-800">{lens.constants.optimized.srkt || '-'}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold">
+                      <span className="text-blue-400">Hoffer Q:</span>
+                      <span className="text-blue-800">{lens.constants.optimized.hoffer_q || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                 <Layers className="w-3.5 h-3.5"/> Dioptrías y Adiciones
@@ -141,7 +170,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
               )}
             </div>
 
-            {/* Características Físicas */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                 <Microscope className="w-3.5 h-3.5"/> Datos de Fabricación
@@ -165,7 +193,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
               </div>
             </div>
 
-            {/* Certificaciones */}
             <div className="flex gap-4 pt-2">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${lens.specifications.preloaded ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
                 <ShieldCheck className="w-4 h-4" /> Pre-cargada
@@ -175,7 +202,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
               </div>
             </div>
 
-            {/* Link Web Externo Secundario */}
             <button 
               onClick={handleWebSearch}
               className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-900/10"
