@@ -8,7 +8,6 @@ import {
   CheckCircle, 
   Circle, 
   Globe, 
-  Info,
   ShieldCheck,
   Zap,
   Microscope,
