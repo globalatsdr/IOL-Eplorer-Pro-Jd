@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   IOL_XML_DATA, 
@@ -30,7 +31,9 @@ import {
   Trash2,
   Stethoscope,
   Sparkles,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Settings2,
+  Layers
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -104,10 +107,25 @@ function App() {
     );
   }, [baseLenses, overrideData]);
 
+  // Efecto para obtener recomendaciones y sincronizar Concepto Óptico
   useEffect(() => {
     const concepts = getLensRecommendations(drAlfonsoInputs);
     setRecommendedConcepts(concepts);
-  }, [drAlfonsoInputs]);
+    
+    // Auto-poblar concepto óptico si hay una recomendación clara
+    if (concepts.length === 1) {
+      const concept = concepts[0];
+      let mapped = 'any';
+      if (concept.includes("Narrow")) mapped = "monofocal";
+      else if (concept.includes("Enhance")) mapped = "Monofocal +";
+      else if (concept.includes("Extend")) mapped = "EDoF";
+      else if (concept.includes("Full Range")) mapped = "multifocal";
+      
+      if (drAlfonsoInputs.opticConcept === 'any') {
+        setDrAlfonsoInputs(prev => ({ ...prev, opticConcept: mapped }));
+      }
+    }
+  }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
 
@@ -246,7 +264,26 @@ function App() {
         if (advFilters.isYellowFilter && !lens.specifications.filter.toLowerCase().includes('yellow')) return false;
         if (advFilters.hydroType !== 'all' && lens.specifications.hydro.toLowerCase() !== advFilters.hydroType) return false;
       } else if (activeTab === FilterTab.DR_ALFONSO) {
-        if (drAlfonsoInputs.opticConcept !== 'any' && lens.specifications.opticConcept !== drAlfonsoInputs.opticConcept) return false;
+        // Filtros Técnicos de Dr. Alfonso
+        if (drAlfonsoInputs.opticConcept !== 'any' && lens.specifications.opticConcept.toLowerCase() !== drAlfonsoInputs.opticConcept.toLowerCase()) return false;
+        
+        if (drAlfonsoInputs.technology !== 'any' && lens.specifications.technology?.toLowerCase() !== drAlfonsoInputs.technology.toLowerCase()) return false;
+        
+        if (drAlfonsoInputs.hapticDesign !== 'any') {
+            const h = lens.specifications.hapticDesign.toLowerCase();
+            const filter = drAlfonsoInputs.hapticDesign.toLowerCase();
+            if (filter === 'c-loop' && !h.includes('c loop') && !h.includes('c-loop')) return false;
+            if (filter === 'plato' && !h.includes('plate') && !h.includes('4 loop') && !h.includes('square')) return false;
+            if (filter === '3 piezas' && !h.includes('3-piece') && !h.includes('3 piece')) return false;
+            if (filter === 'lamina' && !h.includes('lamina')) return false;
+        }
+        
+        if (drAlfonsoInputs.lensMaterial !== 'any') {
+            const m = lens.specifications.hydro.toLowerCase();
+            if (drAlfonsoInputs.lensMaterial === 'hidrofilico' && !m.includes('hydrophilic')) return false;
+            if (drAlfonsoInputs.lensMaterial === 'hidrofobico' && !m.includes('hydrophobic')) return false;
+        }
+
         if (drAlfonsoInputs.toric !== 'any') {
           const isToric = lens.specifications.toric;
           if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
@@ -438,7 +475,8 @@ function App() {
                     <div key={item.key} className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
                       {item.options ? (
-                        <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
+                        // Cast e.target.value to any to fix type mismatch with strictly typed keys
+                        <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value as any})}>
                           {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
                       ) : (
@@ -492,18 +530,16 @@ function App() {
                         </div>
                         <button 
                           onClick={() => {
-                            let mapped = "all";
+                            let mapped = "any";
                             if (concept.includes("Narrow")) mapped = "monofocal";
                             else if (concept.includes("Enhance")) mapped = "Monofocal +";
                             else if (concept.includes("Extend")) mapped = "EDoF";
                             else if (concept.includes("Full Range")) mapped = "multifocal";
                             
-                            setBasicFilters(prev => ({ ...prev, clinicalConcept: concept, opticConcept: mapped }));
-                            setActiveTab(FilterTab.BASIC);
-                            setTimeout(() => window.scrollTo({ top: 450, behavior: 'smooth' }), 100);
+                            setDrAlfonsoInputs(prev => ({ ...prev, opticConcept: mapped }));
                           }}
                           className="p-2 text-slate-300 hover:text-emerald-600 transition-colors"
-                          title="Aplicar este filtro"
+                          title="Aplicar Concepto Óptico sugerido"
                         >
                           <ArrowRightCircle className="w-7 h-7" />
                         </button>
@@ -521,6 +557,68 @@ function App() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Bloque 3: Filtros de Búsqueda Técnicos */}
+              <div className="space-y-8 pt-8 border-t border-slate-100">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                   <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-900/20">
+                    <Settings2 className="w-6 h-6"/>
+                   </div>
+                   <div className="flex flex-col">
+                     <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg leading-none">Criterios de Selección de Lente</h3>
+                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Refinamiento Técnico</span>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1">Concepto Óptico</label>
+                    <select className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-sm font-bold text-blue-800 outline-none" value={drAlfonsoInputs.opticConcept} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, opticConcept: e.target.value})}>
+                      <option value="any">Cualquiera</option>
+                      <option value="monofocal">Monofocal</option>
+                      <option value="Monofocal +">Monofocal +</option>
+                      <option value="EDoF">EDoF</option>
+                      <option value="multifocal">Multifocal</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tecnología</label>
+                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.technology} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, technology: e.target.value})}>
+                      <option value="any">Cualquiera</option>
+                      <option value="refractiva">Refractiva</option>
+                      <option value="difractiva">Difractiva</option>
+                      <option value="hibrida">Híbrida</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Diseño Háptico</label>
+                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})}>
+                      <option value="any">Cualquiera</option>
+                      <option value="c-loop">C-Loop</option>
+                      <option value="plato">Plato</option>
+                      <option value="lamina">Lámina Modificada</option>
+                      <option value="3 piezas">3 Piezas</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Material</label>
+                    {/* Fixed type error by casting e.target.value to any for strictly typed lensMaterial field */}
+                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as any})}>
+                      <option value="any">Cualquiera</option>
+                      <option value="hidrofobico">Hidrofóbico</option>
+                      <option value="hidrofilico">Hidrofílico</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-800">
+                  <Info className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-[11px] font-bold italic leading-snug">Los filtros técnicos actúan sobre la base de datos de lentes para refinar la búsqueda clínica del Dr. Alfonso.</p>
+                </div>
               </div>
             </div>
           )}
