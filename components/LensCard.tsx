@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Lens, SphereRange } from '../types';
-import Tooltip from './Tooltip';
 import { ChevronDown, ChevronUp, Ruler, Activity, CheckCircle, Circle } from 'lucide-react';
 
 interface Props {

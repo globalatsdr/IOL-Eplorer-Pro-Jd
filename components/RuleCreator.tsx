@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { CLINICAL_CONCEPTS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
-import { AGE_RANGES, LA_RANGES, LENS_STATUS_OPTIONS } from '../services/recommendationService';
-import { Clipboard, Check, ArrowLeft, Lightbulb } from 'lucide-react';
+import { CLINICAL_CONCEPTS } from '../constants';
+import { ArrowLeft } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -9,20 +8,15 @@ interface Props {
 
 const RuleCreator: React.FC<Props> = ({ onBack }) => {
   const [result, setResult] = useState('');
-  const [ageGroups, setAgeGroups] = useState<string[]>([]);
-  const [laGroups, setLaGroups] = useState<string[]>([]);
-  const [lensStatuses, setLensStatuses] = useState<string[]>([]);
-  const [lvc, setLvc] = useState('any');
-  const [udva, setUdva] = useState('any');
-  const [contactLenses, setContactLenses] = useState('any');
-  const [anteriorChamber, setAnteriorChamber] = useState('any');
-  const [retina, setRetina] = useState('any');
+  const [ageGroups] = useState<string[]>([]);
+  const [laGroups] = useState<string[]>([]);
+  const [lensStatuses] = useState<string[]>([]);
+  const [lvc] = useState('any');
+  const [udva] = useState('any');
+  const [contactLenses] = useState('any');
+  const [anteriorChamber] = useState('any');
+  const [retina] = useState('any');
   const [generatedCode, setGeneratedCode] = useState('');
-  const [copied, setCopied] = useState(false);
-
-  const handleToggle = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
-    setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
-  };
 
   const handleGenerateCode = () => {
     if (!result) return alert("Seleccione un resultado.");
@@ -56,7 +50,6 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
               {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          {/* ... Resto del formulario simplificado ... */}
           <button onClick={handleGenerateCode} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Generar Código</button>
           {generatedCode && (
             <pre className="bg-slate-800 text-white p-4 rounded text-xs overflow-x-auto mt-4">{generatedCode}</pre>
