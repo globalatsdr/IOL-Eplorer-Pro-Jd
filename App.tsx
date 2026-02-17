@@ -27,7 +27,10 @@ import {
   ExternalLink,
   FileJson,
   Database,
-  Trash2
+  Trash2,
+  Stethoscope,
+  Sparkles,
+  ArrowRightCircle
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -417,58 +420,108 @@ function App() {
           )}
 
           {activeTab === FilterTab.DR_ALFONSO && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                 <h3 className="font-black text-teal-900 flex items-center gap-2 uppercase tracking-tighter text-lg"><Eye className="w-6 h-6 text-teal-600"/> Perfil del Paciente</h3>
-                 <button onClick={() => setIsRulesManagerOpen(true)} className="text-[10px] bg-teal-600 text-white px-4 py-2 rounded-xl font-black hover:bg-teal-700 transition-all uppercase tracking-widest shadow-lg shadow-teal-900/10">Engine Rules</button>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { label: 'Edad', val: drAlfonsoInputs.age, key: 'age', type: 'number' },
-                  { label: 'L. Axial', val: drAlfonsoInputs.axialLength, key: 'axialLength', type: 'number' },
-                  { label: 'LVC', val: drAlfonsoInputs.lvc, key: 'lvc', options: LVC_OPTIONS },
-                  { label: 'UDVA', val: drAlfonsoInputs.udva, key: 'udva', options: UDVA_OPTIONS }
-                ].map(item => (
-                  <div key={item.key} className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
-                    {item.options ? (
+            <div className="space-y-12">
+              {/* Bloque 1: Perfil del Paciente */}
+              <div className="space-y-8">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                   <h3 className="font-black text-teal-900 flex items-center gap-2 uppercase tracking-tighter text-lg"><Eye className="w-6 h-6 text-teal-600"/> Perfil del Paciente</h3>
+                   <button onClick={() => setIsRulesManagerOpen(true)} className="text-[10px] bg-teal-600 text-white px-4 py-2 rounded-xl font-black hover:bg-teal-700 transition-all uppercase tracking-widest shadow-lg shadow-teal-900/10">Engine Rules</button>
+                </div>
+                
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { label: 'Edad', val: drAlfonsoInputs.age, key: 'age', type: 'number' },
+                    { label: 'L. Axial', val: drAlfonsoInputs.axialLength, key: 'axialLength', type: 'number' },
+                    { label: 'Estado Cristalino', val: drAlfonsoInputs.lensStatus, key: 'lensStatus', options: { 'any': 'Cualquiera', 'catarata': 'Catarata', 'transparente': 'Transparente', 'disfuncional': 'Disfuncional', 'presbicia': 'Presbicia' } },
+                    { label: 'UDVA', val: drAlfonsoInputs.udva, key: 'udva', options: UDVA_OPTIONS }
+                  ].map(item => (
+                    <div key={item.key} className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
+                      {item.options ? (
+                        <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
+                          {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        </select>
+                      ) : (
+                        <input type={item.type} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { label: 'LVC', val: drAlfonsoInputs.lvc, key: 'lvc', options: LVC_OPTIONS },
+                    { label: 'Lentes Contacto', val: drAlfonsoInputs.contactLenses, key: 'contactLenses', options: CONTACT_LENS_OPTIONS },
+                    { label: 'Cámara Anterior', val: drAlfonsoInputs.anteriorChamber, key: 'anteriorChamber', options: ANTERIOR_CHAMBER_OPTIONS },
+                    { label: 'Retina', val: drAlfonsoInputs.retina, key: 'retina', options: RETINA_OPTIONS }
+                  ].map(item => (
+                    <div key={item.key} className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
                       <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
-                        {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        {Object.entries(item.options!).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
-                    ) : (
-                      <input type={item.type} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})} />
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { label: 'Lentes Contacto', val: drAlfonsoInputs.contactLenses, key: 'contactLenses', options: CONTACT_LENS_OPTIONS },
-                  { label: 'Cámara Anterior', val: drAlfonsoInputs.anteriorChamber, key: 'anteriorChamber', options: ANTERIOR_CHAMBER_OPTIONS },
-                  { label: 'Retina', val: drAlfonsoInputs.retina, key: 'retina', options: RETINA_OPTIONS }
-                ].map(item => (
-                  <div key={item.key} className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
-                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
-                      {Object.entries(item.options!).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                    </select>
-                  </div>
-                ))}
-              </div>
-              {recommendedConcepts.length > 0 && (
-                <div className="p-6 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 rounded-3xl space-y-4">
-                  <div className="flex items-center gap-3 text-teal-800 font-black text-xs uppercase tracking-widest">
-                    <div className="p-2 bg-teal-600 text-white rounded-lg shadow-lg"><Info className="w-4 h-4" /></div> IA Recomendaciones
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {recommendedConcepts.map(c => (
-                      <span key={c} className="bg-white px-5 py-2.5 rounded-2xl text-xs font-black text-teal-700 border border-teal-200 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                        {c}
-                      </span>
+
+              {/* Bloque 2: Resultados Reales */}
+              <div className="space-y-6 pt-8 border-t border-slate-100">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                   <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-900/20">
+                    <Stethoscope className="w-6 h-6"/>
+                   </div>
+                   <div className="flex flex-col">
+                     <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg leading-none">Análisis y Concepto Clínico Sugerido</h3>
+                     <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Algoritmo Alfonso Engine</span>
+                   </div>
+                </div>
+
+                {recommendedConcepts.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recommendedConcepts.map((concept, idx) => (
+                      <div key={idx} className="group bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-5 rounded-3xl flex items-center justify-between hover:shadow-xl hover:shadow-emerald-900/5 transition-all animate-in fade-in slide-in-from-bottom-3" style={{ animationDelay: `${idx * 100}ms` }}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center border border-emerald-200 shadow-sm text-emerald-600">
+                            <Sparkles className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-0.5">Recomendación {idx + 1}</p>
+                            <p className="text-sm font-black text-slate-800">{concept}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            let mapped = "all";
+                            if (concept.includes("Narrow")) mapped = "monofocal";
+                            else if (concept.includes("Enhance")) mapped = "Monofocal +";
+                            else if (concept.includes("Extend")) mapped = "EDoF";
+                            else if (concept.includes("Full Range")) mapped = "multifocal";
+                            
+                            setBasicFilters(prev => ({ ...prev, clinicalConcept: concept, opticConcept: mapped }));
+                            setActiveTab(FilterTab.BASIC);
+                            setTimeout(() => window.scrollTo({ top: 450, behavior: 'smooth' }), 100);
+                          }}
+                          className="p-2 text-slate-300 hover:text-emerald-600 transition-colors"
+                          title="Aplicar este filtro"
+                        >
+                          <ArrowRightCircle className="w-7 h-7" />
+                        </button>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-10 bg-slate-50 border border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm">
+                      <Search className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Sin coincidencias exactas</p>
+                      <p className="text-slate-400 text-[11px] font-medium max-w-xs mx-auto mt-1">Ajuste los parámetros del paciente para que el motor de reglas pueda sugerir un concepto clínico.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
