@@ -23,11 +23,14 @@ import {
   ShieldCheck, 
   Zap, 
   Eye, 
-  Info 
+  Info,
+  ExternalLink,
+  FileJson
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 const STORAGE_KEY_XML = 'iol_data_cache_v2';
+const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v1';
 
 const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
 
@@ -47,9 +50,11 @@ const deepMerge = (target: any, source: any): any => {
 
 function App() {
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
+  const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
+  const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
   const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
@@ -87,8 +92,12 @@ function App() {
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
   
-  // En esta versión simplificada, overrideData no se usa pero mantenemos la lógica de mezcla por si se requiere
-  const lenses = useMemo(() => baseLenses, [baseLenses]);
+  const lenses = useMemo(() => {
+    if (Object.keys(overrideData).length === 0) return baseLenses;
+    return baseLenses.map(lens => 
+      overrideData[lens.id] ? deepMerge(lens, overrideData[lens.id]) : lens
+    );
+  }, [baseLenses, overrideData]);
 
   useEffect(() => {
     const concepts = getLensRecommendations(drAlfonsoInputs);
@@ -100,6 +109,12 @@ function App() {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
+      
+      const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
+      if (cachedOverrides) {
+        try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) { console.error("Error loading overrides"); }
+      }
+
       const cachedXML = localStorage.getItem(STORAGE_KEY_XML);
       let dataLoaded = false;
       if (cachedXML) {
@@ -120,7 +135,7 @@ function App() {
             localStorage.setItem(STORAGE_KEY_XML, text);
           }
         }
-      } catch (error) { console.log("Usando base de datos local"); } finally { setLoading(false); }
+      } catch (error) { console.log("Usando DB local/cache"); } finally { setLoading(false); }
     };
     initData();
   }, []);
@@ -143,6 +158,22 @@ function App() {
     };
     reader.readAsText(file);
     if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
+  };
+
+  const handleOverrideUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        setOverrideData(json);
+        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(json));
+        alert('Modificaciones cargadas con éxito.');
+      } catch (err) { alert('Error al leer el archivo JSON de modificaciones.'); }
+    };
+    reader.readAsText(file);
+    if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
   };
 
   const toggleLensSelection = (lens: Lens) => {
@@ -175,7 +206,6 @@ function App() {
 
   const filteredLenses = useMemo(() => {
     return lenses.filter(lens => {
-      // Búsqueda por palabra clave global
       if (advFilters.keyword && !lens.name.toLowerCase().includes(advFilters.keyword.toLowerCase()) && !lens.manufacturer.toLowerCase().includes(advFilters.keyword.toLowerCase())) return false;
 
       if (activeTab === FilterTab.BASIC) {
@@ -208,47 +238,48 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
+      <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm px-4 h-16 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">IOL Explorer Pro</h1>
         <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-slate-800">IOL Explorer Pro</h1>
+          <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="hidden md:flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold hover:bg-blue-100 transition-colors">
+            <ExternalLink className="w-3 h-3" /> IOLcon.org
+          </a>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button onClick={() => xmlFileInputRef.current?.click()} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Cargar XML Base">
+              <Upload className="w-4 h-4" />
+            </button>
+            <button onClick={() => overrideFileInputRef.current?.click()} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Cargar Modificaciones (JSON)">
+              <FileJson className="w-4 h-4" />
+            </button>
+            <button onClick={handleResetFilters} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Limpiar Filtros">
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="h-8 w-px bg-slate-200 mx-1"></div>
+          
           <input 
             type="password" 
             value={passwordInput} 
             onChange={(e) => setPasswordInput(e.target.value)} 
             placeholder="Pass" 
-            className="bg-slate-100 border-none text-xs w-16 rounded px-2 py-1 focus:ring-1 focus:ring-blue-400" 
+            className="bg-slate-100 border-none text-xs w-16 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-blue-400" 
           />
-          <button onClick={() => xmlFileInputRef.current?.click()} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200" title="Cargar XML">
-            <Upload className="w-4 h-4" />
-          </button>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 sm:p-8">
-        {/* Tab Switcher */}
         <div className="flex gap-2 mb-8 max-w-xl mx-auto bg-slate-200 p-1 rounded-xl">
-          <button 
-            onClick={() => setActiveTab(FilterTab.BASIC)} 
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === FilterTab.BASIC ? 'bg-white shadow text-blue-600' : 'text-slate-600 hover:bg-white/50'}`}
-          >
-            Basic
-          </button>
-          <button 
-            onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.ADVANCED)} 
-            className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.ADVANCED ? 'bg-white shadow text-blue-600' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}
-          >
-            Advanced {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}
-          </button>
-          <button 
-            onClick={() => isDrAlfonsoUnlocked && setActiveTab(FilterTab.DR_ALFONSO)} 
-            className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white shadow text-teal-600' : isDrAlfonsoUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}
-          >
-            Dr. Alfonso {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}
-          </button>
+          <button onClick={() => setActiveTab(FilterTab.BASIC)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === FilterTab.BASIC ? 'bg-white shadow text-blue-600' : 'text-slate-600 hover:bg-white/50'}`}>Basic</button>
+          <button onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.ADVANCED)} className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.ADVANCED ? 'bg-white shadow text-blue-600' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Advanced {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}</button>
+          <button onClick={() => isDrAlfonsoUnlocked && setActiveTab(FilterTab.DR_ALFONSO)} className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white shadow text-teal-600' : isDrAlfonsoUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Dr. Alfonso {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}</button>
         </div>
 
-        {/* Filters Container */}
         <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border border-slate-100">
           <div className="flex justify-between items-center mb-6">
             <div className="relative max-w-xs w-full">
@@ -261,13 +292,13 @@ function App() {
                 onChange={e => setAdvFilters({...advFilters, keyword: e.target.value})}
               />
             </div>
-            <button onClick={handleResetFilters} className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-              <RotateCcw className="w-3 h-3"/> Reset Filters
-            </button>
+            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-2">
+              {Object.keys(overrideData).length > 0 && <span className="text-orange-500 flex items-center gap-1"><Info className="w-3 h-3"/> Datos Modificados Activos</span>}
+            </div>
           </div>
 
           {activeTab === FilterTab.BASIC && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Fabricante</label>
                 <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={basicFilters.manufacturer} onChange={e => setBasicFilters({...basicFilters, manufacturer: e.target.value})}>
@@ -290,6 +321,7 @@ function App() {
                   <option value="Monofocal +">Monofocal +</option>
                   <option value="EDoF">EDoF</option>
                   <option value="multifocal">Multifocal</option>
+                  <option value="bifocal">Bifocal</option>
                 </select>
               </div>
               <div>
@@ -304,7 +336,7 @@ function App() {
           )}
 
           {activeTab === FilterTab.ADVANCED && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in slide-in-from-top-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2"><Zap className="w-4 h-4 text-blue-500"/> Rango de Esfera Disponible</h4>
@@ -345,12 +377,11 @@ function App() {
           )}
 
           {activeTab === FilterTab.DR_ALFONSO && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in slide-in-from-top-2">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                  <h3 className="font-bold text-teal-800 flex items-center gap-2"><Eye className="w-5 h-5"/> Perfil del Paciente</h3>
                  <button onClick={() => setIsRulesManagerOpen(true)} className="text-[10px] bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-bold border border-teal-100 hover:bg-teal-100 transition-colors uppercase tracking-wider">Ver Reglas Expertas</button>
               </div>
-              
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Edad</span>
@@ -373,7 +404,6 @@ function App() {
                   </select>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Lentes de Contacto</span>
@@ -413,76 +443,34 @@ function App() {
           )}
         </div>
 
-        {/* Results Grid */}
         <div className="flex justify-between items-center mb-6 px-2">
           <h2 className="font-bold text-slate-800">
             Resultados <span className="text-blue-600 ml-1 font-black">{filteredLenses.length}</span>
           </h2>
-          <div className="text-xs text-slate-400 font-medium italic">
-            Mostrando {filteredLenses.length} de {lenses.length} lentes cargadas
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLenses.map(lens => (
-            <LensCard 
-              key={lens.id} 
-              lens={lens} 
-              isSelected={selectedLensIds.has(lens.id)} 
-              onToggleSelect={toggleLensSelection} 
-            />
+            <LensCard key={lens.id} lens={lens} isSelected={selectedLensIds.has(lens.id)} onToggleSelect={toggleLensSelection} />
           ))}
         </div>
-        
-        {filteredLenses.length === 0 && (
-          <div className="bg-white rounded-2xl p-20 text-center border border-dashed border-slate-200 mt-8">
-            <Search className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-800 mb-2">No se encontraron lentes</h3>
-            <p className="text-slate-400 text-sm">Intenta ajustar los criterios de filtrado o busca otra palabra clave.</p>
-          </div>
-        )}
       </main>
 
-      {/* Floating Selection Bar */}
       {selectedLensIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl p-4 bg-slate-900/90 backdrop-blur-md text-white rounded-2xl shadow-2xl flex justify-between items-center z-30 animate-in slide-in-from-bottom-5">
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-lg">
-              {selectedLensIds.size}
-            </div>
+            <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-lg">{selectedLensIds.size}</div>
             <div>
               <p className="text-sm font-bold">Lentes seleccionadas</p>
-              <p className="text-[10px] text-slate-400">Puedes comparar hasta 5 modelos</p>
+              <p className="text-[10px] text-slate-400">Máximo 5 para comparar</p>
             </div>
           </div>
-          <div className="flex gap-3">
-             <button onClick={() => setSelectedLensIds(new Set())} className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-3 py-2">Limpiar</button>
-             <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-900/40">Comparar ahora</button>
-          </div>
+          <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg">Comparar ahora</button>
         </div>
       )}
 
-      {/* Modals */}
-      {showComparison && (
-        <ComparisonView 
-          lenses={lenses.filter(l => selectedLensIds.has(l.id))} 
-          onClose={() => setShowComparison(false)} 
-          onRemove={id => {
-            const n = new Set(selectedLensIds); 
-            n.delete(id); 
-            setSelectedLensIds(n);
-            if (n.size === 0) setShowComparison(false);
-          }} 
-          onFindSimilar={()=>{}} 
-        />
-      )}
-      
-      {isRulesManagerOpen && (
-        <RulesManager 
-          rules={ALL_RULES} 
-          onClose={() => setIsRulesManagerOpen(false)} 
-        />
-      )}
+      {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={()=>{}} />}
+      {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} />}
     </div>
   );
 }
