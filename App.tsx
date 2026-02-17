@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   IOL_XML_DATA, 
@@ -32,8 +31,7 @@ import {
   Stethoscope,
   Sparkles,
   ArrowRightCircle,
-  Settings2,
-  Layers
+  Settings2
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -475,7 +473,6 @@ function App() {
                     <div key={item.key} className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
                       {item.options ? (
-                        // Cast e.target.value to any to fix type mismatch with strictly typed keys
                         <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value as any})}>
                           {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
@@ -606,7 +603,6 @@ function App() {
 
                   <div className="space-y-2">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Material</label>
-                    {/* Fixed type error by casting e.target.value to any for strictly typed lensMaterial field */}
                     <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as any})}>
                       <option value="any">Cualquiera</option>
                       <option value="hidrofobico">Hidrofóbico</option>
