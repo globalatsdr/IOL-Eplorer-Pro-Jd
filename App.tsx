@@ -1,0 +1,766 @@
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { IOL_XML_DATA, CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from './constants';
+import { parseIOLData } from './utils/parser';
+import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs } from './types';
+import LensCard from './components/LensCard';
+import ComparisonView from './components/ComparisonView';
+import Tooltip from './components/Tooltip';
+import DualRangeSlider from './components/DualRangeSlider';
+import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
+import RulesManager from './components/RulesManager';
+import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info, FilePlus, Trash2 } from 'lucide-react';
+
+// --- CONFIGURACIÓN DE BASE DE DATOS EXTERNA ---
+// URL directa al archivo RAW en GitHub
+const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
+const STORAGE_KEY_XML = 'iol_data_cache_v2';
+const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v1';
+
+// Helper to check if a value is a non-array object
+const isObject = (item: any) => {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+};
+
+// A more robust, non-mutating deep merge function
+const deepMerge = (target: any, source: any): any => {
+  const output = { ...target };
+
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key]) && key in target && isObject(target[key])) {
+        output[key] = deepMerge(target[key], source[key]);
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+
+  return output;
+};
+
+
+function App() {
+  const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
+  const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
+  const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
+  const [loading, setLoading] = useState(true);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const xmlFileInputRef = useRef<HTMLInputElement>(null);
+  const overrideFileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- PASSWORD CONFIGURATION ---
+  const ADVANCED_UNLOCK_PASSWORD = "1234!";
+  const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
+  const [passwordInput, setPasswordInput] = useState('');
+  
+  const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD;
+  const isDrAlfonsoUnlocked = passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
+
+  // Comparison State
+  const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
+  const [showComparison, setShowComparison] = useState(false);
+
+  // New state for the Rules Manager modal
+  const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
+
+  // Filters State
+  const [basicFilters, setBasicFilters] = useState<BasicFilters>({
+    manufacturer: 'all',
+    clinicalConcept: 'all',
+    opticConcept: 'all',
+    toric: 'all',
+    technology: 'all'
+  });
+
+  const [advFilters, setAdvFilters] = useState<AdvancedFilters>({
+    filterMinSphere: 10,
+    filterMaxSphere: 30,
+    isPreloaded: false,
+    isYellowFilter: false,
+    hydroType: 'all',
+    keyword: ''
+  });
+
+  const [drAlfonsoInputs, setDrAlfonsoInputs] = useState<DrAlfonsoInputs>({
+    age: '',
+    axialLength: '',
+    lensStatus: 'any',
+    refraction: 'any',
+    lensMaterial: 'any',
+    hapticDesign: 'any',
+    opticConcept: 'any',
+    toric: 'any',
+    technology: 'any',
+    lvc: 'any',
+    udva: 'any',
+    contactLenses: 'any',
+    anteriorChamber: 'any',
+    retina: 'any',
+  });
+  
+  const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
+  
+  // Final merged lens list
+  const lenses = useMemo(() => {
+    if (Object.keys(overrideData).length === 0) {
+      return baseLenses;
+    }
+    return baseLenses.map(lens => {
+      if (overrideData[lens.id]) {
+        return deepMerge(lens, overrideData[lens.id]);
+      }
+      return lens;
+    });
+  }, [baseLenses, overrideData]);
+
+  // Effect to update recommendations when inputs change
+  useEffect(() => {
+    const concepts = getLensRecommendations(drAlfonsoInputs);
+    setRecommendedConcepts(concepts);
+  }, [drAlfonsoInputs]);
+
+  // Effect to auto-select optic concept in Dr. Alfonso tab based on recommendations
+  useEffect(() => {
+    const hasEnhance = recommendedConcepts.some(c => c.includes('Enhance'));
+
+    if (activeTab === FilterTab.DR_ALFONSO && hasEnhance) {
+      setDrAlfonsoInputs(prev => {
+        if (prev.opticConcept !== 'Monofocal +') {
+          return { ...prev, opticConcept: 'Monofocal +' };
+        }
+        return prev;
+      });
+    }
+  }, [recommendedConcepts, activeTab]);
+
+  // Extract unique values for dropdowns
+  const uniqueManufacturers = useMemo(() => 
+    Array.from(new Set(lenses.map(l => l.manufacturer))).sort()
+  , [lenses]);
+
+  const uniqueConcepts = useMemo(() => 
+    Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
+  , [lenses]);
+
+  // Load Data Logic
+  useEffect(() => {
+    const initData = async () => {
+      setLoading(true);
+
+      const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
+      if (cachedOverrides) {
+        try {
+          setOverrideData(JSON.parse(cachedOverrides));
+        } catch (e) {
+          console.error("Override cache corrupted", e);
+        }
+      }
+      
+      const cachedXML = localStorage.getItem(STORAGE_KEY_XML);
+      let dataLoaded = false;
+
+      if (cachedXML) {
+        try {
+          const data = parseIOLData(cachedXML);
+          if (data.length > 0) {
+            setBaseLenses(data);
+            dataLoaded = true;
+          }
+        } catch (e) {
+          console.error("Cache corrupted", e);
+        }
+      }
+
+      if (!dataLoaded) {
+        try {
+          const defaultData = parseIOLData(IOL_XML_DATA);
+          setBaseLenses(defaultData);
+        } catch (e) {
+          console.error("Default data error", e);
+        }
+      }
+
+      try {
+        const response = await fetch(EXTERNAL_DB_URL);
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const text = await response.text();
+        const newData = parseIOLData(text);
+
+        if (newData.length > 0) {
+          setBaseLenses(newData);
+          localStorage.setItem(STORAGE_KEY_XML, text);
+          setIsOfflineMode(false);
+        }
+      } catch (error) {
+        console.warn("Could not fetch remote data, using cached/default data.", error);
+        setIsOfflineMode(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === FilterTab.ADVANCED && !isAdvancedUnlocked) {
+      setActiveTab(FilterTab.BASIC);
+    }
+    if (activeTab === FilterTab.DR_ALFONSO && !isDrAlfonsoUnlocked) {
+      setActiveTab(FilterTab.BASIC);
+    }
+  }, [isAdvancedUnlocked, isDrAlfonsoUnlocked, activeTab]);
+
+  const handleXMLUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        try {
+          const parsedData = parseIOLData(text);
+          setBaseLenses(parsedData);
+          localStorage.setItem(STORAGE_KEY_XML, text);
+          setSelectedLensIds(new Set());
+          setIsOfflineMode(true); 
+          alert(`Successfully loaded and saved ${parsedData.length} lenses.`);
+        } catch (err) {
+          alert('Error parsing XML file. Please check the format.');
+          console.error(err);
+        }
+      }
+      setLoading(false);
+    };
+    reader.readAsText(file);
+    if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
+  };
+
+  const handleOverrideUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        try {
+          const jsonData = JSON.parse(text);
+          setOverrideData(jsonData);
+          localStorage.setItem(STORAGE_KEY_OVERRIDES, text);
+          alert(`Successfully loaded ${Object.keys(jsonData).length} lens modifications.`);
+        } catch (err) {
+          alert('Error parsing JSON file. Please check the format.');
+          console.error(err);
+        }
+      }
+    };
+    reader.readAsText(file);
+     if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
+  };
+
+  const handleClearOverrides = () => {
+    if (window.confirm("Are you sure you want to clear all loaded modifications? This will revert to the original data.")) {
+      localStorage.removeItem(STORAGE_KEY_OVERRIDES);
+      setOverrideData({});
+      alert("Modifications cleared.");
+    }
+  };
+
+  const toggleLensSelection = (lens: Lens) => {
+    const newSelection = new Set(selectedLensIds);
+    if (newSelection.has(lens.id)) {
+      newSelection.delete(lens.id);
+    } else {
+      if (newSelection.size >= 5) {
+        alert("You can compare up to 5 lenses at a time.");
+        return;
+      }
+      newSelection.add(lens.id);
+    }
+    setSelectedLensIds(newSelection);
+  };
+
+  const removeLensFromComparison = (id: string) => {
+    const newSelection = new Set(selectedLensIds);
+    newSelection.delete(id);
+    setSelectedLensIds(newSelection);
+    if (newSelection.size === 0) setShowComparison(false);
+  };
+
+  const clearSelection = () => setSelectedLensIds(new Set());
+
+  const handleResetFilters = () => {
+    setBasicFilters({
+      manufacturer: 'all',
+      clinicalConcept: 'all',
+      opticConcept: 'all',
+      toric: 'all',
+      technology: 'all'
+    });
+    setAdvFilters({
+      filterMinSphere: 10,
+      filterMaxSphere: 30,
+      isPreloaded: false,
+      isYellowFilter: false,
+      hydroType: 'all',
+      keyword: ''
+    });
+    setDrAlfonsoInputs({
+      age: '',
+      axialLength: '',
+      lensStatus: 'any',
+      refraction: 'any',
+      lensMaterial: 'any',
+      hapticDesign: 'any',
+      opticConcept: 'any',
+      toric: 'any',
+      technology: 'any',
+      lvc: 'any',
+      udva: 'any',
+      contactLenses: 'any',
+      anteriorChamber: 'any',
+      retina: 'any',
+    });
+  };
+
+  const handleFindZeissSimilar = (targetLens: Lens) => {
+    const zeissName = uniqueManufacturers.find(m => m.toLowerCase().includes('zeiss'));
+    if (!zeissName) {
+      alert("No Zeiss lenses found in the current database.");
+      return;
+    }
+    setBasicFilters({
+      manufacturer: zeissName,
+      clinicalConcept: 'all',
+      opticConcept: targetLens.specifications.opticConcept,
+      toric: targetLens.specifications.toric ? 'yes' : 'no',
+      technology: 'all'
+    });
+    setActiveTab(FilterTab.BASIC);
+    setShowComparison(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleClinicalConceptChange = (val: string) => {
+    let mappedOpticConcept = basicFilters.opticConcept;
+
+    if (val === "Partial Range of Field-Narrow") mappedOpticConcept = "monofocal";
+    else if (val === "Partial Range of Field-Enhance") mappedOpticConcept = "Monofocal +";
+    else if (val === "Partial Range of Field-Extend") mappedOpticConcept = "EDoF";
+    else if (val === "Full Range of Field-Steep") mappedOpticConcept = "bifocal";
+    else if (val === "Full Range of Field-Smooth") mappedOpticConcept = "multifocal";
+    else if (val === "Full Range of Field-Continuous") mappedOpticConcept = "multifocal";
+    else if (val === "all") mappedOpticConcept = "all";
+
+    setBasicFilters({
+      ...basicFilters,
+      clinicalConcept: val,
+      opticConcept: mappedOpticConcept
+    });
+  };
+
+  const mapClinicalToOptic = (clinicalConcepts: string[]): string[] => {
+    const opticConcepts = new Set<string>();
+    clinicalConcepts.forEach(val => {
+      const v = val.toLowerCase();
+      if (v.includes("narrow")) opticConcepts.add("monofocal");
+      else if (v.includes("enhance")) opticConcepts.add("Monofocal +");
+      else if (v.includes("extend")) opticConcepts.add("EDoF");
+      else if (v.includes("steep")) opticConcepts.add("bifocal");
+      else if (v.includes("smooth")) opticConcepts.add("multifocal");
+      else if (v.includes("continuous")) {
+        opticConcepts.add("trifocal");
+        opticConcepts.add("multifocal");
+      }
+    });
+    return Array.from(opticConcepts);
+  }
+  
+  const recommendedLensesBase = useMemo(() => {
+    if (activeTab !== FilterTab.DR_ALFONSO) return [];
+    
+    const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
+    if (!hasBlock1Input || recommendedConcepts.length === 0) return [];
+
+    const targetOpticConcepts = mapClinicalToOptic(recommendedConcepts);
+    
+    return lenses.filter(lens => {
+        const opticConceptLower = lens.specifications.opticConcept.toLowerCase();
+        return targetOpticConcepts.some(c => opticConceptLower === c.toLowerCase());
+    });
+  }, [lenses, activeTab, drAlfonsoInputs, recommendedConcepts]);
+
+  const availableOpticConcepts = useMemo(() => 
+      Array.from(new Set(recommendedLensesBase.map(l => l.specifications.opticConcept).filter(Boolean))).sort()
+  , [recommendedLensesBase]);
+  
+  const availableHapticDesigns = useMemo(() => 
+      Array.from(new Set(recommendedLensesBase.map(l => l.specifications.hapticDesign).filter(Boolean))).sort()
+  , [recommendedLensesBase]);
+
+  const availableMaterials = useMemo(() => {
+      const materials = new Set<string>();
+      recommendedLensesBase.forEach(lens => {
+          const hydro = lens.specifications.hydro.toLowerCase();
+          if (hydro.includes('hydrophilic')) materials.add('hidrofilico');
+          if (hydro.includes('hydrophobic')) materials.add('hidrofobico');
+      });
+      return Array.from(materials).sort();
+  }, [recommendedLensesBase]);
+
+  const filteredLenses = useMemo(() => {
+    if (activeTab === FilterTab.DR_ALFONSO) {
+        if (recommendedLensesBase.length === 0) return [];
+        return recommendedLensesBase.filter(lens => {
+            if (drAlfonsoInputs.opticConcept !== 'any' && lens.specifications.opticConcept !== drAlfonsoInputs.opticConcept) return false;
+            if (drAlfonsoInputs.lensMaterial !== 'any') {
+                const lensMaterialLower = lens.specifications.hydro.toLowerCase();
+                if (drAlfonsoInputs.lensMaterial === 'hidrofilico' && !lensMaterialLower.includes('hydrophilic')) return false;
+                if (drAlfonsoInputs.lensMaterial === 'hidrofobico' && !lensMaterialLower.includes('hydrophobic')) return false;
+            }
+            if (drAlfonsoInputs.hapticDesign !== 'any' && lens.specifications.hapticDesign !== drAlfonsoInputs.hapticDesign) return false;
+            if (drAlfonsoInputs.toric !== 'any') {
+                const isToric = lens.specifications.toric;
+                if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
+                if (drAlfonsoInputs.toric === 'no' && isToric) return false;
+            }
+            return true;
+        });
+    }
+    
+    return lenses.filter(lens => {
+      if (activeTab === FilterTab.ADVANCED && advFilters.keyword) {
+        const kw = advFilters.keyword.toLowerCase();
+        const match = lens.name.toLowerCase().includes(kw) || 
+                      lens.manufacturer.toLowerCase().includes(kw);
+        if (!match) return false;
+      }
+
+      if (activeTab === FilterTab.BASIC) {
+        if (basicFilters.manufacturer !== 'all' && lens.manufacturer !== basicFilters.manufacturer) return false;
+        if (basicFilters.opticConcept !== 'all') {
+           const lensConcept = lens.specifications.opticConcept.toLowerCase();
+           const filterConcept = basicFilters.opticConcept.toLowerCase();
+           if (lensConcept !== filterConcept) return false;
+        }
+        if (basicFilters.toric !== 'all') {
+          const isToric = lens.specifications.toric;
+          if (basicFilters.toric === 'yes' && !isToric) return false;
+          if (basicFilters.toric === 'no' && isToric) return false;
+        }
+        if (basicFilters.technology !== 'all' && lens.specifications.technology !== basicFilters.technology) return false;
+      } else { // ADVANCED
+        if (lens.availability.minSphere > advFilters.filterMinSphere) return false;
+        if (lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
+        if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
+        if (advFilters.isYellowFilter) {
+           const filterStr = lens.specifications.filter.toLowerCase();
+           if (!filterStr.includes('yellow') && !filterStr.includes('blue-light')) return false;
+        }
+        if (advFilters.hydroType !== 'all' && !lens.specifications.hydro.toLowerCase().includes(advFilters.hydroType)) return false;
+      }
+      return true;
+    });
+  }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs, recommendedLensesBase]);
+
+  const recommendationSummary = useMemo(() => {
+    if (activeTab !== FilterTab.DR_ALFONSO) return null;
+    const parts = [];
+    if (drAlfonsoInputs.opticConcept !== 'any') {
+        parts.push(drAlfonsoInputs.opticConcept);
+    } else if (recommendedConcepts.length > 0) {
+        parts.push(recommendedConcepts.join(' / '));
+    }
+    if (drAlfonsoInputs.lensMaterial !== 'any') {
+        parts.push(drAlfonsoInputs.lensMaterial === 'hidrofilico' ? 'Hidrofílico' : 'Hidrofóbico');
+    }
+    if (drAlfonsoInputs.hapticDesign !== 'any') {
+        parts.push(`Diseño ${drAlfonsoInputs.hapticDesign}`);
+    }
+    if (drAlfonsoInputs.toric !== 'any') {
+        parts.push(drAlfonsoInputs.toric === 'yes' ? 'Tórica' : 'No Tórica');
+    }
+    if (parts.length === 0) return null;
+    if (parts.length === 1) return parts[0];
+    const last = parts.pop();
+    return `${parts.join(', ')} y ${last}`;
+  }, [recommendedConcepts, drAlfonsoInputs, activeTab]);
+
+  const selectedLensesForComparison = useMemo(() => {
+    return lenses.filter(l => selectedLensIds.has(l.id));
+  }, [lenses, selectedLensIds]);
+
+  const noLensesMessage = useMemo(() => {
+    if (activeTab === FilterTab.DR_ALFONSO) {
+        const hasBlock1Input = drAlfonsoInputs.age || drAlfonsoInputs.axialLength || drAlfonsoInputs.lensStatus !== 'any';
+        
+        if (!hasBlock1Input) {
+            return "Introduzca los parámetros principales del paciente para iniciar la recomendación.";
+        }
+        if (recommendedConcepts.length === 0 && recommendedLensesBase.length === 0) {
+            return "No se ha podido determinar un concepto clínico con los datos actuales. Pruebe a ajustar los parámetros.";
+        }
+        return "Se han encontrado conceptos clínicos compatibles, pero ninguna lente de la base de datos cumple con todos los criterios seleccionados (incluyendo material, diseño y toricidad).";
+    }
+    return "Pruebe a ajustar los filtros para ver más resultados.";
+  }, [activeTab, drAlfonsoInputs, recommendedConcepts.length, recommendedLensesBase.length]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-slate-500 animate-pulse">Processing IOL Database...</div>;
+  }
+  
+  const renderResults = () => {
+     if (filteredLenses.length === 0) {
+       return (
+         <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-slate-900">No se encontraron lentes</h3>
+            <p className="text-slate-500 mt-1 max-w-md mx-auto">{noLensesMessage}</p>
+         </div>
+       );
+     }
+     return (
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+         {filteredLenses.map(lens => (
+           <LensCard 
+             key={lens.id} 
+             lens={lens} 
+             isSelected={selectedLensIds.has(lens.id)}
+             onToggleSelect={toggleLensSelection}
+           />
+         ))}
+       </div>
+     );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
+      <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
+
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight">IOL Explorer</h1>
+          </div>
+          <div className="flex items-center gap-2 md:gap-4">
+             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                {isAdvancedUnlocked || isDrAlfonsoUnlocked ? <Unlock className="w-4 h-4 text-emerald-500" /> : <KeyRound className="w-4 h-4 text-slate-400" />}
+                <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="Admin Code" className="bg-transparent border-none text-sm w-24 focus:ring-0 focus:outline-none placeholder-slate-400 text-slate-700" />
+             </div>
+             <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+             <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 hidden md:block">{lenses.length} lenses</span>
+                {isOfflineMode ? <Tooltip content="Using cached data. Cannot connect to GitHub." /> : <div className="w-2 h-2 rounded-full bg-emerald-500" title="Live data from GitHub" />}
+             </div>
+             {Object.keys(overrideData).length > 0 && (
+                <button onClick={handleClearOverrides} className="flex items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-colors" title="Limpiar modificaciones">
+                  <Trash2 className="w-4 h-4" /><span className="hidden sm:inline">Limpiar</span>
+                </button>
+             )}
+             <button onClick={() => overrideFileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors" title="Cargar archivo de modificaciones (.json)">
+                <FilePlus className="w-4 h-4" /><span className="hidden sm:inline">Complementar</span>
+             </button>
+             <button onClick={() => xmlFileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors" title="Cargar base de datos principal (.xml)">
+                <Upload className="w-4 h-4" /><span className="hidden sm:inline">Upload</span>
+             </button>
+             <a href="https://iolcon.org/lensesTable.php" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 rounded-lg text-sm font-medium transition-colors">
+                <Globe className="w-4 h-4" /><span className="hidden sm:inline">IOLcon</span>
+             </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex space-x-1 rounded-xl bg-slate-200 p-1 mb-8 max-w-lg mx-auto relative">
+          <button onClick={() => setActiveTab(FilterTab.BASIC)} className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out ${activeTab === FilterTab.BASIC ? 'bg-white text-blue-700 shadow' : 'text-slate-600 hover:bg-white/[0.12] hover:text-blue-800'}`}>Basic Filters</button>
+          <button onClick={() => { if (isAdvancedUnlocked) setActiveTab(FilterTab.ADVANCED); }} disabled={!isAdvancedUnlocked} className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2 ${activeTab === FilterTab.ADVANCED ? 'bg-white text-blue-700 shadow' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/[0.12] hover:text-blue-800' : 'text-slate-400 opacity-60 cursor-not-allowed'}`}>Advanced Search {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}</button>
+          <button onClick={() => { if (isDrAlfonsoUnlocked) setActiveTab(FilterTab.DR_ALFONSO); }} disabled={!isDrAlfonsoUnlocked} className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition duration-150 ease-in-out flex items-center justify-center gap-2 ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white text-teal-700 shadow' : isDrAlfonsoUnlocked ? 'text-slate-600 hover:bg-white/[0.12] hover:text-teal-800' : 'text-slate-400 opacity-60 cursor-not-allowed'}`}><User className="w-4 h-4" />Dr. Alfonso {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}</button>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8 relative">
+          <div className="absolute top-4 right-5"><button onClick={handleResetFilters} className="text-xs font-medium text-slate-500 hover:text-blue-600 flex items-center gap-1.5 transition-colors px-2 py-1 rounded hover:bg-slate-50"><RotateCcw className="w-3.5 h-3.5" />Reset All</button></div>
+          {activeTab === FilterTab.BASIC ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 pt-6">
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Manufacturer</label>
+                <div className="relative">
+                  <select className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.manufacturer} onChange={(e) => setBasicFilters({...basicFilters, manufacturer: e.target.value})}>
+                    <option value="all">All Manufacturers</option>
+                    {uniqueManufacturers.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Tecnología</label>
+                <div className="relative">
+                  <select className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.technology} onChange={(e) => setBasicFilters({ ...basicFilters, technology: e.target.value })}>
+                    <option value="all">Todas</option><option value="Refractiva">Refractiva</option><option value="Difractiva">Difractiva</option><option value="Híbrida">Híbrida</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2 text-blue-800"><Stethoscope className="w-3.5 h-3.5 mr-1.5" />Clinical Concept</label>
+                <div className="relative">
+                  <select className="w-full appearance-none bg-blue-50 border border-blue-200 text-blue-900 font-medium py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.clinicalConcept} onChange={(e) => handleClinicalConceptChange(e.target.value)}>
+                    <option value="all">Custom Selection</option>
+                    {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Optic Concept</label>
+                <div className="relative">
+                  <select className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500" value={basicFilters.opticConcept} onChange={(e) => setBasicFilters({...basicFilters, opticConcept: e.target.value, clinicalConcept: 'all'})}>
+                    <option value="all">All Concepts</option>
+                    {Array.from(new Set([...uniqueConcepts, 'monofocal', 'Monofocal +', 'multifocal', 'EDoF', 'bifocal', 'trifocal'])).sort().map(c => (<option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"><ChevronDown className="h-4 w-4" /></div>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Toric</label>
+                <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200 h-[50px] items-center">
+                  {(['all', 'yes', 'no'] as const).map((opt) => (<button key={opt} onClick={() => setBasicFilters({...basicFilters, toric: opt})} className={`flex-1 py-2 text-sm font-medium rounded-md capitalize transition-colors ${basicFilters.toric === opt ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}>{opt === 'all' ? 'Any' : opt}</button>))}
+                </div>
+              </div>
+            </div>
+          ) : activeTab === FilterTab.ADVANCED ? (
+            <div className="space-y-6 pt-6">
+              <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div><input type="text" className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Search by Name or Manufacturer..." value={advFilters.keyword} onChange={(e) => setAdvFilters({...advFilters, keyword: e.target.value})} /></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div className="md:col-span-2 px-2"><label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Availability Range Requirement</label><DualRangeSlider min={-10} max={60} minValue={advFilters.filterMinSphere} maxValue={advFilters.filterMaxSphere} onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})} unit="D" /><p className="text-xs text-slate-400 mt-1">Find lenses covering <strong>{advFilters.filterMinSphere}D</strong> to <strong>{advFilters.filterMaxSphere}D</strong>.</p></div>
+                 <div><label className="flex items-center text-sm font-semibold text-slate-700 mb-2">Material Type</label><select className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-blue-500" value={advFilters.hydroType} onChange={(e) => setAdvFilters({...advFilters, hydroType: e.target.value})}><option value="all">All Materials</option><option value="hydrophobic">Hydrophobic</option><option value="hydrophilic">Hydrophilic</option></select></div>
+                 <div className="flex flex-col justify-center gap-3"><label className="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isPreloaded} onChange={(e) => setAdvFilters({...advFilters, isPreloaded: e.target.checked})} /><span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Preloaded Only</span></label><label className="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={advFilters.isYellowFilter} onChange={(e) => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})} /><span className="text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">Yellow/Blue Filter</span></label></div>
+              </div>
+            </div>
+          ) : ( 
+            <>
+              <div className="pt-6 space-y-8">
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-bold text-teal-800 flex items-center gap-2"><ListTree className="w-5 h-5" />Bloque 1: Parámetros Principales</h3>
+                      {isDrAlfonsoUnlocked && (<button onClick={() => setIsRulesManagerOpen(true)} className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors" title="Gestionar Reglas Clínicas"><Database className="w-4 h-4" />Gestionar Reglas</button>)}
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Edad</label><input type="number" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 58" /></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Longitud Axial</label><input type="number" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500" placeholder="Ej: 23.5" /></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cristalino</label><select value={drAlfonsoInputs.lensStatus} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensStatus: e.target.value as DrAlfonsoInputs['lensStatus']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="transparente">Transparente</option><option value="presbicia">Presbicia</option><option value="disfuncional">Disfuncional</option><option value="catarata">Catarata</option><option value="otro">Otro</option></select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Refracción</label><select value={drAlfonsoInputs.refraction} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, refraction: e.target.value as DrAlfonsoInputs['refraction']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500"><option value="any">Cualquiera</option><option value="hipermetrope_extremo">Hipermetrope extremo</option><option value="hipermetrope_alto">Hipermetrope Alto</option><option value="emetrope">Emetrope +/-</option><option value="miope_alto">Miope Alto</option><option value="miope_extremo">Miope Extremo</option></select></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><CheckSquare className="w-5 h-5" />Bloque 2: Condiciones Adicionales</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-4 items-end">
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">LVC</label><select value={drAlfonsoInputs.lvc} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(LVC_OPTIONS).map(([key, label]:[string,string]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">UDVA</label><select value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(UDVA_OPTIONS).map(([key, label]:[string,string]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Lentes de Contacto</label><select value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(CONTACT_LENS_OPTIONS).map(([key, label]:[string,string]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div><label className="block text-sm font-semibold text-slate-700 mb-1">Cámara Anterior</label><select value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500">{Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([key, label]:[string,string]) => (<option key={key} value={key}>{label}</option>))}</select></div>
+                        <div>
+                           <label className="block text-sm font-semibold text-slate-700 mb-1">Retina</label>
+                           <select value={drAlfonsoInputs.retina} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, retina: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[42px]">
+                              {Object.entries(RETINA_OPTIONS).map(([key, label]:[string,string]) => (<option key={key} value={key}>{label}</option>))}
+                           </select>
+                        </div>
+                     </div>
+                </div>
+                 <div className="bg-slate-50/70 p-5 rounded-xl border border-slate-200">
+                    <h3 className="text-lg font-bold text-teal-800 mb-3 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" />Bloque 3: Conceptos Clínicos Compatibles</h3>
+                    {recommendedConcepts.length > 0 ? (<div className="flex flex-wrap gap-3">{recommendedConcepts.map(concept => (<span key={concept} className="px-4 py-2 rounded-full text-sm font-bold bg-teal-100 text-teal-900 border border-teal-200 shadow-sm animate-in fade-in duration-300">{concept}</span>))}</div>) : (<p className="text-slate-500">Introduzca datos en el Bloque 1 para ver los conceptos recomendados.</p>)}
+                 </div>
+                 <div>
+                    <h3 className="text-lg font-bold text-teal-800 mb-4 flex items-center gap-2"><Filter className="w-5 h-5" />Bloque 4: Filtros Opcionales de Lente</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-4 items-center">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Concepto Óptico</label>
+                            <select value={drAlfonsoInputs.opticConcept} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, opticConcept: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
+                                <option value="any">Cualquiera</option>
+                                {availableOpticConcepts.map(concept => (<option key={concept} value={concept}>{concept}</option>))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Tecnología</label>
+                            <select value={drAlfonsoInputs.technology} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, technology: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
+                                <option value="any">Cualquiera</option><option value="Refractiva">Refractiva</option><option value="Difractiva">Difractiva</option><option value="Híbrida">Híbrida</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Material de la Lente</label>
+                            <select value={drAlfonsoInputs.lensMaterial} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lensMaterial: e.target.value as DrAlfonsoInputs['lensMaterial']})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
+                                <option value="any">Cualquiera</option>
+                                {availableMaterials.map(material => (<option key={material} value={material}>{material.charAt(0).toUpperCase() + material.slice(1)}</option>))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Diseño del Háptico</label>
+                            <select value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-lg focus:outline-none focus:border-teal-500 h-[44px]">
+                                <option value="any">Cualquiera</option>
+                                {availableHapticDesigns.map(design => (<option key={design} value={design}>{design}</option>))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Tórica</label>
+                            <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200 h-[44px] items-center">
+                                {(['any', 'yes', 'no'] as const).map((opt) => (<button key={opt} onClick={() => setDrAlfonsoInputs({...drAlfonsoInputs, toric: opt})} className={`flex-1 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${drAlfonsoInputs.toric === opt ? 'bg-white text-teal-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}>{opt === 'any' ? 'Todas' : opt}</button>))}
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+              </div>
+              <div className="border-t border-slate-200 -mx-6 mt-8 mb-6"></div>
+              <div className="px-0">
+                 <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-slate-800">Resultados de la Recomendación</h2>
+                    <span className="text-sm font-medium bg-teal-100 text-teal-800 px-3 py-1 rounded-full">{filteredLenses.length} lente(s) encontrada(s)</span>
+                 </div>
+                 {recommendationSummary && filteredLenses.length > 0 && (
+                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 flex items-start gap-3">
+                        <Info className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                           <p className="text-sm font-semibold text-slate-800">Mostrando {filteredLenses.length} lente(s) que cumplen:</p>
+                           <p className="text-sm text-slate-600 italic mt-1">{recommendationSummary}</p>
+                        </div>
+                    </div>
+                 )}
+                 {renderResults()}
+              </div>
+            </>
+          )}
+        </div>
+        {activeTab !== FilterTab.DR_ALFONSO && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Lentes Encontradas</h2>
+              <span className="text-sm font-medium bg-slate-100 text-slate-700 px-3 py-1 rounded-full">Mostrando {filteredLenses.length} de {lenses.length} lentes</span>
+            </div>
+            {renderResults()}
+          </>
+        )}
+      </main>
+
+      {selectedLensIds.size > 0 && (
+        <div className="fixed bottom-0 inset-x-0 p-4 bg-white border-t border-slate-200 shadow-lg z-30 animate-in slide-in-from-bottom-5">
+           <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">{selectedLensIds.size}</div>
+                 <span className="text-slate-700 font-medium">Lentes Seleccionadas</span>
+                 <button onClick={clearSelection} className="text-xs text-red-500 hover:text-red-700 ml-2 font-medium">Clear</button>
+              </div>
+              <button onClick={() => setShowComparison(true)} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-colors"><ArrowLeftRight className="w-5 h-5" />Comparar Lentes</button>
+           </div>
+        </div>
+      )}
+      {showComparison && <ComparisonView lenses={selectedLensesForComparison} onClose={() => setShowComparison(false)} onRemove={removeLensFromComparison} onFindSimilar={handleFindZeissSimilar} />}
+      {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} />}
+    </div>
+  );
+}
+
+export default App;
