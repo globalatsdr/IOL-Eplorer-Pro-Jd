@@ -1,4 +1,4 @@
-import { Lens, SphereRange } from '../types';
+import { Lens, SphereRange, ConstantValues } from '../types';
 
 export const parseIOLData = (xmlString: string): Lens[] => {
   const parser = new DOMParser();
@@ -12,6 +12,23 @@ export const parseIOLData = (xmlString: string): Lens[] => {
       const v = parseFloat(getV(tag, p));
       return isNaN(v) ? null : v;
     };
+
+    const parseConstants = (container: Element | null): ConstantValues => {
+      if (!container) return {};
+      return {
+        ultrasound: getF("Ultrasound", container),
+        srkt: getF("SRKt", container),
+        pacd: getF("pACD", container),
+        sf: getF("sf", container),
+        haigis_a0: getF("Haigis_a0", container),
+        haigis_a1: getF("Haigis_a1", container),
+        haigis_a2: getF("Haigis_a2", container),
+        hoffer_q: getF("HofferQ", container) || getF("pACD", container), // Fallback common in some XMLs
+        holladay_1: getF("Holladay1", container),
+        barrett: getF("Barrett", container),
+      };
+    };
+
     const sNode = node.getElementsByTagName("Specifications")[0];
     const aNode = node.getElementsByTagName("Availability")[0];
     
@@ -31,6 +48,11 @@ export const parseIOLData = (xmlString: string): Lens[] => {
     // Parsear adiciones
     const additionNodes = Array.from(aNode?.getElementsByTagName("Addition") || []);
     const additions = additionNodes.map(add => parseFloat(add.textContent || "0")).filter(n => !isNaN(n));
+
+    // Obtener nodos de constantes
+    const constantNodes = Array.from(node.getElementsByTagName("Constants"));
+    const nominalNode = constantNodes.find(c => c.getAttribute("type") === "nominal");
+    const optimizedNode = constantNodes.find(c => c.getAttribute("type") === "optimized");
 
     lenses.push({
       id: node.getAttribute("id") || Math.random().toString(),
@@ -68,12 +90,9 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         totalDiopterRange: (maxS !== -100 && minS !== 100) ? (maxS - minS) : 0
       },
       constants: {
-        sourceType: 'nominal',
-        source: {
-          srkt: getF("SRKt", node.getElementsByTagName("Constants")[0]),
-          ultrasound: getF("Ultrasound", node.getElementsByTagName("Constants")[0])
-        },
-        optimized: {}
+        sourceType: (nominalNode?.getAttribute("type") as any) || 'nominal',
+        source: parseConstants(nominalNode || constantNodes[0]),
+        optimized: parseConstants(optimizedNode || null)
       }
     });
   });
