@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
+import { CLINICAL_CONCEPTS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
 import { AGE_RANGES, LA_RANGES, LENS_STATUS_OPTIONS } from '../services/recommendationService';
 import { Clipboard, Check, ArrowLeft, Lightbulb } from 'lucide-react';
 
@@ -56,9 +56,10 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
               {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          {/* ... Resto del formulario simplificado ... */}
           <button onClick={handleGenerateCode} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Generar Código</button>
           {generatedCode && (
-            <pre className="bg-slate-800 text-white p-4 rounded text-xs overflow-x-auto">{generatedCode}</pre>
+            <pre className="bg-slate-800 text-white p-4 rounded text-xs overflow-x-auto mt-4">{generatedCode}</pre>
           )}
         </div>
       </div>
