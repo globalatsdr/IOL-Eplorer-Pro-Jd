@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lens, SphereRange } from '../types';
+import { Lens, SphereRange, ConstantValues } from '../types';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -37,6 +37,19 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
     e.stopPropagation();
     const query = encodeURIComponent(`${lens.manufacturer} ${lens.name} IOL specifications`);
     window.open(`https://www.google.com/search?q=${query}`, '_blank');
+  };
+
+  const renderConstantRow = (label: string, nominal?: number | null, optimized?: number | null) => {
+    if (nominal === undefined && optimized === undefined) return null;
+    if (nominal === null && optimized === null) return null;
+
+    return (
+      <div className="flex justify-between items-center text-[11px] py-1 border-b border-slate-50 last:border-0">
+        <span className="text-slate-400 font-bold uppercase tracking-tighter w-1/3">{label}</span>
+        <span className="text-slate-800 font-black text-center w-1/3">{nominal || '-'}</span>
+        <span className="text-blue-600 font-black text-right w-1/3">{optimized || '-'}</span>
+      </div>
+    );
   };
 
   return (
@@ -107,37 +120,27 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         <div className="px-8 pb-8 pt-2 bg-white animate-in slide-in-from-top-2 duration-300">
           <div className="space-y-8">
             
+            {/* Constantes Exhaustivas */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                <Settings className="w-3.5 h-3.5"/> Constantes de Cálculo
+                <Settings className="w-3.5 h-3.5"/> Comparativa de Constantes
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Nominal / Ulib</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span className="text-slate-400">SRK/T:</span>
-                      <span className="text-slate-800">{lens.constants.source.srkt || '-'}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span className="text-slate-400">Ultras.:</span>
-                      <span className="text-slate-800">{lens.constants.source.ultrasound || '-'}</span>
-                    </div>
-                  </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1">
+                <div className="flex justify-between mb-4 border-b border-slate-200 pb-2">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest w-1/3">Constante</span>
+                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest text-center w-1/3">Nominal/Ulib</span>
+                  <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest text-right w-1/3">Optimizado</span>
                 </div>
-                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-                  <p className="text-[10px] font-black text-blue-400 uppercase mb-3 tracking-widest">Optimizado</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span className="text-blue-400">SRK/T:</span>
-                      <span className="text-blue-800">{lens.constants.optimized.srkt || '-'}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span className="text-blue-400">Hoffer Q:</span>
-                      <span className="text-blue-800">{lens.constants.optimized.hoffer_q || '-'}</span>
-                    </div>
-                  </div>
-                </div>
+                {renderConstantRow("SRK/T", lens.constants.source.srkt, lens.constants.optimized.srkt)}
+                {renderConstantRow("US", lens.constants.source.ultrasound, lens.constants.optimized.ultrasound)}
+                {renderConstantRow("pACD", lens.constants.source.pacd, lens.constants.optimized.pacd)}
+                {renderConstantRow("sf", lens.constants.source.sf, lens.constants.optimized.sf)}
+                {renderConstantRow("Haigis a0", lens.constants.source.haigis_a0, lens.constants.optimized.haigis_a0)}
+                {renderConstantRow("Haigis a1", lens.constants.source.haigis_a1, lens.constants.optimized.haigis_a1)}
+                {renderConstantRow("Haigis a2", lens.constants.source.haigis_a2, lens.constants.optimized.haigis_a2)}
+                {renderConstantRow("Hoffer Q", lens.constants.source.hoffer_q, lens.constants.optimized.hoffer_q)}
+                {renderConstantRow("Holladay 1", lens.constants.source.holladay_1, lens.constants.optimized.holladay_1)}
+                {renderConstantRow("Barrett", lens.constants.source.barrett, lens.constants.optimized.barrett)}
               </div>
             </div>
 
