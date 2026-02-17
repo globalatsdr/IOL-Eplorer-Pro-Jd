@@ -27,7 +27,8 @@ import {
   ExternalLink,
   FileJson,
   Database,
-  Trash2
+  Trash2,
+  Stethoscope
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -191,20 +192,32 @@ function App() {
   };
 
   const findZeissEquivalent = (lens: Lens) => {
+    // 1. Limpiamos filtros actuales
+    const conceptToFilter = lens.specifications.opticConcept;
+    const isToric = lens.specifications.toric ? 'yes' : 'no';
+    
+    // 2. Aplicamos el nuevo estado de filtros
     setBasicFilters({
       manufacturer: 'ZEISS',
       clinicalConcept: 'all',
-      opticConcept: lens.specifications.opticConcept,
-      toric: lens.specifications.toric ? 'yes' : 'no',
+      opticConcept: conceptToFilter,
+      toric: isToric,
       technology: 'all'
     });
-    setAdvFilters({
-      ...advFilters,
+    
+    setAdvFilters(prev => ({
+      ...prev,
       keyword: ''
-    });
+    }));
+    
+    // 3. Cambiamos a la pestaña básica y cerramos comparativa
     setActiveTab(FilterTab.BASIC);
     setShowComparison(false);
-    window.scrollTo({ top: 400, behavior: 'smooth' });
+    
+    // 4. Scroll suave a la lista
+    setTimeout(() => {
+      window.scrollTo({ top: 450, behavior: 'smooth' });
+    }, 100);
   };
 
   const toggleLensSelection = (lens: Lens) => {
@@ -253,13 +266,17 @@ function App() {
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
       <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
+      {/* Header Restaurado con Logo */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-900/20">
+            <Stethoscope className="w-6 h-6 text-white" />
+          </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">IOL Explorer <span className="text-blue-600">Pro</span></h1>
-            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Clinical Decision Support</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Advance Clinical Service</span>
           </div>
-          <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-all group">
+          <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="ml-4 flex items-center gap-2 text-[11px] bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-all group">
             <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">IOLcon.org</span>
           </a>
         </div>
