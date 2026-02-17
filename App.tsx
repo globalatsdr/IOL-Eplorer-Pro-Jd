@@ -27,8 +27,7 @@ import {
   ExternalLink,
   FileJson,
   Database,
-  Trash2,
-  Stethoscope
+  Trash2
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -192,11 +191,9 @@ function App() {
   };
 
   const findZeissEquivalent = (lens: Lens) => {
-    // 1. Limpiamos filtros actuales
     const conceptToFilter = lens.specifications.opticConcept;
     const isToric = lens.specifications.toric ? 'yes' : 'no';
     
-    // 2. Aplicamos el nuevo estado de filtros para buscar equivalentes en Zeiss
     setBasicFilters({
       manufacturer: 'ZEISS',
       clinicalConcept: 'all',
@@ -210,11 +207,9 @@ function App() {
       keyword: ''
     }));
     
-    // 3. Cambiamos a la pestaña básica y cerramos comparativa
     setActiveTab(FilterTab.BASIC);
     setShowComparison(false);
     
-    // 4. Scroll suave a la lista de resultados
     setTimeout(() => {
       window.scrollTo({ top: 450, behavior: 'smooth' });
     }, 150);
@@ -266,7 +261,6 @@ function App() {
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
       <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
-      {/* Header Restaurado con Logo oficial desde el repositorio */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
