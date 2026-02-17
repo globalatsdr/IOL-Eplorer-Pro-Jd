@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { IOL_XML_DATA, CLINICAL_CONCEPTS } from './constants';
 import { parseIOLData } from './utils/parser';
-import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs } from './types';
+import { Lens, FilterTab, BasicFilters, DrAlfonsoInputs } from './types';
 import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
@@ -34,7 +34,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
-  const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
   const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
   const [passwordInput, setPasswordInput] = useState('');
@@ -105,7 +104,7 @@ function App() {
           setBaseLenses(newData);
           localStorage.setItem(STORAGE_KEY_XML, text);
         }
-      } catch (error) { console.log("Offline mode"); } finally { setLoading(false); }
+      } catch (error) { console.log("Offline mode active"); } finally { setLoading(false); }
     };
     initData();
   }, []);
