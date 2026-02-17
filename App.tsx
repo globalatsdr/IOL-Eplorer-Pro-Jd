@@ -1,14 +1,12 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { IOL_XML_DATA, CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from './constants';
+import { IOL_XML_DATA, CLINICAL_CONCEPTS } from './constants';
 import { parseIOLData } from './utils/parser';
 import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs } from './types';
 import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
-import Tooltip from './components/Tooltip';
-import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager';
-import { Search, ChevronDown, AlertCircle, Upload, ArrowLeftRight, Lock, Unlock, KeyRound, Stethoscope, Globe, RotateCcw, User, CheckSquare, ListTree, Lightbulb, Filter, Database, Info, FilePlus, Trash2 } from 'lucide-react';
+import { Upload, Lock, RotateCcw } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 const STORAGE_KEY_XML = 'iol_data_cache_v2';
@@ -35,15 +33,12 @@ function App() {
   const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
   const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
-  const ADVANCED_UNLOCK_PASSWORD = "1234!";
   const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
   const [passwordInput, setPasswordInput] = useState('');
   
-  const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD;
   const isDrAlfonsoUnlocked = passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
 
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
@@ -56,15 +51,6 @@ function App() {
     opticConcept: 'all',
     toric: 'all',
     technology: 'all'
-  });
-
-  const [advFilters, setAdvFilters] = useState<AdvancedFilters>({
-    filterMinSphere: 10,
-    filterMaxSphere: 30,
-    isPreloaded: false,
-    isYellowFilter: false,
-    hydroType: 'all',
-    keyword: ''
   });
 
   const [drAlfonsoInputs, setDrAlfonsoInputs] = useState<DrAlfonsoInputs>({
@@ -93,7 +79,6 @@ function App() {
   }, [recommendedConcepts, activeTab]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
-  const uniqueConcepts = useMemo(() => Array.from(new Set(lenses.map(l => l.specifications.opticConcept).filter(Boolean))).sort(), [lenses]);
 
   useEffect(() => {
     const initData = async () => {
@@ -119,9 +104,8 @@ function App() {
         if (newData.length > 0) {
           setBaseLenses(newData);
           localStorage.setItem(STORAGE_KEY_XML, text);
-          setIsOfflineMode(false);
         }
-      } catch (error) { setIsOfflineMode(true); } finally { setLoading(false); }
+      } catch (error) { console.log("Offline mode"); } finally { setLoading(false); }
     };
     initData();
   }, []);
@@ -138,32 +122,12 @@ function App() {
           setBaseLenses(parsedData);
           localStorage.setItem(STORAGE_KEY_XML, text);
           setSelectedLensIds(new Set());
-          setIsOfflineMode(true); 
           alert(`Cargadas ${parsedData.length} lentes.`);
         } catch (err) { alert('Error al leer XML.'); }
       }
     };
     reader.readAsText(file);
     if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
-  };
-
-  const handleOverrideUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        try {
-          const jsonData = JSON.parse(text);
-          setOverrideData(jsonData);
-          localStorage.setItem(STORAGE_KEY_OVERRIDES, text);
-          alert(`Modificaciones cargadas.`);
-        } catch (err) { alert('Error al leer JSON.'); }
-      }
-    };
-    reader.readAsText(file);
-    if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
   };
 
   const toggleLensSelection = (lens: Lens) => {
@@ -190,7 +154,6 @@ function App() {
 
   const handleResetFilters = () => {
     setBasicFilters({ manufacturer: 'all', clinicalConcept: 'all', opticConcept: 'all', toric: 'all', technology: 'all' });
-    setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '' });
     setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
   };
 
@@ -225,7 +188,6 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
-      <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm px-4 h-16 flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-800">IOL Explorer Pro</h1>
