@@ -25,12 +25,13 @@ import {
   Eye, 
   Info,
   ExternalLink,
-  FileJson
+  FileJson,
+  Database
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
-const STORAGE_KEY_XML = 'iol_data_cache_v2';
-const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v1';
+const STORAGE_KEY_XML = 'iol_data_cache_v3';
+const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v2';
 
 const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
 
@@ -109,10 +110,9 @@ function App() {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
-      
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
       if (cachedOverrides) {
-        try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) { console.error("Error loading overrides"); }
+        try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
       }
 
       const cachedXML = localStorage.getItem(STORAGE_KEY_XML);
@@ -135,7 +135,7 @@ function App() {
             localStorage.setItem(STORAGE_KEY_XML, text);
           }
         }
-      } catch (error) { console.log("Usando DB local/cache"); } finally { setLoading(false); }
+      } catch (error) { console.log("Modo offline"); } finally { setLoading(false); }
     };
     initData();
   }, []);
@@ -152,8 +152,8 @@ function App() {
           setBaseLenses(parsedData);
           localStorage.setItem(STORAGE_KEY_XML, text);
           setSelectedLensIds(new Set());
-          alert(`Cargadas ${parsedData.length} lentes.`);
-        } catch (err) { alert('Error al leer XML.'); }
+          alert(`Base de datos actualizada: ${parsedData.length} lentes.`);
+        } catch (err) { alert('Error al procesar el XML.'); }
       }
     };
     reader.readAsText(file);
@@ -169,39 +169,27 @@ function App() {
         const json = JSON.parse(e.target?.result as string);
         setOverrideData(json);
         localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(json));
-        alert('Modificaciones cargadas con éxito.');
-      } catch (err) { alert('Error al leer el archivo JSON de modificaciones.'); }
+        alert('Modificaciones aplicadas.');
+      } catch (err) { alert('Error al cargar el JSON.'); }
     };
     reader.readAsText(file);
     if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
-  };
-
-  const toggleLensSelection = (lens: Lens) => {
-    const newSelection = new Set(selectedLensIds);
-    if (newSelection.has(lens.id)) newSelection.delete(lens.id);
-    else {
-      if (newSelection.size >= 5) { alert("Máximo 5 lentes."); return; }
-      newSelection.add(lens.id);
-    }
-    setSelectedLensIds(newSelection);
-  };
-
-  const handleClinicalConceptChange = (val: string) => {
-    let mappedOpticConcept = basicFilters.opticConcept;
-    if (val === "Partial Range of Field-Narrow") mappedOpticConcept = "monofocal";
-    else if (val === "Partial Range of Field-Enhance") mappedOpticConcept = "Monofocal +";
-    else if (val === "Partial Range of Field-Extend") mappedOpticConcept = "EDoF";
-    else if (val === "Full Range of Field-Steep") mappedOpticConcept = "bifocal";
-    else if (val === "Full Range of Field-Smooth") mappedOpticConcept = "multifocal";
-    else if (val === "Full Range of Field-Continuous") mappedOpticConcept = "multifocal";
-    else if (val === "all") mappedOpticConcept = "all";
-    setBasicFilters({ ...basicFilters, clinicalConcept: val, opticConcept: mappedOpticConcept });
   };
 
   const handleResetFilters = () => {
     setBasicFilters({ manufacturer: 'all', clinicalConcept: 'all', opticConcept: 'all', toric: 'all', technology: 'all' });
     setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '' });
     setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
+  };
+
+  const toggleLensSelection = (lens: Lens) => {
+    const newSelection = new Set(selectedLensIds);
+    if (newSelection.has(lens.id)) newSelection.delete(lens.id);
+    else {
+      if (newSelection.size >= 5) { alert("Máximo 5 lentes para comparar."); return; }
+      newSelection.add(lens.id);
+    }
+    setSelectedLensIds(newSelection);
   };
 
   const filteredLenses = useMemo(() => {
@@ -233,101 +221,120 @@ function App() {
     });
   }, [lenses, activeTab, basicFilters, advFilters, drAlfonsoInputs]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Cargando base de datos...</div>;
+  if (loading) return <div className="min-h-screen flex flex-col items-center justify-center text-slate-500 gap-4"><Database className="w-10 h-10 animate-pulse text-blue-500"/>Cargando IOL Explorer Pro...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-24">
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
       <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-slate-800">IOL Explorer Pro</h1>
-          <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="hidden md:flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold hover:bg-blue-100 transition-colors">
-            <ExternalLink className="w-3 h-3" /> IOLcon.org
+      {/* Header Restaurado */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">IOL Explorer <span className="text-blue-600">Pro</span></h1>
+            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Clinical Decision Support</span>
+          </div>
+          <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-all group">
+            <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">IOLcon.org</span>
           </a>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <button onClick={() => xmlFileInputRef.current?.click()} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Cargar XML Base">
-              <Upload className="w-4 h-4" />
+        <div className="flex items-center gap-4">
+          {/* Toolbar Acciones */}
+          <div className="hidden sm:flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
+            <button onClick={() => xmlFileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-bold text-slate-700 hover:text-blue-600 transition-all border border-slate-200/50">
+              <Upload className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Cargar XML</span>
             </button>
-            <button onClick={() => overrideFileInputRef.current?.click()} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Cargar Modificaciones (JSON)">
-              <FileJson className="w-4 h-4" />
+            <button onClick={() => overrideFileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 hover:bg-white rounded-lg transition-all text-xs font-bold text-slate-700 hover:text-orange-600">
+              <FileJson className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Modificaciones</span>
             </button>
-            <button onClick={handleResetFilters} className="p-2 hover:bg-white rounded-md transition-all text-slate-600" title="Limpiar Filtros">
+            <button onClick={handleResetFilters} className="p-2 hover:bg-white rounded-lg transition-all text-slate-500 hover:text-red-600" title="Limpiar todo">
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
+
+          <div className="h-10 w-px bg-slate-200 mx-1"></div>
           
-          <div className="h-8 w-px bg-slate-200 mx-1"></div>
-          
-          <input 
-            type="password" 
-            value={passwordInput} 
-            onChange={(e) => setPasswordInput(e.target.value)} 
-            placeholder="Pass" 
-            className="bg-slate-100 border-none text-xs w-16 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-blue-400" 
-          />
+          <div className="relative">
+            <input 
+              type="password" 
+              value={passwordInput} 
+              onChange={(e) => setPasswordInput(e.target.value)} 
+              placeholder="Unlock" 
+              className="bg-slate-100 border border-slate-200 text-xs w-20 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+            />
+            {!isAdvancedUnlocked && !isDrAlfonsoUnlocked && <Lock className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>}
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 sm:p-8">
-        <div className="flex gap-2 mb-8 max-w-xl mx-auto bg-slate-200 p-1 rounded-xl">
-          <button onClick={() => setActiveTab(FilterTab.BASIC)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === FilterTab.BASIC ? 'bg-white shadow text-blue-600' : 'text-slate-600 hover:bg-white/50'}`}>Basic</button>
-          <button onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.ADVANCED)} className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.ADVANCED ? 'bg-white shadow text-blue-600' : isAdvancedUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Advanced {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}</button>
-          <button onClick={() => isDrAlfonsoUnlocked && setActiveTab(FilterTab.DR_ALFONSO)} className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white shadow text-teal-600' : isDrAlfonsoUnlocked ? 'text-slate-600 hover:bg-white/50' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Dr. Alfonso {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}</button>
+        {/* Barra de Búsqueda Global Prominente */}
+        <div className="relative max-w-2xl mx-auto mb-10 shadow-xl shadow-blue-900/5 rounded-2xl overflow-hidden group">
+          <Search className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Buscar por modelo, fabricante o tecnología..." 
+            className="w-full pl-14 pr-6 py-5 bg-white border-none text-slate-800 placeholder:text-slate-400 font-medium focus:ring-0 text-lg"
+            value={advFilters.keyword}
+            onChange={e => setAdvFilters({...advFilters, keyword: e.target.value})}
+          />
+          {Object.keys(overrideData).length > 0 && (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full text-[10px] font-black uppercase border border-orange-100">
+              <Info className="w-3 h-3"/> Overrides Activos
+            </div>
+          )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <div className="relative max-w-xs w-full">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Buscar modelo o marca..." 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm"
-                value={advFilters.keyword}
-                onChange={e => setAdvFilters({...advFilters, keyword: e.target.value})}
-              />
-            </div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-2">
-              {Object.keys(overrideData).length > 0 && <span className="text-orange-500 flex items-center gap-1"><Info className="w-3 h-3"/> Datos Modificados Activos</span>}
-            </div>
-          </div>
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-8 max-w-xl mx-auto bg-slate-200/50 p-1.5 rounded-2xl border border-slate-200">
+          <button onClick={() => setActiveTab(FilterTab.BASIC)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === FilterTab.BASIC ? 'bg-white shadow-lg text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}>Estándar</button>
+          <button onClick={() => isAdvancedUnlocked && setActiveTab(FilterTab.ADVANCED)} className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.ADVANCED ? 'bg-white shadow-lg text-blue-600' : isAdvancedUnlocked ? 'text-slate-500' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Avanzado {!isAdvancedUnlocked && <Lock className="w-3 h-3" />}</button>
+          <button onClick={() => isDrAlfonsoUnlocked && setActiveTab(FilterTab.DR_ALFONSO)} className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === FilterTab.DR_ALFONSO ? 'bg-white shadow-lg text-teal-600' : isDrAlfonsoUnlocked ? 'text-slate-500' : 'text-slate-400 opacity-50 cursor-not-allowed'}`}>Dr. Alfonso {!isDrAlfonsoUnlocked && <Lock className="w-3 h-3" />}</button>
+        </div>
 
+        {/* Filtros */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 mb-10">
           {activeTab === FilterTab.BASIC && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Fabricante</label>
-                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={basicFilters.manufacturer} onChange={e => setBasicFilters({...basicFilters, manufacturer: e.target.value})}>
-                  <option value="all">Todos los fabricantes</option>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Fabricante</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" value={basicFilters.manufacturer} onChange={e => setBasicFilters({...basicFilters, manufacturer: e.target.value})}>
+                  <option value="all">Todos</option>
                   {uniqueManufacturers.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-blue-600 uppercase mb-2">Concepto Clínico</label>
-                <select className="w-full p-2.5 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800 font-medium" value={basicFilters.clinicalConcept} onChange={e => handleClinicalConceptChange(e.target.value)}>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1">Concepto Clínico</label>
+                <select className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-sm font-bold text-blue-800 outline-none" value={basicFilters.clinicalConcept} onChange={e => {
+                  const val = e.target.value;
+                  let mapped = basicFilters.opticConcept;
+                  if (val === "Partial Range of Field-Narrow") mapped = "monofocal";
+                  else if (val === "Partial Range of Field-Enhance") mapped = "Monofocal +";
+                  else if (val === "Partial Range of Field-Extend") mapped = "EDoF";
+                  else if (val.includes("Full Range")) mapped = "multifocal";
+                  else if (val === "all") mapped = "all";
+                  setBasicFilters({ ...basicFilters, clinicalConcept: val, opticConcept: mapped });
+                }}>
                   <option value="all">Selección Libre</option>
                   {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Concepto Óptico</label>
-                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={basicFilters.opticConcept} onChange={e => setBasicFilters({...basicFilters, opticConcept: e.target.value})}>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Concepto Óptico</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.opticConcept} onChange={e => setBasicFilters({...basicFilters, opticConcept: e.target.value})}>
                   <option value="all">Cualquiera</option>
                   <option value="monofocal">Monofocal</option>
                   <option value="Monofocal +">Monofocal +</option>
                   <option value="EDoF">EDoF</option>
                   <option value="multifocal">Multifocal</option>
-                  <option value="bifocal">Bifocal</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Toricidad</label>
-                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={basicFilters.toric} onChange={e => setBasicFilters({...basicFilters, toric: e.target.value})}>
-                  <option value="all">Ambos</option>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tórica</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.toric} onChange={e => setBasicFilters({...basicFilters, toric: e.target.value})}>
+                  <option value="all">Indiferente</option>
                   <option value="yes">Sólo Tóricas</option>
                   <option value="no">Sólo No Tóricas</option>
                 </select>
@@ -336,103 +343,91 @@ function App() {
           )}
 
           {activeTab === FilterTab.ADVANCED && (
-            <div className="space-y-8 animate-in slide-in-from-top-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2"><Zap className="w-4 h-4 text-blue-500"/> Rango de Esfera Disponible</h4>
-                  <DualRangeSlider 
-                    min={-15} max={40} step={0.5} 
-                    minValue={advFilters.filterMinSphere} maxValue={advFilters.filterMaxSphere} 
-                    onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})} 
-                  />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-4">
+                <h4 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-tight"><Zap className="w-4 h-4 text-blue-500"/> Dioptrías Disponibles</h4>
+                <DualRangeSlider 
+                  min={-15} max={45} step={0.5} 
+                  minValue={advFilters.filterMinSphere} maxValue={advFilters.filterMaxSphere} 
+                  onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})} 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Material</label>
+                  <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={advFilters.hydroType} onChange={e => setAdvFilters({...advFilters, hydroType: e.target.value})}>
+                    <option value="all">Todos</option>
+                    <option value="hydrophilic">Hidrofílico</option>
+                    <option value="hydrophobic">Hidrofóbico</option>
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Material</label>
-                    <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={advFilters.hydroType} onChange={e => setAdvFilters({...advFilters, hydroType: e.target.value})}>
-                      <option value="all">Cualquier Material</option>
-                      <option value="hydrophilic">Hidrofílico</option>
-                      <option value="hydrophobic">Hidrofóbico</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col justify-center gap-3">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${advFilters.isPreloaded ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 group-hover:border-blue-400'}`}>
-                        {advFilters.isPreloaded && <ShieldCheck className="w-3 h-3" />}
-                      </div>
-                      <input type="checkbox" className="hidden" checked={advFilters.isPreloaded} onChange={e => setAdvFilters({...advFilters, isPreloaded: e.target.checked})} />
-                      <span className="text-sm text-slate-600 font-medium">Pre-cargada</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${advFilters.isYellowFilter ? 'bg-yellow-500 border-yellow-500 text-white' : 'bg-white border-slate-300 group-hover:border-yellow-400'}`}>
-                        {advFilters.isYellowFilter && <ShieldCheck className="w-3 h-3" />}
-                      </div>
-                      <input type="checkbox" className="hidden" checked={advFilters.isYellowFilter} onChange={e => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})} />
-                      <span className="text-sm text-slate-600 font-medium">Filtro Amarillo</span>
-                    </label>
-                  </div>
+                <div className="flex flex-col justify-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${advFilters.isPreloaded ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                      {advFilters.isPreloaded && <ShieldCheck className="w-3.5 h-3.5" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={advFilters.isPreloaded} onChange={e => setAdvFilters({...advFilters, isPreloaded: e.target.checked})} />
+                    <span className="text-xs text-slate-700 font-bold uppercase tracking-tight">Pre-cargada</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${advFilters.isYellowFilter ? 'bg-yellow-500 border-yellow-500 text-white' : 'bg-white border-slate-300'}`}>
+                      {advFilters.isYellowFilter && <ShieldCheck className="w-3.5 h-3.5" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={advFilters.isYellowFilter} onChange={e => setAdvFilters({...advFilters, isYellowFilter: e.target.checked})} />
+                    <span className="text-xs text-slate-700 font-bold uppercase tracking-tight">Filtro Amarillo</span>
+                  </label>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === FilterTab.DR_ALFONSO && (
-            <div className="space-y-6 animate-in slide-in-from-top-2">
+            <div className="space-y-8">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                 <h3 className="font-bold text-teal-800 flex items-center gap-2"><Eye className="w-5 h-5"/> Perfil del Paciente</h3>
-                 <button onClick={() => setIsRulesManagerOpen(true)} className="text-[10px] bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-bold border border-teal-100 hover:bg-teal-100 transition-colors uppercase tracking-wider">Ver Reglas Expertas</button>
+                 <h3 className="font-black text-teal-900 flex items-center gap-2 uppercase tracking-tighter text-lg"><Eye className="w-6 h-6 text-teal-600"/> Perfil del Paciente</h3>
+                 <button onClick={() => setIsRulesManagerOpen(true)} className="text-[10px] bg-teal-600 text-white px-4 py-2 rounded-xl font-black hover:bg-teal-700 transition-all uppercase tracking-widest shadow-lg shadow-teal-900/10">Engine Rules</button>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Edad</span>
-                  <input type="number" placeholder="Edad" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 transition-shadow" value={drAlfonsoInputs.age} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, age: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">L. Axial (mm)</span>
-                  <input type="number" placeholder="LA" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 transition-shadow" value={drAlfonsoInputs.axialLength} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, axialLength: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">LVC Previo</span>
-                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={drAlfonsoInputs.lvc} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, lvc: e.target.value})}>
-                    {Object.entries(LVC_OPTIONS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">UDVA</span>
-                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={drAlfonsoInputs.udva} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, udva: e.target.value})}>
-                    {Object.entries(UDVA_OPTIONS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Lentes de Contacto</span>
-                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={drAlfonsoInputs.contactLenses} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, contactLenses: e.target.value})}>
-                    {Object.entries(CONTACT_LENS_OPTIONS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Cámara Anterior</span>
-                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={drAlfonsoInputs.anteriorChamber} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, anteriorChamber: e.target.value})}>
-                    {Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Retina</span>
-                  <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" value={drAlfonsoInputs.retina} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, retina: e.target.value})}>
-                    {Object.entries(RETINA_OPTIONS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {recommendedConcepts.length > 0 && (
-                <div className="p-5 bg-teal-50 border border-teal-100 rounded-xl space-y-3">
-                  <div className="flex items-center gap-2 text-teal-800 font-bold text-xs">
-                    <Info className="w-4 h-4" /> Recomendaciones IA Basadas en Reglas
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { label: 'Edad', val: drAlfonsoInputs.age, key: 'age', type: 'number' },
+                  { label: 'L. Axial', val: drAlfonsoInputs.axialLength, key: 'axialLength', type: 'number' },
+                  { label: 'LVC', val: drAlfonsoInputs.lvc, key: 'lvc', options: LVC_OPTIONS },
+                  { label: 'UDVA', val: drAlfonsoInputs.udva, key: 'udva', options: UDVA_OPTIONS }
+                ].map(item => (
+                  <div key={item.key} className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
+                    {item.options ? (
+                      <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
+                        {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    ) : (
+                      <input type={item.type} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})} />
+                    )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                ))}
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { label: 'Lentes Contacto', val: drAlfonsoInputs.contactLenses, key: 'contactLenses', options: CONTACT_LENS_OPTIONS },
+                  { label: 'Cámara Anterior', val: drAlfonsoInputs.anteriorChamber, key: 'anteriorChamber', options: ANTERIOR_CHAMBER_OPTIONS },
+                  { label: 'Retina', val: drAlfonsoInputs.retina, key: 'retina', options: RETINA_OPTIONS }
+                ].map(item => (
+                  <div key={item.key} className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
+                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
+                      {Object.entries(item.options!).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              {recommendedConcepts.length > 0 && (
+                <div className="p-6 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 rounded-3xl space-y-4">
+                  <div className="flex items-center gap-3 text-teal-800 font-black text-xs uppercase tracking-widest">
+                    <div className="p-2 bg-teal-600 text-white rounded-lg shadow-lg"><Info className="w-4 h-4" /></div> IA Recomendaciones
+                  </div>
+                  <div className="flex flex-wrap gap-3">
                     {recommendedConcepts.map(c => (
-                      <span key={c} className="bg-white px-4 py-1.5 rounded-lg text-xs font-bold text-teal-700 border border-teal-200 shadow-sm animate-in slide-in-from-bottom-5">
+                      <span key={c} className="bg-white px-5 py-2.5 rounded-2xl text-xs font-black text-teal-700 border border-teal-200 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                         {c}
                       </span>
                     ))}
@@ -443,29 +438,34 @@ function App() {
           )}
         </div>
 
-        <div className="flex justify-between items-center mb-6 px-2">
-          <h2 className="font-bold text-slate-800">
-            Resultados <span className="text-blue-600 ml-1 font-black">{filteredLenses.length}</span>
-          </h2>
+        {/* Grid de Resultados */}
+        <div className="flex items-baseline gap-3 mb-8 ml-2">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Explorar Lentes</h2>
+          <span className="text-blue-600 font-black text-lg">{filteredLenses.length}</span>
+          <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Modelos Disponibles</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredLenses.map(lens => (
             <LensCard key={lens.id} lens={lens} isSelected={selectedLensIds.has(lens.id)} onToggleSelect={toggleLensSelection} />
           ))}
         </div>
       </main>
 
+      {/* Floating Comparison Bar */}
       {selectedLensIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl p-4 bg-slate-900/90 backdrop-blur-md text-white rounded-2xl shadow-2xl flex justify-between items-center z-30 animate-in slide-in-from-bottom-5">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-lg">{selectedLensIds.size}</div>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl p-4 bg-slate-900/95 backdrop-blur-xl text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex justify-between items-center z-50 animate-in slide-in-from-bottom-5 border border-white/10">
+          <div className="flex items-center gap-5">
+            <div className="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-900/40">{selectedLensIds.size}</div>
             <div>
-              <p className="text-sm font-bold">Lentes seleccionadas</p>
-              <p className="text-[10px] text-slate-400">Máximo 5 para comparar</p>
+              <p className="text-sm font-black uppercase tracking-tight">Comparativa Activa</p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite alcanzado' : 'Selecciona hasta 5'}</p>
             </div>
           </div>
-          <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg">Comparar ahora</button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSelectedLensIds(new Set())} className="text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Limpiar</button>
+            <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-900/40 uppercase tracking-tight">Comparar</button>
+          </div>
         </div>
       )}
 
