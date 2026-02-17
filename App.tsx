@@ -27,7 +27,8 @@ import {
   ExternalLink,
   FileJson,
   Database,
-  Trash2
+  Trash2,
+  Stethoscope
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
