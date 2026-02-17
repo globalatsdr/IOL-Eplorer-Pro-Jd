@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CLINICAL_CONCEPTS } from '../constants';
-import { ArrowLeft } from 'lucide-react';
+import { CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
+import { ArrowLeft, Code, ClipboardCheck, Info } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -8,51 +8,199 @@ interface Props {
 
 const RuleCreator: React.FC<Props> = ({ onBack }) => {
   const [result, setResult] = useState('');
-  const [ageGroups] = useState<string[]>([]);
-  const [laGroups] = useState<string[]>([]);
-  const [lensStatuses] = useState<string[]>([]);
-  const [lvc] = useState('any');
-  const [udva] = useState('any');
-  const [contactLenses] = useState('any');
-  const [anteriorChamber] = useState('any');
-  const [retina] = useState('any');
+  const [selectedAge, setSelectedAge] = useState<number | null>(null);
+  const [selectedLA, setSelectedLA] = useState<number | null>(null);
+  const [lensStatus, setLensStatus] = useState<string>('any');
+  
+  // Special Conditions
+  const [lvc, setLvc] = useState('any');
+  const [udva, setUdva] = useState('any');
+  const [contactLenses, setContactLenses] = useState('any');
+  const [anteriorChamber, setAnteriorChamber] = useState('any');
+  const [retina, setRetina] = useState('any');
+  
   const [generatedCode, setGeneratedCode] = useState('');
 
+  const ageLabels = ["35-44", "45-54", "55-64", "65-74", "75-85"];
+  const laLabels = ["14-18,5", "19-22", "22,5-24,5", "25-29", "30-35"];
+
   const handleGenerateCode = () => {
-    if (!result) return alert("Seleccione un resultado.");
-    const sc = [];
+    if (!result) return alert("Por favor, seleccione un Resultado Clínico.");
+    
+    const sc: string[] = [];
     if (lvc !== 'any') sc.push(lvc);
     if (udva !== 'any') sc.push(udva);
     if (contactLenses !== 'any') sc.push(contactLenses);
     if (anteriorChamber !== 'any') sc.push(anteriorChamber);
-    if (retina !== 'any') sc.push(retina);
+    if (retina === 'con_estafiloma') sc.push('estafiloma');
+
     const rule = {
       result,
       conditions: {
-        ...(ageGroups.length > 0 && { ageGroup: ageGroups.map(Number) }),
-        ...(laGroups.length > 0 && { laGroup: laGroups.map(Number) }),
-        ...(lensStatuses.length > 0 && { lensStatus: lensStatuses }),
+        ...(selectedAge !== null && { ageGroup: [selectedAge + 1] }),
+        ...(selectedLA !== null && { laGroup: [selectedLA + 1] }),
+        ...(lensStatus !== 'any' && { lensStatus: [lensStatus] }),
         ...(sc.length > 0 && { specialConditions: sc })
       }
     };
+
     setGeneratedCode(JSON.stringify(rule, null, 2) + ",");
   };
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedCode);
+    alert("Código copiado al portapapeles");
+  };
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
       <div className="p-6 overflow-y-auto">
-        <button onClick={onBack} className="flex items-center gap-2 mb-4 text-slate-600"><ArrowLeft className="w-4 h-4"/> Volver</button>
-        <div className="space-y-6 max-w-2xl">
-          <div>
-            <label className="block font-bold mb-2">1. Resultado Clínico</label>
-            <select value={result} onChange={e => setResult(e.target.value)} className="w-full p-2 border rounded">
-              <option value="">Seleccionar...</option>
-              {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+        <div className="max-w-3xl mx-auto space-y-8 pb-20">
+          <div className="flex items-center justify-between">
+            <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-colors">
+              <ArrowLeft className="w-4 h-4"/> Volver al Gestor
+            </button>
+            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Nueva Regla Clínica</h3>
           </div>
-          <button onClick={handleGenerateCode} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Generar Código</button>
+
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 space-y-8">
+            {/* 1. Resultado */}
+            <div className="space-y-3">
+              <label className="block text-[11px] font-black text-blue-500 uppercase tracking-widest">1. Concepto Clínico (Resultado)</label>
+              <select 
+                value={result} 
+                onChange={e => setResult(e.target.value)} 
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Seleccionar Resultado...</option>
+                {CLINICAL_CONCEPTS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* 2. Edad */}
+              <div className="space-y-3">
+                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">2. Grupo de Edad</label>
+                <div className="flex flex-wrap gap-2">
+                  {ageLabels.map((label, idx) => (
+                    <button
+                      key={label}
+                      onClick={() => setSelectedAge(selectedAge === idx ? null : idx)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                        selectedAge === idx 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/20' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Longitud Axial */}
+              <div className="space-y-3">
+                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">3. Longitud Axial (mm)</label>
+                <div className="flex flex-wrap gap-2">
+                  {laLabels.map((label, idx) => (
+                    <button
+                      key={label}
+                      onClick={() => setSelectedLA(selectedLA === idx ? null : idx)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                        selectedLA === idx 
+                        ? 'bg-teal-600 border-teal-600 text-white shadow-lg shadow-teal-900/20' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-teal-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Estado Cristalino */}
+            <div className="space-y-3">
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">4. Estado Cristalino</label>
+              <select 
+                value={lensStatus} 
+                onChange={e => setLensStatus(e.target.value)}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none"
+              >
+                <option value="any">Cualquiera</option>
+                <option value="catarata">Catarata</option>
+                <option value="transparente">Transparente</option>
+                <option value="disfuncional">Disfuncional</option>
+                <option value="presbicia">Presbicia</option>
+              </select>
+            </div>
+
+            {/* 5. Condiciones Especiales */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2 text-[11px] font-black text-orange-500 uppercase tracking-widest">
+                <Info className="w-3.5 h-3.5"/> Condiciones Especiales (Deben cumplirse todas)
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">LVC</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={lvc} onChange={e => setLvc(e.target.value)}>
+                    {Object.entries(LVC_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">UCVA</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={udva} onChange={e => setUdva(e.target.value)}>
+                    {Object.entries(UDVA_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Lentes de Contacto</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={contactLenses} onChange={e => setContactLenses(e.target.value)}>
+                    {Object.entries(CONTACT_LENS_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cámara Anterior</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={anteriorChamber} onChange={e => setAnteriorChamber(e.target.value)}>
+                    {Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Retina</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={retina} onChange={e => setRetina(e.target.value)}>
+                    {Object.entries(RETINA_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleGenerateCode} 
+              className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-3"
+            >
+              <Code className="w-5 h-5" /> Generar Código de Regla
+            </button>
+          </div>
+
           {generatedCode && (
-            <pre className="bg-slate-800 text-white p-4 rounded text-xs overflow-x-auto mt-4">{generatedCode}</pre>
+            <div className="bg-slate-900 rounded-3xl p-8 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex items-center justify-between text-white">
+                <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Snippet de Código</span>
+                <button 
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-xs font-black uppercase tracking-widest transition-colors"
+                >
+                  <ClipboardCheck className="w-4 h-4" /> Copiar Código
+                </button>
+              </div>
+              <pre className="bg-black/30 p-6 rounded-2xl text-blue-300 text-[11px] font-mono overflow-x-auto leading-relaxed border border-white/5">
+                {generatedCode}
+              </pre>
+              <p className="text-[10px] text-slate-500 font-bold italic">
+                * Copia este bloque y agrégalo al array ALL_RULES en services/recommendationService.ts
+              </p>
+            </div>
           )}
         </div>
       </div>
