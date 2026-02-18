@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
 import { X, ArrowDownAZ, ArrowUpAZ, Sparkles } from 'lucide-react';
@@ -30,6 +29,29 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getValue: (l: Lens) => l.name, 
       getSortValue: (l: Lens) => l.name 
     },
+    // --- NUEVA FILA: GRÁFICAS ---
+    {
+      label: 'Gráfica MTF',
+      getValue: (l: Lens) => (
+        <div className="h-40 w-full flex items-center justify-center bg-white rounded-xl border border-slate-100 p-2 shadow-sm">
+          <img
+            src={`./graphs/${l.id}.jpeg`} 
+            alt={`Gráfica ${l.name}`}
+            className="max-h-full max-w-full object-contain mix-blend-multiply"
+            onError={(e) => {
+              // Si falla la carga, ocultamos la imagen y mostramos texto
+              e.currentTarget.style.display = 'none';
+              if(e.currentTarget.parentElement) {
+                 e.currentTarget.parentElement.innerText = 'Gráfica no disponible';
+                 e.currentTarget.parentElement.classList.add('text-[10px]', 'text-slate-400', 'italic', 'font-bold');
+              }
+            }}
+          />
+        </div>
+      ),
+      getSortValue: () => 0 // No ordenable
+    },
+    // ----------------------------
     {
       label: 'Notas',
       getValue: (l: Lens) => l.note ? <span className="text-yellow-700 font-bold bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100 text-xs">{l.note}</span> : '-',

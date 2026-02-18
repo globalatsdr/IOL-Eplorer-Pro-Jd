@@ -13,8 +13,7 @@ import {
   Microscope,
   Layers,
   Settings,
-  Lightbulb,
-  BarChart3
+  Lightbulb
 } from 'lucide-react';
 
 interface Props {
@@ -26,7 +25,6 @@ interface Props {
 const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   const [expanded, setExpanded] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const [graphError, setGraphError] = useState(false);
   
   const getTypeColor = (concept: string) => {
     const c = concept.toLowerCase();
@@ -57,10 +55,8 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   };
 
   // URL de las imágenes basadas en el ID.
-  // IMPORTANTE: Debes crear las carpetas 'public/lenses' y 'public/graphs' y poner ahí los archivos.
-  // Ejemplo: public/lenses/2299.png
+  // Lentes = .png
   const lensImageUrl = `./lenses/${lens.id}.png`;
-  const graphImageUrl = `./graphs/${lens.id}.png`;
 
   return (
     <div className={`relative bg-white rounded-[2rem] shadow-sm border overflow-hidden transition-all duration-300 group ${isSelected ? 'ring-4 ring-blue-500/20 border-blue-500 shadow-blue-900/5' : 'border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/5'}`}>
@@ -158,23 +154,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         <div className="px-8 pb-8 pt-2 bg-white animate-in slide-in-from-top-2 duration-300">
           <div className="space-y-8">
             
-            {/* Sección de Gráficas (MTF / Defocus Curve) */}
-            {!graphError && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                  <BarChart3 className="w-3.5 h-3.5"/> Curva de Desenfoque / MTF
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-center">
-                   <img 
-                    src={graphImageUrl} 
-                    alt={`Gráfica ${lens.name}`} 
-                    className="max-h-48 object-contain rounded-lg mix-blend-multiply"
-                    onError={() => setGraphError(true)}
-                  />
-                </div>
-              </div>
-            )}
-
             {/* Constantes Exhaustivas */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
