@@ -14,7 +14,6 @@ import {
   Layers,
   Settings,
   Lightbulb,
-  ImageIcon,
   BarChart3
 } from 'lucide-react';
 
