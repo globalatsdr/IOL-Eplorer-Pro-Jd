@@ -186,27 +186,11 @@ function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const rawJson = JSON.parse(e.target?.result as string);
-        
-        // Normalizar JSON: Mapear "Notas" a "note"
-        const normalizedJson: Record<string, Partial<Lens>> = {};
-        
-        Object.keys(rawJson).forEach(key => {
-          const item = rawJson[key];
-          // Si el JSON tiene "Notas", lo asignamos a "note" que es la variable interna
-          if (item["Notas"]) {
-            item.note = item["Notas"];
-          }
-          normalizedJson[key] = item;
-        });
-
-        setOverrideData(normalizedJson);
-        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
-        alert('Modificaciones aplicadas correctamente (Campo Notas detectado).');
-      } catch (err) { 
-        console.error(err);
-        alert('Error al cargar el JSON de modificaciones.'); 
-      }
+        const json = JSON.parse(e.target?.result as string);
+        setOverrideData(json);
+        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(json));
+        alert('Modificaciones aplicadas.');
+      } catch (err) { alert('Error al cargar el JSON.'); }
     };
     reader.readAsText(file);
     if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
