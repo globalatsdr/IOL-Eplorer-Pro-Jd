@@ -186,10 +186,36 @@ function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const json = JSON.parse(e.target?.result as string);
-        setOverrideData(json);
-        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(json));
-        alert('Modificaciones aplicadas.');
+        const rawJson = JSON.parse(e.target?.result as string);
+        const normalizedJson: Record<string, Partial<Lens>> = {};
+
+        // Normalización inteligente: busca 'note' o 'Notas' en raíz y en specifications
+        Object.keys(rawJson).forEach(key => {
+          const item = rawJson[key];
+          
+          // 1. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
+          const noteContent = 
+            item.note || 
+            item.Notas || 
+            item.specifications?.note || 
+            item.specifications?.Notas;
+
+          // 2. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
+          if (noteContent) {
+            item.note = noteContent;
+            delete item.Notas; // Limpieza
+            if (item.specifications) {
+              delete item.specifications.note; // Limpieza
+              delete item.specifications.Notas; // Limpieza
+            }
+          }
+
+          normalizedJson[key] = item;
+        });
+
+        setOverrideData(normalizedJson);
+        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
+        alert('Modificaciones aplicadas correctamente (Notas sincronizadas).');
       } catch (err) { alert('Error al cargar el JSON.'); }
     };
     reader.readAsText(file);
