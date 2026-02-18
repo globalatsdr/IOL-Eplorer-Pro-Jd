@@ -1,3 +1,4 @@
+
 // --- Type Definitions for Rules ---
 export type LensStatus = 'transparente' | 'presbicia' | 'disfuncional' | 'catarata';
 
@@ -74,6 +75,7 @@ export interface Lens {
   id: string;
   manufacturer: string;
   name: string;
+  note?: string; // Campo opcional para notas personalizadas
   specifications: Specifications;
   availability: Availability;
   constants: Constants;
