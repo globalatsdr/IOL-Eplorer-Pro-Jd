@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Lens, SphereRange } from '../types';
 import { 
@@ -14,7 +13,9 @@ import {
   Microscope,
   Layers,
   Settings,
-  Lightbulb
+  Lightbulb,
+  ImageIcon,
+  BarChart3
 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
 
 const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   const [expanded, setExpanded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [graphError, setGraphError] = useState(false);
   
   const getTypeColor = (concept: string) => {
     const c = concept.toLowerCase();
@@ -53,6 +56,12 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
       </div>
     );
   };
+
+  // URL de las imágenes basadas en el ID.
+  // IMPORTANTE: Debes crear las carpetas 'public/lenses' y 'public/graphs' y poner ahí los archivos.
+  // Ejemplo: public/lenses/2299.png
+  const lensImageUrl = `./lenses/${lens.id}.png`;
+  const graphImageUrl = `./graphs/${lens.id}.png`;
 
   return (
     <div className={`relative bg-white rounded-[2rem] shadow-sm border overflow-hidden transition-all duration-300 group ${isSelected ? 'ring-4 ring-blue-500/20 border-blue-500 shadow-blue-900/5' : 'border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/5'}`}>
@@ -87,21 +96,39 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
             <Globe className="w-4 h-4" />
           </button>
         </div>
-        <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4">{lens.name}</h3>
         
-        <div className="flex flex-wrap gap-2">
-          <span className={`px-3 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider ${getTypeColor(lens.specifications.opticConcept)}`}>
-            {lens.specifications.opticConcept}
-          </span>
-          {lens.specifications.toric && (
-            <span className="px-3 py-1 rounded-lg text-[10px] bg-red-50 border border-red-100 font-black text-red-600 uppercase tracking-wider">
-              Toric
-            </span>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+             <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4">{lens.name}</h3>
+             
+             <div className="flex flex-wrap gap-2 mb-4">
+              <span className={`px-3 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider ${getTypeColor(lens.specifications.opticConcept)}`}>
+                {lens.specifications.opticConcept}
+              </span>
+              {lens.specifications.toric && (
+                <span className="px-3 py-1 rounded-lg text-[10px] bg-red-50 border border-red-100 font-black text-red-600 uppercase tracking-wider">
+                  Toric
+                </span>
+              )}
+              <span className="px-3 py-1 rounded-lg text-[10px] bg-slate-100 border border-slate-200 font-bold text-slate-500 uppercase tracking-wider">
+                {lens.specifications.hydro}
+              </span>
+            </div>
+          </div>
+
+          {/* Imagen de la Lente (Thumbnail) */}
+          {!imgError && (
+            <div className="w-24 h-24 flex-shrink-0 bg-white rounded-xl border border-slate-100 p-2 flex items-center justify-center">
+              <img 
+                src={lensImageUrl} 
+                alt={lens.name} 
+                className="w-full h-full object-contain mix-blend-multiply"
+                onError={() => setImgError(true)}
+              />
+            </div>
           )}
-          <span className="px-3 py-1 rounded-lg text-[10px] bg-slate-100 border border-slate-200 font-bold text-slate-500 uppercase tracking-wider">
-            {lens.specifications.hydro}
-          </span>
         </div>
+
       </div>
 
       <div className="px-8 py-6 grid grid-cols-2 gap-6 bg-slate-50/50 border-y border-slate-100">
@@ -132,6 +159,23 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         <div className="px-8 pb-8 pt-2 bg-white animate-in slide-in-from-top-2 duration-300">
           <div className="space-y-8">
             
+            {/* Sección de Gráficas (MTF / Defocus Curve) */}
+            {!graphError && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                  <BarChart3 className="w-3.5 h-3.5"/> Curva de Desenfoque / MTF
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-center">
+                   <img 
+                    src={graphImageUrl} 
+                    alt={`Gráfica ${lens.name}`} 
+                    className="max-h-48 object-contain rounded-lg mix-blend-multiply"
+                    onError={() => setGraphError(true)}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Constantes Exhaustivas */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
