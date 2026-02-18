@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
 import { X, ArrowDownAZ, ArrowUpAZ, Sparkles } from 'lucide-react';
@@ -28,6 +29,11 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       label: 'Model Name', 
       getValue: (l: Lens) => l.name, 
       getSortValue: (l: Lens) => l.name 
+    },
+    {
+      label: 'Notas',
+      getValue: (l: Lens) => l.note ? <span className="text-yellow-700 font-bold bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100 text-xs">{l.note}</span> : '-',
+      getSortValue: (l: Lens) => l.note || ''
     },
     { 
       label: 'Tecnología', 

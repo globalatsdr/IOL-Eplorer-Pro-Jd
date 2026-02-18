@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Lens, SphereRange } from '../types';
 import { 
@@ -12,7 +13,8 @@ import {
   Zap,
   Microscope,
   Layers,
-  Settings
+  Settings,
+  Lightbulb
 } from 'lucide-react';
 
 interface Props {
@@ -70,7 +72,17 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
 
       <div className="p-8 pb-6">
         <div className="flex justify-between items-start mb-2">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{lens.manufacturer}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{lens.manufacturer}</span>
+            {lens.note && (
+              <div className="group/note relative">
+                <Lightbulb className="w-4 h-4 text-yellow-500 fill-yellow-500 animate-pulse" />
+                <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-lg border border-yellow-200 shadow-lg opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none z-20">
+                  {lens.note}
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={handleWebSearch} className="text-slate-300 hover:text-blue-500 transition-colors mr-10" title="Buscar ficha técnica">
             <Globe className="w-4 h-4" />
           </button>
