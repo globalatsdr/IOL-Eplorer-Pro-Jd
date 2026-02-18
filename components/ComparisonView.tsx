@@ -2,6 +2,44 @@ import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
 import { X, ArrowDownAZ, ArrowUpAZ, Sparkles } from 'lucide-react';
 
+// --- COMPONENTE AUXILIAR PARA IMÁGENES ROBUSTAS ---
+// Este componente prueba diferentes extensiones si la primera falla.
+// Soluciona el problema de '2299.JPG' vs '2299.jpeg'
+const GraphImage = ({ id, name }: { id: string, name: string }) => {
+  // Lista de extensiones a probar en orden
+  const extensions = ['jpeg', 'jpg', 'JPG', 'png', 'PNG'];
+  const [currentExtIndex, setCurrentExtIndex] = useState(0);
+  const [isError, setIsError] = useState(false);
+
+  const handleError = () => {
+    // Si falla la carga, intentamos la siguiente extensión
+    if (currentExtIndex < extensions.length - 1) {
+      setCurrentExtIndex(prev => prev + 1);
+    } else {
+      // Si fallan todas, mostramos el error
+      setIsError(true);
+    }
+  };
+
+  if (isError) {
+    return (
+      <span className="text-[10px] text-slate-400 italic font-bold text-center block w-full">
+        Gráfica no disponible
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={`./graphs/${id}.${extensions[currentExtIndex]}`}
+      alt={`Gráfica ${name}`}
+      className="max-h-full max-w-full object-contain mix-blend-multiply"
+      onError={handleError}
+    />
+  );
+};
+// --------------------------------------------------
+
 interface Props {
   lenses: Lens[];
   onClose: () => void;
@@ -29,29 +67,17 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getValue: (l: Lens) => l.name, 
       getSortValue: (l: Lens) => l.name 
     },
-    // --- NUEVA FILA: GRÁFICAS ---
+    // --- USO DEL COMPONENTE ROBUSTO ---
     {
       label: 'Gráfica MTF',
       getValue: (l: Lens) => (
         <div className="h-40 w-full flex items-center justify-center bg-white rounded-xl border border-slate-100 p-2 shadow-sm">
-          <img
-            src={`./graphs/${l.id}.jpeg`} 
-            alt={`Gráfica ${l.name}`}
-            className="max-h-full max-w-full object-contain mix-blend-multiply"
-            onError={(e) => {
-              // Si falla la carga, ocultamos la imagen y mostramos texto
-              e.currentTarget.style.display = 'none';
-              if(e.currentTarget.parentElement) {
-                 e.currentTarget.parentElement.innerText = 'Gráfica no disponible';
-                 e.currentTarget.parentElement.classList.add('text-[10px]', 'text-slate-400', 'italic', 'font-bold');
-              }
-            }}
-          />
+          <GraphImage id={l.id} name={l.name} />
         </div>
       ),
       getSortValue: () => 0 // No ordenable
     },
-    // ----------------------------
+    // ----------------------------------
     {
       label: 'Notas',
       getValue: (l: Lens) => l.note ? <span className="text-yellow-700 font-bold bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100 text-xs">{l.note}</span> : '-',
