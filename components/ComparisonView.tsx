@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
 import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, ZoomIn, Download } from 'lucide-react';
@@ -232,30 +233,51 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
     if (!element) return;
 
     try {
-      // Capturamos el elemento tabla
+      const scrollWidth = element.scrollWidth;
+      const scrollHeight = element.scrollHeight;
+
+      // Capturamos el elemento con html2canvas
+      // Configuramos width/height/windowWidth/windowHeight para capturar todo el scroll
+      // Usamos onclone para quitar overflow y sticky en el clon
       const canvas = await html2canvas(element, {
         scale: 2, // Mejor calidad
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: scrollWidth,
+        height: scrollHeight,
+        windowWidth: scrollWidth,
+        windowHeight: scrollHeight,
+        onclone: (clonedDoc) => {
+            const clonedElement = clonedDoc.getElementById('comparison-table-container');
+            if (clonedElement) {
+                // Forzar que se muestre todo el contenido
+                clonedElement.style.overflow = 'visible';
+                clonedElement.style.height = 'auto';
+                clonedElement.style.width = 'fit-content';
+                clonedElement.style.maxHeight = 'none';
+
+                // Buscar encabezados sticky y hacerlos estáticos en el PDF
+                const stickyHeaders = clonedElement.querySelectorAll('.sticky');
+                stickyHeaders.forEach((el) => {
+                    const htmlEl = el as HTMLElement;
+                    htmlEl.style.position = 'static';
+                });
+            }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // Apaisado (Landscape)
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10; // Margen superior
 
-      // Uso correcto de imgX para centrar la imagen
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save('iol-comparison.pdf');
+      // Crear PDF con el tamaño exacto de la imagen generada (en píxeles)
+      // Esto asegura que se vea TODO sin cortes ni saltos de página extraños
+      const orientation = imgWidth > imgHeight ? 'l' : 'p';
+      const pdf = new jsPDF(orientation, 'px', [imgWidth, imgHeight]);
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save('iol-comparison-full.pdf');
+
     } catch (err) {
       console.error("Error exporting PDF:", err);
       alert("Hubo un error al generar el PDF. Revisa la consola para más detalles.");
@@ -305,7 +327,7 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                 onClick={handleExportPDF}
                 disabled={isExporting}
                 className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
-                title="Exportar tabla a PDF"
+                title="Exportar tabla completa a PDF"
               >
                 <Download className="w-4 h-4" />
                 <span className="text-xs font-bold">{isExporting ? 'Generando...' : 'PDF'}</span>
