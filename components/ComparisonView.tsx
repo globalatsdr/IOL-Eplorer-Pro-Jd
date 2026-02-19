@@ -253,7 +253,8 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
       const imgY = 10; // Margen superior
 
-      pdf.addImage(imgData, 'PNG', 0, imgY, imgWidth * ratio, imgHeight * ratio);
+      // Uso correcto de imgX para centrar la imagen
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
       pdf.save('iol-comparison.pdf');
     } catch (err) {
       console.error("Error exporting PDF:", err);
