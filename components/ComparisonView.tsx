@@ -258,7 +258,7 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       pdf.save('iol-comparison.pdf');
     } catch (err) {
       console.error("Error exporting PDF:", err);
-      alert("Hubo un error al generar el PDF.");
+      alert("Hubo un error al generar el PDF. Revisa la consola para más detalles.");
     } finally {
       setIsExporting(false);
     }
