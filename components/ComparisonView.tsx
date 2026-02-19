@@ -1,21 +1,46 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Lens } from '../types';
+import { getSafeFileName } from '../utils/parser';
 import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, ZoomIn, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 // --- COMPONENTE AUXILIAR PARA IMÁGENES ROBUSTAS ---
-const GraphImage = ({ id, name, onPreview }: { id: string, name: string, onPreview: (url: string) => void }) => {
+const GraphImage = ({ id, manufacturer, name, onPreview }: { id: string, manufacturer: string, name: string, onPreview: (url: string) => void }) => {
   const extensions = ['jpeg', 'jpg', 'JPG', 'png', 'PNG'];
+  
+  // Estrategia: 0 = Probar Nombre Robusto, 1 = Probar ID (Fallback)
+  const [strategy, setStrategy] = useState<0 | 1>(0);
   const [currentExtIndex, setCurrentExtIndex] = useState(0);
   const [isError, setIsError] = useState(false);
 
+  // Resetear estados si cambia la lente
+  useEffect(() => {
+    setStrategy(0);
+    setCurrentExtIndex(0);
+    setIsError(false);
+  }, [id, manufacturer, name]);
+
+  const robustName = getSafeFileName(manufacturer, name);
+  
+  // Construir SRC basado en la estrategia actual
+  const currentFileName = strategy === 0 ? robustName : id;
+  const currentSrc = `./graphs/${currentFileName}.${extensions[currentExtIndex]}`;
+
   const handleError = () => {
+    // 1. Intentar siguiente extensión en la estrategia actual
     if (currentExtIndex < extensions.length - 1) {
       setCurrentExtIndex(prev => prev + 1);
     } else {
-      setIsError(true);
+      // 2. Si se acaban las extensiones y estábamos en Estrategia 0 (Nombre), pasamos a Estrategia 1 (ID)
+      if (strategy === 0) {
+        setStrategy(1);
+        setCurrentExtIndex(0); // Reiniciar extensiones para ID
+      } else {
+        // 3. Si se acaban las extensiones y ya estábamos en ID, error definitivo.
+        setIsError(true);
+      }
     }
   };
 
@@ -26,8 +51,6 @@ const GraphImage = ({ id, name, onPreview }: { id: string, name: string, onPrevi
       </span>
     );
   }
-
-  const currentSrc = `./graphs/${id}.${extensions[currentExtIndex]}`;
 
   return (
     <div 
@@ -81,7 +104,7 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       label: 'Gráfica MTF',
       getValue: (l: Lens) => (
         <div className="h-40 w-full flex items-center justify-center bg-white rounded-xl border border-slate-100 p-2 shadow-sm overflow-hidden">
-          <GraphImage id={l.id} name={l.name} onPreview={setPreviewImage} />
+          <GraphImage id={l.id} manufacturer={l.manufacturer} name={l.name} onPreview={setPreviewImage} />
         </div>
       ),
       getSortValue: () => 0 

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Lens, SphereRange } from '../types';
+import { getSafeFileName } from '../utils/parser';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -26,9 +28,35 @@ interface Props {
 
 const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   const [expanded, setExpanded] = useState(false);
+  
+  // Lógica de fallback para imágenes
+  // 1. Intenta nombre robusto (Manufacturer_Model.png)
+  // 2. Si falla, intenta ID (2299.png)
+  const robustName = getSafeFileName(lens.manufacturer, lens.name);
+  const [imgSrc, setImgSrc] = useState(`./lenses/${robustName}.png`);
+  const [hasTriedIdFallback, setHasTriedIdFallback] = useState(false);
   const [imgError, setImgError] = useState(false);
+
   const [showLightbox, setShowLightbox] = useState(false);
   
+  // Resetear estado si cambia la lente (para reutilización de componentes)
+  useEffect(() => {
+    setImgSrc(`./lenses/${getSafeFileName(lens.manufacturer, lens.name)}.png`);
+    setHasTriedIdFallback(false);
+    setImgError(false);
+  }, [lens]);
+
+  const handleImageError = () => {
+    if (!hasTriedIdFallback) {
+        // Fallback: Intentar cargar por ID si el nombre falla
+        setImgSrc(`./lenses/${lens.id}.png`);
+        setHasTriedIdFallback(true);
+    } else {
+        // Si falla ID también, mostrar error
+        setImgError(true);
+    }
+  };
+
   const getTypeColor = (concept: string) => {
     const c = concept.toLowerCase();
     if (c.includes('monofocal')) return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -56,9 +84,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
       </div>
     );
   };
-
-  // URL de las imágenes basadas en el ID.
-  const lensImageUrl = `./lenses/${lens.id}.png`;
 
   return (
     <>
@@ -121,10 +146,10 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
                 onClick={(e) => { e.stopPropagation(); setShowLightbox(true); }}
               >
                 <img 
-                  src={lensImageUrl} 
+                  src={imgSrc} 
                   alt={lens.name} 
                   className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover/img:scale-105"
-                  onError={() => setImgError(true)}
+                  onError={handleImageError}
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-blue-900/0 group-hover/img:bg-blue-900/5 transition-colors rounded-lg">
                   <ZoomIn className="w-6 h-6 text-blue-500 opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-sm" />
@@ -267,9 +292,10 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         >
           <div className="relative max-w-full max-h-full">
             <img 
-              src={lensImageUrl} 
+              src={imgSrc} 
               alt={lens.name} 
               className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl bg-white p-4"
+              onError={handleImageError} 
             />
             <div className="mt-4 text-center">
                <h3 className="text-white text-xl font-bold">{lens.name}</h3>
