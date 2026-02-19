@@ -1,4 +1,18 @@
+
 import { Lens, SphereRange, ConstantValues } from '../types';
+
+// Función para generar nombres de archivo seguros y robustos
+// Ejemplo: "ZEISS" + "AT LISA tri" -> "ZEISS_AT_LISA_tri"
+export const getSafeFileName = (manufacturer: string, name: string): string => {
+  const clean = (str: string) => {
+    if (!str) return '';
+    return str
+      .trim()
+      .replace(/\s+/g, '_') // Reemplazar espacios por guiones bajos
+      .replace(/[^a-zA-Z0-9_\-\.]/g, ''); // Eliminar caracteres especiales salvo _ - .
+  };
+  return `${clean(manufacturer)}_${clean(name)}`;
+};
 
 export const parseIOLData = (xmlString: string): Lens[] => {
   const parser = new DOMParser();
