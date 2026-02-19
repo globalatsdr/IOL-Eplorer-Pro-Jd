@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Lens, SphereRange } from '../types';
-import { getSafeFileName } from '../utils/parser';
+import { getImageCandidates } from '../utils/parser';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -26,34 +26,45 @@ interface Props {
   onToggleSelect: (lens: Lens) => void;
 }
 
+const EXTENSIONS = ['png', 'jpg', 'jpeg', 'PNG', 'JPG'];
+
 const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
   const [expanded, setExpanded] = useState(false);
   
-  // Lógica de fallback para imágenes
-  // 1. Intenta nombre robusto (Manufacturer_Model.png)
-  // 2. Si falla, intenta ID (2299.png)
-  const robustName = getSafeFileName(lens.manufacturer, lens.name);
-  const [imgSrc, setImgSrc] = useState(`./lenses/${robustName}.png`);
-  const [hasTriedIdFallback, setHasTriedIdFallback] = useState(false);
+  // Estado para gestionar los intentos de carga de imagen
+  const candidates = useMemo(() => getImageCandidates(lens.manufacturer, lens.name, lens.id), [lens.manufacturer, lens.name, lens.id]);
+  const [tryState, setTryState] = useState({ candidateIdx: 0, extIdx: 0 });
   const [imgError, setImgError] = useState(false);
-
   const [showLightbox, setShowLightbox] = useState(false);
-  
-  // Resetear estado si cambia la lente (para reutilización de componentes)
+
+  // Reiniciar estado al cambiar de lente
   useEffect(() => {
-    setImgSrc(`./lenses/${getSafeFileName(lens.manufacturer, lens.name)}.png`);
-    setHasTriedIdFallback(false);
+    setTryState({ candidateIdx: 0, extIdx: 0 });
     setImgError(false);
-  }, [lens]);
+  }, [lens.id]);
+
+  // Construir la URL actual basada en el estado de intento
+  const currentFilename = candidates[tryState.candidateIdx];
+  const currentExt = EXTENSIONS[tryState.extIdx];
+  // Usamos encodeURIComponent para manejar espacios y símbolos especiales en nombres de archivo
+  const imgSrc = `./lenses/${currentFilename}.${currentExt}`;
 
   const handleImageError = () => {
-    if (!hasTriedIdFallback) {
-        // Fallback: Intentar cargar por ID si el nombre falla
-        setImgSrc(`./lenses/${lens.id}.png`);
-        setHasTriedIdFallback(true);
-    } else {
-        // Si falla ID también, mostrar error
+    const nextExtIdx = tryState.extIdx + 1;
+    
+    // 1. Probar siguiente extensión para el mismo nombre candidato
+    if (nextExtIdx < EXTENSIONS.length) {
+      setTryState(prev => ({ ...prev, extIdx: nextExtIdx }));
+    } 
+    // 2. Si se acaban las extensiones, pasar al siguiente nombre candidato (reset extensiones)
+    else {
+      const nextCandIdx = tryState.candidateIdx + 1;
+      if (nextCandIdx < candidates.length) {
+        setTryState({ candidateIdx: nextCandIdx, extIdx: 0 });
+      } else {
+        // 3. Se acabaron todas las opciones
         setImgError(true);
+      }
     }
   };
 
