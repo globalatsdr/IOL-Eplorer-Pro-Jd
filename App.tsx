@@ -32,8 +32,7 @@ import {
   Stethoscope,
   Sparkles,
   ArrowRightCircle,
-  Settings2,
-  AlertTriangle
+  Settings2
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
