@@ -1,15 +1,36 @@
 
 import { Lens, SphereRange, ConstantValues } from '../types';
 
-// Función para generar nombres de archivo seguros y robustos
-// Ejemplo: "ZEISS" + "AT LISA tri" -> "ZEISS_AT_LISA_tri"
+// Función "Sabueso": Genera una lista de posibles nombres de archivo para intentar cargar
+export const getImageCandidates = (manufacturer: string, name: string, id: string): string[] => {
+  const candidates: string[] = [];
+  
+  const manuTrim = manufacturer.trim();
+  const nameTrim = name.trim();
+
+  // 1. Concatenación Literal (Para archivos como "Alcon_AcrySof MA60MA (+D).png")
+  // Respeta espacios y símbolos tal cual vienen en el XML
+  candidates.push(`${manuTrim}_${nameTrim}`);
+
+  // 2. Variante con Fabricante en Mayúsculas (Para corregir "1stQ" -> "1STQ_611HPS")
+  candidates.push(`${manuTrim.toUpperCase()}_${nameTrim}`);
+
+  // 3. Variante "Segura" (Sin espacios ni símbolos, por si acaso alguno se renombró así)
+  const clean = (str: string) => str.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
+  const safeName = `${clean(manuTrim)}_${clean(nameTrim)}`;
+  if (!candidates.includes(safeName)) candidates.push(safeName);
+
+  // 4. Fallback al ID (Para archivos antiguos como "2465.jpeg")
+  candidates.push(id);
+
+  return candidates;
+};
+
+// Mantenemos esta por compatibilidad, aunque getImageCandidates es la principal ahora
 export const getSafeFileName = (manufacturer: string, name: string): string => {
   const clean = (str: string) => {
     if (!str) return '';
-    return str
-      .trim()
-      .replace(/\s+/g, '_') // Reemplazar espacios por guiones bajos
-      .replace(/[^a-zA-Z0-9_\-\.]/g, ''); // Eliminar caracteres especiales salvo _ - .
+    return str.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
   };
   return `${clean(manufacturer)}_${clean(name)}`;
 };
@@ -37,7 +58,7 @@ export const parseIOLData = (xmlString: string): Lens[] => {
         haigis_a0: getF("Haigis_a0", container),
         haigis_a1: getF("Haigis_a1", container),
         haigis_a2: getF("Haigis_a2", container),
-        hoffer_q: getF("HofferQ", container) || getF("pACD", container), // Fallback common in some XMLs
+        hoffer_q: getF("HofferQ", container) || getF("pACD", container),
         holladay_1: getF("Holladay1", container),
         barrett: getF("Barrett", container),
       };
