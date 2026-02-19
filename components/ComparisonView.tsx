@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
-import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, ZoomIn } from 'lucide-react';
+import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, ZoomIn, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 // --- COMPONENTE AUXILIAR PARA IMÁGENES ROBUSTAS ---
-// Este componente prueba diferentes extensiones y ahora maneja el click para Zoom
 const GraphImage = ({ id, name, onPreview }: { id: string, name: string, onPreview: (url: string) => void }) => {
   const extensions = ['jpeg', 'jpg', 'JPG', 'png', 'PNG'];
   const [currentExtIndex, setCurrentExtIndex] = useState(0);
@@ -56,9 +57,8 @@ interface Props {
 const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimilar }) => {
   const [sortKey, setSortKey] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  
-  // Estado para el Popup de la imagen
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const features = useMemo(() => [
     { 
@@ -76,7 +76,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getValue: (l: Lens) => l.name, 
       getSortValue: (l: Lens) => l.name 
     },
-    // --- GRÁFICAS CON ZOOM ---
     {
       label: 'Gráfica MTF',
       getValue: (l: Lens) => (
@@ -86,7 +85,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       ),
       getSortValue: () => 0 
     },
-    // ----------------------------------
     {
       label: 'Notas',
       getValue: (l: Lens) => l.note ? <span className="text-yellow-700 font-bold bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100 text-xs">{l.note}</span> : '-',
@@ -228,6 +226,43 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    const element = document.getElementById('comparison-table-container');
+    if (!element) return;
+
+    try {
+      // Capturamos el elemento tabla
+      const canvas = await html2canvas(element, {
+        scale: 2, // Mejor calidad
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // Apaisado (Landscape)
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10; // Margen superior
+
+      pdf.addImage(imgData, 'PNG', 0, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save('iol-comparison.pdf');
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
+      alert("Hubo un error al generar el PDF.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -236,6 +271,7 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
             <h2 className="text-xl font-bold text-gray-800">Compare Lenses</h2>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
+              {/* Controles de Ordenamiento */}
               <div className="flex items-center gap-2 text-sm bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
                   <span className="text-gray-500 pl-2 font-medium">Sort by:</span>
                   <select 
@@ -261,6 +297,18 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                     }
                   </button>
               </div>
+
+              <div className="h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
+              
+              <button 
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
+                title="Exportar tabla a PDF"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-xs font-bold">{isExporting ? 'Generando...' : 'PDF'}</span>
+              </button>
               
               <div className="h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
 
@@ -270,7 +318,7 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
             </div>
           </div>
 
-          <div className="overflow-auto flex-1 p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <div id="comparison-table-container" className="overflow-auto flex-1 p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent bg-white">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr>
@@ -281,13 +329,15 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                     <th key={lens.id} className="p-4 bg-white border-b-2 border-gray-200 min-w-[250px] relative group transition-colors hover:bg-slate-50">
                       <div className="flex justify-between items-center gap-2">
                         <span className="font-bold text-blue-900 text-lg">{lens.name}</span>
-                        <button 
-                          onClick={() => onRemove(lens.id)}
-                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Remove from comparison"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
+                        {!isExporting && (
+                          <button 
+                            onClick={() => onRemove(lens.id)}
+                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove from comparison"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                       <div className="text-xs text-gray-500 font-normal mt-1 mb-3">
                         {lens.manufacturer}
@@ -298,14 +348,16 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                         )}
                       </div>
                       
-                      <button 
-                        onClick={() => onFindSimilar(lens)}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-md border border-slate-200 transition-colors"
-                        title={`Find Zeiss lenses similar to ${lens.name}`}
-                      >
-                        <Sparkles className="w-3 h-3 text-yellow-500" />
-                        Find Zeiss Equivalent
-                      </button>
+                      {!isExporting && (
+                        <button 
+                          onClick={() => onFindSimilar(lens)}
+                          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-md border border-slate-200 transition-colors"
+                          title={`Find Zeiss lenses similar to ${lens.name}`}
+                        >
+                          <Sparkles className="w-3 h-3 text-yellow-500" />
+                          Find Zeiss Equivalent
+                        </button>
+                      )}
                     </th>
                   ))}
                 </tr>
