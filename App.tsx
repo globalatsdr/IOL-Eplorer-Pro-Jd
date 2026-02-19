@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   IOL_XML_DATA, 
@@ -31,7 +32,8 @@ import {
   Stethoscope,
   Sparkles,
   ArrowRightCircle,
-  Settings2
+  Settings2,
+  AlertTriangle
 } from 'lucide-react';
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
@@ -53,6 +55,9 @@ const deepMerge = (target: any, source: any): any => {
   }
   return output;
 };
+
+// Función auxiliar para normalizar texto y comparar de forma segura (ignora mayúsculas y espacios)
+const normalizeText = (text: string) => text ? text.toLowerCase().trim().replace(/\s+/g, ' ') : '';
 
 function App() {
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
@@ -188,19 +193,40 @@ function App() {
       try {
         const rawJson = JSON.parse(e.target?.result as string);
         const normalizedJson: Record<string, Partial<Lens>> = {};
+        const mismatches: string[] = [];
 
-        // Normalización inteligente: busca 'note' o 'Notas' en raíz y en specifications
+        // Normalización inteligente y VALIDACIÓN DE SEGURIDAD
         Object.keys(rawJson).forEach(key => {
           const item = rawJson[key];
           
-          // 1. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
+          // 1. Validación de Integridad (Anti-Corrupción de IDs)
+          // Si el JSON contiene 'name' o 'manufacturer', verificamos que coincida con el XML actual.
+          const originalLens = baseLenses.find(l => l.id === key);
+          
+          if (originalLens) {
+             const checkName = item.name || item.Name;
+             const checkManu = item.manufacturer || item.Manufacturer;
+
+             // Solo validamos si el usuario incluyó estos campos en su JSON
+             if (checkName || checkManu) {
+                 const nameMatch = !checkName || normalizeText(checkName) === normalizeText(originalLens.name);
+                 const manuMatch = !checkManu || normalizeText(checkManu) === normalizeText(originalLens.manufacturer);
+
+                 if (!nameMatch || !manuMatch) {
+                     mismatches.push(`ID ${key}: Conflicto detectado. JSON espera "${checkName || checkManu}" pero XML tiene "${originalLens.name} (${originalLens.manufacturer})".`);
+                     return; // SALTAR esta entrada, no aplicarla.
+                 }
+             }
+          }
+
+          // 2. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
           const noteContent = 
             item.note || 
             item.Notas || 
             item.specifications?.note || 
             item.specifications?.Notas;
 
-          // 2. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
+          // 3. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
           if (noteContent) {
             item.note = noteContent;
             delete item.Notas; // Limpieza
@@ -215,7 +241,13 @@ function App() {
 
         setOverrideData(normalizedJson);
         localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
-        alert('Modificaciones aplicadas correctamente (Notas sincronizadas).');
+        
+        if (mismatches.length > 0) {
+            alert(`ATENCIÓN: Se cargaron las modificaciones, pero se ignoraron ${mismatches.length} entradas por conflictos de identidad (El ID del XML ya no coincide con tu lente):\n\n` + mismatches.slice(0, 5).join('\n') + (mismatches.length > 5 ? '\n...' : ''));
+        } else {
+            alert('Modificaciones aplicadas correctamente y verificadas.');
+        }
+
       } catch (err) { alert('Error al cargar el JSON.'); }
     };
     reader.readAsText(file);
