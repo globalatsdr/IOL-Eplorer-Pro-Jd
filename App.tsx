@@ -132,7 +132,7 @@ function App() {
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
 
   useEffect(() => {
-    fetch('./lens_images.json')
+    fetch('/lens_images.json')
       .then(res => {
         if (res.ok) return res.json();
         return [];
