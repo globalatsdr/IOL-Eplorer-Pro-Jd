@@ -20,7 +20,12 @@ export const getImageCandidates = (manufacturer: string, name: string, id: strin
   const safeName = `${clean(manuTrim)}_${clean(nameTrim)}`;
   if (!candidates.includes(safeName)) candidates.push(safeName);
 
-  // 4. Fallback al ID (Para archivos antiguos como "2465.jpeg")
+  // 4. Variante Solo Nombre (Para archivos como "enVista.png" sin fabricante)
+  if (!candidates.includes(nameTrim)) candidates.push(nameTrim);
+  const safeNameOnly = clean(nameTrim);
+  if (!candidates.includes(safeNameOnly)) candidates.push(safeNameOnly);
+
+  // 5. Fallback al ID (Para archivos antiguos como "2465.jpeg")
   candidates.push(id);
 
   return candidates;
