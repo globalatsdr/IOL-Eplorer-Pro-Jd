@@ -63,6 +63,7 @@ function App() {
   const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
+  const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
   const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,6 +131,20 @@ function App() {
   }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
+
+  useEffect(() => {
+    fetch('./lens_images.json')
+      .then(res => {
+        if (res.ok) return res.json();
+        return [];
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAvailableImages(new Set(data));
+        }
+      })
+      .catch(err => console.error("Error loading image list", err));
+  }, []);
 
   useEffect(() => {
     const initData = async () => {
@@ -718,7 +733,13 @@ function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredLenses.map(lens => (
-            <LensCard key={lens.id} lens={lens} isSelected={selectedLensIds.has(lens.id)} onToggleSelect={toggleLensSelection} />
+            <LensCard 
+              key={lens.id} 
+              lens={lens} 
+              isSelected={selectedLensIds.has(lens.id)} 
+              onToggleSelect={toggleLensSelection} 
+              availableImages={availableImages}
+            />
           ))}
         </div>
       </main>
