@@ -1,0 +1,44 @@
+{
+  "2299": {
+    "manufacturer": "1stQ",
+    "name": "611HPS",
+    "specifications": {
+      "opticConcept": "Monofocal +",
+      "hapticDesign": "C-Loop MODIFICADO",
+      "toric": true,
+      "hydro": "hydrophobic",
+      "opticMaterial": "Silicona Modificada",
+      "filter": "Violeta-TEST2",
+      "technology": "Refractiva",
+      "note": "Comportamiento como EDOF - Pruena de notas"
+    },
+    "availability": {
+      "additions": [ 5.0, 6.0 ]
+    },
+    "constants": {
+      "source": {
+        "srkt": 999.99
+      },
+      "optimized": {
+        "srkt": 888.88
+      }
+    }
+  },
+  "2306": {
+    "manufacturer": "1stQ",
+    "name": "A4DW0K",
+    "specifications": {
+      "opticConcept": "Monofocal +",
+      "filter": "Violet-light & UV",
+      "note": "Lente monofocal hidrofílica estándar. Buena estabilidad en saco."
+    }
+  },
+  "2307": {
+    "manufacturer": "1stQ",
+    "name": "A4EW0H",
+    "specifications": {
+      "technology": "Refractiva",
+      "note": "Tecnología EDoF no difractiva. Ideal para evitar halos nocturnos."
+    }
+  }
+}
