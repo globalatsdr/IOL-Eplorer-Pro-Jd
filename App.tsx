@@ -65,7 +65,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
-  const overrideFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
   const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
@@ -199,73 +198,74 @@ function App() {
     if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
   };
 
-  const handleOverrideUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const rawJson = JSON.parse(e.target?.result as string);
-        const normalizedJson: Record<string, Partial<Lens>> = {};
-        const mismatches: string[] = [];
+  const handleLoadModifications = async () => {
+    try {
+      const response = await fetch('./modificaciones.json');
+      if (!response.ok) {
+        throw new Error('No se pudo cargar el archivo de modificaciones.');
+      }
+      
+      const rawJson = await response.json();
+      const normalizedJson: Record<string, Partial<Lens>> = {};
+      const mismatches: string[] = [];
 
-        // Normalización inteligente y VALIDACIÓN DE SEGURIDAD
-        Object.keys(rawJson).forEach(key => {
-          const item = rawJson[key];
-          
-          // 1. Validación de Integridad (Anti-Corrupción de IDs)
-          // Si el JSON contiene 'name' o 'manufacturer', verificamos que coincida con el XML actual.
-          const originalLens = baseLenses.find(l => l.id === key);
-          
-          if (originalLens) {
-             const checkName = item.name || item.Name;
-             const checkManu = item.manufacturer || item.Manufacturer;
-
-             // Solo validamos si el usuario incluyó estos campos en su JSON
-             if (checkName || checkManu) {
-                 const nameMatch = !checkName || normalizeText(checkName) === normalizeText(originalLens.name);
-                 const manuMatch = !checkManu || normalizeText(checkManu) === normalizeText(originalLens.manufacturer);
-
-                 if (!nameMatch || !manuMatch) {
-                     mismatches.push(`ID ${key}: Conflicto detectado. JSON espera "${checkName || checkManu}" pero XML tiene "${originalLens.name} (${originalLens.manufacturer})".`);
-                     return; // SALTAR esta entrada, no aplicarla.
-                 }
-             }
-          }
-
-          // 2. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
-          const noteContent = 
-            item.note || 
-            item.Notas || 
-            item.specifications?.note || 
-            item.specifications?.Notas;
-
-          // 3. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
-          if (noteContent) {
-            item.note = noteContent;
-            delete item.Notas; // Limpieza
-            if (item.specifications) {
-              delete item.specifications.note; // Limpieza
-              delete item.specifications.Notas; // Limpieza
-            }
-          }
-
-          normalizedJson[key] = item;
-        });
-
-        setOverrideData(normalizedJson);
-        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
+      // Normalización inteligente y VALIDACIÓN DE SEGURIDAD
+      Object.keys(rawJson).forEach(key => {
+        const item = rawJson[key];
         
-        if (mismatches.length > 0) {
-            alert(`ATENCIÓN: Se cargaron las modificaciones, pero se ignoraron ${mismatches.length} entradas por conflictos de identidad (El ID del XML ya no coincide con tu lente):\n\n` + mismatches.slice(0, 5).join('\n') + (mismatches.length > 5 ? '\n...' : ''));
-        } else {
-            alert('Modificaciones aplicadas correctamente y verificadas.');
+        // 1. Validación de Integridad (Anti-Corrupción de IDs)
+        // Si el JSON contiene 'name' o 'manufacturer', verificamos que coincida con el XML actual.
+        const originalLens = baseLenses.find(l => l.id === key);
+        
+        if (originalLens) {
+           const checkName = item.name || item.Name;
+           const checkManu = item.manufacturer || item.Manufacturer;
+
+           // Solo validamos si el usuario incluyó estos campos en su JSON
+           if (checkName || checkManu) {
+               const nameMatch = !checkName || normalizeText(checkName) === normalizeText(originalLens.name);
+               const manuMatch = !checkManu || normalizeText(checkManu) === normalizeText(originalLens.manufacturer);
+
+               if (!nameMatch || !manuMatch) {
+                   mismatches.push(`ID ${key}: Conflicto detectado. JSON espera "${checkName || checkManu}" pero XML tiene "${originalLens.name} (${originalLens.manufacturer})".`);
+                   return; // SALTAR esta entrada, no aplicarla.
+               }
+           }
         }
 
-      } catch (err) { alert('Error al cargar el JSON.'); }
-    };
-    reader.readAsText(file);
-    if (overrideFileInputRef.current) overrideFileInputRef.current.value = '';
+        // 2. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
+        const noteContent = 
+          item.note || 
+          item.Notas || 
+          item.specifications?.note || 
+          item.specifications?.Notas;
+
+        // 3. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
+        if (noteContent) {
+          item.note = noteContent;
+          delete item.Notas; // Limpieza
+          if (item.specifications) {
+            delete item.specifications.note; // Limpieza
+            delete item.specifications.Notas; // Limpieza
+          }
+        }
+
+        normalizedJson[key] = item;
+      });
+
+      setOverrideData(normalizedJson);
+      localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
+      
+      if (mismatches.length > 0) {
+          alert(`ATENCIÓN: Se cargaron las modificaciones, pero se ignoraron ${mismatches.length} entradas por conflictos de identidad (El ID del XML ya no coincide con tu lente):\n\n` + mismatches.slice(0, 5).join('\n') + (mismatches.length > 5 ? '\n...' : ''));
+      } else {
+          alert('Modificaciones aplicadas correctamente y verificadas desde el archivo interno.');
+      }
+
+    } catch (err) { 
+      console.error(err);
+      alert('Error al cargar el archivo modificaciones.json. Asegúrate de que existe en la carpeta public.'); 
+    }
   };
 
   const handleClearOverrides = () => {
@@ -373,7 +373,6 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       <input type="file" ref={xmlFileInputRef} onChange={handleXMLUpload} accept=".xml" className="hidden" />
-      <input type="file" ref={overrideFileInputRef} onChange={handleOverrideUpload} accept=".json" className="hidden" />
 
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -402,10 +401,10 @@ function App() {
               <Upload className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Cargar XML</span>
             </button>
             <button 
-              onClick={() => overrideFileInputRef.current?.click()} 
+              onClick={handleLoadModifications} 
               disabled={!areAdminActionsEnabled}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-bold text-slate-700 ${areAdminActionsEnabled ? 'hover:bg-white hover:text-orange-600 cursor-pointer' : 'cursor-not-allowed'}`}
-              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Cargar JSON de modificaciones"}
+              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Cargar modificaciones internas"}
             >
               <FileJson className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Modificaciones</span>
             </button>
