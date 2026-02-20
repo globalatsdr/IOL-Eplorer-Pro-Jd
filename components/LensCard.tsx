@@ -43,8 +43,8 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
         const filename = `${candidate}.${ext}`;
         if (availableImages.has(filename)) {
           // IMPORTANTE: Codificar el nombre del archivo para URL (espacios -> %20, etc)
-          // Usamos ruta absoluta /lenses/ para evitar problemas con rutas relativas
-          return `/lenses/${encodeURIComponent(filename)}`;
+          // Usamos ruta relativa ./lenses/ para compatibilidad con subdirectorios (GitHub Pages, etc)
+          return `./lenses/${encodeURIComponent(filename)}`;
         }
       }
     }
