@@ -132,7 +132,7 @@ function App() {
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
 
   useEffect(() => {
-    fetch('/lens_images.json')
+    fetch('./lens_images.json')
       .then(res => {
         if (res.ok) return res.json();
         return [];
@@ -322,7 +322,7 @@ function App() {
 
       if (activeTab === FilterTab.BASIC) {
         if (basicFilters.manufacturer !== 'all' && lens.manufacturer !== basicFilters.manufacturer) return false;
-        if (basicFilters.opticConcept !== 'all' && lens.specifications.opticConcept.toLowerCase() !== basicFilters.opticConcept.toLowerCase()) return false;
+        if (basicFilters.opticConcept !== 'all' && lens.specifications.opticConcept?.toLowerCase() !== basicFilters.opticConcept.toLowerCase()) return false;
         if (basicFilters.toric !== 'all') {
           const isToric = lens.specifications.toric;
           if (basicFilters.toric === 'yes' && !isToric) return false;
