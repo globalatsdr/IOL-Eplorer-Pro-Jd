@@ -5,6 +5,8 @@ import { Lens, SphereRange, ConstantValues } from '../types';
 export const getImageCandidates = (manufacturer: string, name: string, id: string): string[] => {
   const candidates: string[] = [];
   
+  if (!manufacturer || !name) return [id];
+
   const manuTrim = manufacturer.trim();
   const nameTrim = name.trim();
 
