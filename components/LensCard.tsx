@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Lens, SphereRange } from '../types';
 import { getImageCandidates } from '../utils/parser';
 import { 
@@ -24,49 +24,33 @@ interface Props {
   lens: Lens;
   isSelected: boolean;
   onToggleSelect: (lens: Lens) => void;
+  availableImages: Set<string>;
 }
 
 const EXTENSIONS = ['png', 'jpg', 'jpeg', 'PNG', 'JPG'];
 
-const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
+const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, availableImages }) => {
   const [expanded, setExpanded] = useState(false);
-  
-  // Estado para gestionar los intentos de carga de imagen
-  const candidates = useMemo(() => getImageCandidates(lens.manufacturer, lens.name, lens.id), [lens.manufacturer, lens.name, lens.id]);
-  const [tryState, setTryState] = useState({ candidateIdx: 0, extIdx: 0 });
-  const [imgError, setImgError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  
+  const candidates = useMemo(() => getImageCandidates(lens.manufacturer, lens.name, lens.id), [lens.manufacturer, lens.name, lens.id]);
 
-  // Reiniciar estado al cambiar de lente
-  useEffect(() => {
-    setTryState({ candidateIdx: 0, extIdx: 0 });
-    setImgError(false);
-  }, [lens.id]);
-
-  // Construir la URL actual basada en el estado de intento
-  const currentFilename = candidates[tryState.candidateIdx];
-  const currentExt = EXTENSIONS[tryState.extIdx];
-  // Usamos encodeURIComponent para manejar espacios y símbolos especiales en nombres de archivo
-  const imgSrc = `./lenses/${currentFilename}.${currentExt}`;
-
-  const handleImageError = () => {
-    const nextExtIdx = tryState.extIdx + 1;
+  const imgSrc = useMemo(() => {
+    if (!availableImages || availableImages.size === 0) return null;
     
-    // 1. Probar siguiente extensión para el mismo nombre candidato
-    if (nextExtIdx < EXTENSIONS.length) {
-      setTryState(prev => ({ ...prev, extIdx: nextExtIdx }));
-    } 
-    // 2. Si se acaban las extensiones, pasar al siguiente nombre candidato (reset extensiones)
-    else {
-      const nextCandIdx = tryState.candidateIdx + 1;
-      if (nextCandIdx < candidates.length) {
-        setTryState({ candidateIdx: nextCandIdx, extIdx: 0 });
-      } else {
-        // 3. Se acabaron todas las opciones
-        setImgError(true);
+    for (const candidate of candidates) {
+      for (const ext of EXTENSIONS) {
+        const filename = `${candidate}.${ext}`;
+        if (availableImages.has(filename)) {
+          // Usamos encodeURIComponent para manejar espacios y símbolos especiales en nombres de archivo
+          // Pero como ya tenemos el nombre exacto del archivo, solo necesitamos asegurar que la URL sea válida
+          // El nombre en el Set es el nombre real del archivo.
+          return `./lenses/${filename}`;
+        }
       }
     }
-  };
+    return null;
+  }, [candidates, availableImages]);
 
   const getTypeColor = (concept: string) => {
     const c = concept.toLowerCase();
@@ -151,7 +135,7 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
             </div>
 
             {/* Imagen de la Lente (Thumbnail con Lightbox) */}
-            {!imgError && (
+            {imgSrc && (
               <div 
                 className="w-24 h-24 flex-shrink-0 bg-white rounded-xl border border-slate-100 p-2 flex items-center justify-center cursor-zoom-in relative group/img"
                 onClick={(e) => { e.stopPropagation(); setShowLightbox(true); }}
@@ -160,7 +144,6 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
                   src={imgSrc} 
                   alt={lens.name} 
                   className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover/img:scale-105"
-                  onError={handleImageError}
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-blue-900/0 group-hover/img:bg-blue-900/5 transition-colors rounded-lg">
                   <ZoomIn className="w-6 h-6 text-blue-500 opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-sm" />
@@ -303,10 +286,9 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect }) => {
         >
           <div className="relative max-w-full max-h-full">
             <img 
-              src={imgSrc} 
+              src={imgSrc || ''} 
               alt={lens.name} 
               className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl bg-white p-4"
-              onError={handleImageError} 
             />
             <div className="mt-4 text-center">
                <h3 className="text-white text-xl font-bold">{lens.name}</h3>
