@@ -104,7 +104,7 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
               {lens.note && (
                 <div className="group/note relative">
                   <Lightbulb className="w-4 h-4 text-yellow-500 fill-yellow-500 animate-pulse" />
-                  <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-lg border border-yellow-200 shadow-lg opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none z-20">
+                  <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-lg border border-yellow-200 shadow-lg opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none z-50">
                     {lens.note}
                   </div>
                 </div>
