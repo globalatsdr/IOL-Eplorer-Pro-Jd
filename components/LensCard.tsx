@@ -52,6 +52,7 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
   }, [candidates, availableImages]);
 
   const getTypeColor = (concept: string) => {
+    if (!concept) return 'bg-gray-100 text-gray-800 border-gray-200';
     const c = concept.toLowerCase();
     if (c.includes('monofocal')) return 'bg-blue-100 text-blue-800 border-blue-200';
     if (c.includes('multifocal')) return 'bg-purple-100 text-purple-800 border-purple-200';
