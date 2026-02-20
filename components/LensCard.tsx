@@ -42,10 +42,9 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
       for (const ext of EXTENSIONS) {
         const filename = `${candidate}.${ext}`;
         if (availableImages.has(filename)) {
-          // Usamos encodeURIComponent para manejar espacios y símbolos especiales en nombres de archivo
-          // Pero como ya tenemos el nombre exacto del archivo, solo necesitamos asegurar que la URL sea válida
-          // El nombre en el Set es el nombre real del archivo.
-          return `./lenses/${filename}`;
+          // IMPORTANTE: Codificar el nombre del archivo para URL (espacios -> %20, etc)
+          // Usamos ruta absoluta /lenses/ para evitar problemas con rutas relativas
+          return `/lenses/${encodeURIComponent(filename)}`;
         }
       }
     }
