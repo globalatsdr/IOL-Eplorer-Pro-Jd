@@ -731,15 +731,21 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredLenses.map(lens => (
-            <LensCard 
-              key={lens.id} 
-              lens={lens} 
-              isSelected={selectedLensIds.has(lens.id)} 
-              onToggleSelect={toggleLensSelection} 
-              availableImages={availableImages}
-            />
-          ))}
+          {filteredLenses.length === 0 ? (
+            <div className="col-span-full text-center p-10 text-slate-400">
+              <p>No se encontraron lentes con los filtros actuales.</p>
+            </div>
+          ) : (
+            filteredLenses.map(lens => (
+              <LensCard 
+                key={lens.id} 
+                lens={lens} 
+                isSelected={selectedLensIds.has(lens.id)} 
+                onToggleSelect={toggleLensSelection} 
+                availableImages={availableImages}
+              />
+            ))
+          )}
         </div>
       </main>
 
