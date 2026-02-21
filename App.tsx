@@ -32,8 +32,137 @@ import {
   Stethoscope,
   Sparkles,
   ArrowRightCircle,
-  Settings2
+  Settings2,
+  LineChart,
+  X
 } from 'lucide-react';
+
+// ... (existing imports)
+
+// Helper para buscar gráficas
+const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
+  const cleanName = lensName.trim();
+  // Normalización simple: buscar si existe el archivo exacto o con espacios reemplazados
+  // Patrones esperados: "MTF3_Nombre.png", "MTF3_Nombre Lente.png"
+  
+  const candidates = [
+    `${type}_${cleanName}.png`,
+    `${type}_${cleanName.replace(/\s+/g, '_')}.png`
+  ];
+
+  for (const c of candidates) {
+    if (availableGraphs.has(c)) return `./graphs/${c}`;
+  }
+  return null;
+};
+
+const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], availableGraphs: Set<string>, onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <LineChart className="w-6 h-6 text-blue-600" />
+              Análisis Gráfico Comparativo
+            </h2>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">
+              Curvas MTF y Desenfoque
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+            <X className="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
+          <div className="grid grid-cols-1 gap-12">
+            {lenses.map(lens => {
+              const mtf3 = getGraphUrl('MTF3', lens.name, availableGraphs);
+              const mtf45 = getGraphUrl('MTF45', lens.name, availableGraphs);
+              const defocus = getGraphUrl('Defocus', lens.name, availableGraphs);
+              const hasAnyGraph = mtf3 || mtf45 || defocus;
+
+              if (!hasAnyGraph) return null;
+
+              return (
+                <div key={lens.id} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                    <div className="w-3 h-12 bg-blue-600 rounded-full"></div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900">{lens.name}</h3>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{lens.manufacturer}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* MTF 3.0mm */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> MTF (3.0mm)
+                      </div>
+                      <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
+                        {mtf3 ? (
+                          <img src={mtf3} alt={`MTF 3.0mm - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                        ) : (
+                          <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* MTF 4.5mm */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> MTF (4.5mm)
+                      </div>
+                      <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
+                        {mtf45 ? (
+                          <img src={mtf45} alt={`MTF 4.5mm - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                        ) : (
+                          <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Defocus Curve */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest">
+                        <span className="w-2 h-2 rounded-full bg-purple-500"></span> Curva de Desenfoque
+                      </div>
+                      <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
+                        {defocus ? (
+                          <img src={defocus} alt={`Defocus - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                        ) : (
+                          <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {lenses.every(l => !getGraphUrl('MTF3', l.name, availableGraphs) && !getGraphUrl('MTF45', l.name, availableGraphs) && !getGraphUrl('Defocus', l.name, availableGraphs)) && (
+               <div className="text-center py-20">
+                 <LineChart className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                 <p className="text-slate-400 font-bold text-lg">No hay gráficas disponibles para las lentes seleccionadas.</p>
+                 <p className="text-slate-300 text-sm mt-2">Asegúrese de que los archivos existen en la carpeta /graphs y están listados en lens_graphs.json</p>
+               </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-6 border-t border-slate-100 bg-white flex justify-end">
+          <button onClick={onClose} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors">
+            Cerrar Panel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ... (rest of App component)
 
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 const STORAGE_KEY_XML = 'iol_data_cache_v3';
@@ -64,6 +193,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
   const [loading, setLoading] = useState(true);
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
+  const [availableGraphs, setAvailableGraphs] = useState<Set<string>>(new Set());
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
@@ -75,6 +205,7 @@ function App() {
 
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
   const [showComparison, setShowComparison] = useState(false);
+  const [showGraphsModal, setShowGraphsModal] = useState(false);
   const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
 
   const [basicFilters, setBasicFilters] = useState<BasicFilters>({
@@ -132,17 +263,21 @@ function App() {
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
 
   useEffect(() => {
+    // Cargar imágenes
     fetch('./lens_images.json')
-      .then(res => {
-        if (res.ok) return res.json();
-        return [];
-      })
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
-        if (Array.isArray(data)) {
-          setAvailableImages(new Set(data));
-        }
+        if (Array.isArray(data)) setAvailableImages(new Set(data));
       })
       .catch(err => console.error("Error loading image list", err));
+
+    // Cargar gráficas
+    fetch('./lens_graphs.json')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) setAvailableGraphs(new Set(data));
+      })
+      .catch(err => console.error("Error loading graphs list", err));
   }, []);
 
   useEffect(() => {
@@ -760,12 +895,16 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => setSelectedLensIds(new Set())} className="text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Limpiar</button>
+            <button onClick={() => setShowGraphsModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-slate-900/40 uppercase tracking-tight flex items-center gap-2">
+              <LineChart className="w-4 h-4" /> <span className="hidden sm:inline">Gráficas</span>
+            </button>
             <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-900/40 uppercase tracking-tight">Comparar</button>
           </div>
         </div>
       )}
 
       {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findZeissEquivalent} />}
+      {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
       {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} />}
     </div>
   );
