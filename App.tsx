@@ -66,7 +66,7 @@ const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, avail
   return null;
 };
 
-const GraphImage = ({ src, alt }: { src: string, alt: string }) => {
+const GraphImage = ({ src, alt, onClick }: { src: string, alt: string, onClick?: () => void }) => {
   const [error, setError] = React.useState(false);
 
   if (error) {
@@ -79,19 +79,28 @@ const GraphImage = ({ src, alt }: { src: string, alt: string }) => {
   }
 
   return (
-    <img 
-      src={src} 
-      alt={alt} 
-      className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" 
-      onError={() => setError(true)}
-    />
+    <div className="relative w-full h-full group cursor-zoom-in" onClick={onClick}>
+      <img 
+        src={src} 
+        alt={alt} 
+        className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" 
+        onError={() => setError(true)}
+      />
+      <div className="absolute inset-0 flex items-center justify-center bg-blue-900/0 group-hover:bg-blue-900/5 transition-colors rounded-xl pointer-events-none">
+        <div className="bg-white/90 p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100">
+           <Search className="w-4 h-4 text-blue-600" />
+        </div>
+      </div>
+    </div>
   );
 };
 
 const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], availableGraphs: Set<string>, onClose: () => void }) => {
+  const [selectedGraph, setSelectedGraph] = React.useState<{src: string, alt: string} | null>(null);
+
   return (
     <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -135,7 +144,11 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {mtf3 ? (
-                          <GraphImage src={mtf3} alt={`MTF 3.0mm - ${lens.name}`} />
+                          <GraphImage 
+                            src={mtf3} 
+                            alt={`MTF 3.0mm - ${lens.name}`} 
+                            onClick={() => setSelectedGraph({ src: mtf3, alt: `MTF 3.0mm - ${lens.name}` })}
+                          />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
@@ -149,7 +162,11 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {mtf45 ? (
-                          <GraphImage src={mtf45} alt={`MTF 4.5mm - ${lens.name}`} />
+                          <GraphImage 
+                            src={mtf45} 
+                            alt={`MTF 4.5mm - ${lens.name}`} 
+                            onClick={() => setSelectedGraph({ src: mtf45, alt: `MTF 4.5mm - ${lens.name}` })}
+                          />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
@@ -163,7 +180,11 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {defocus ? (
-                          <GraphImage src={defocus} alt={`Defocus - ${lens.name}`} />
+                          <GraphImage 
+                            src={defocus} 
+                            alt={`Defocus - ${lens.name}`} 
+                            onClick={() => setSelectedGraph({ src: defocus, alt: `Defocus - ${lens.name}` })}
+                          />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
@@ -189,6 +210,31 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
             Cerrar Panel
           </button>
         </div>
+
+        {/* LIGHTBOX OVERLAY */}
+        {selectedGraph && (
+          <div 
+            className="absolute inset-0 z-50 bg-white flex flex-col animate-in fade-in duration-200"
+            onClick={() => setSelectedGraph(null)}
+          >
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-black text-slate-800 text-lg">{selectedGraph.alt}</h3>
+              <button 
+                onClick={() => setSelectedGraph(null)}
+                className="p-2 bg-slate-200 hover:bg-slate-300 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-600" />
+              </button>
+            </div>
+            <div className="flex-1 p-8 flex items-center justify-center bg-slate-50 cursor-zoom-out">
+              <img 
+                src={selectedGraph.src} 
+                alt={selectedGraph.alt} 
+                className="max-w-full max-h-full object-contain mix-blend-multiply shadow-2xl rounded-xl bg-white p-4"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
