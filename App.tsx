@@ -42,16 +42,19 @@ import {
 // Helper para buscar gráficas
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
   const cleanName = lensName.trim();
-  // Normalización simple: buscar si existe el archivo exacto o con espacios reemplazados
-  // Patrones esperados: "MTF3_Nombre.png", "MTF3_Nombre Lente.png"
+  const extensions = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG'];
   
-  const candidates = [
-    `${type}_${cleanName}.png`,
-    `${type}_${cleanName.replace(/\s+/g, '_')}.png`
+  // Generar variantes de nombres base (sin extensión)
+  const bases = [
+    `${type}_${cleanName}`,                     // Ej: MTF3_611HPS
+    `${type}_${cleanName.replace(/\s+/g, '_')}` // Ej: MTF3_611HPS (si hubiera espacios)
   ];
 
-  for (const c of candidates) {
-    if (availableGraphs.has(c)) return `./graphs/${c}`;
+  for (const base of bases) {
+    for (const ext of extensions) {
+      const filename = `${base}.${ext}`;
+      if (availableGraphs.has(filename)) return `./graphs/${filename}`;
+    }
   }
   return null;
 };
