@@ -44,19 +44,48 @@ const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, avail
   const cleanName = lensName.trim();
   const extensions = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG'];
   
+  // Función de limpieza robusta (igual que en parser.ts)
+  const safeClean = (str: string) => str.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
+
   // Generar variantes de nombres base (sin extensión)
   const bases = [
-    `${type}_${cleanName}`,                     // Ej: MTF3_611HPS
-    `${type}_${cleanName.replace(/\s+/g, '_')}` // Ej: MTF3_611HPS (si hubiera espacios)
+    `${type}_${cleanName}`,                     // Ej: MTF3_AcrySof IQ
+    `${type}_${cleanName.replace(/\s+/g, '_')}`, // Ej: MTF3_AcrySof_IQ
+    `${type}_${safeClean(cleanName)}`           // Ej: MTF3_AcrySof_IQ (limpio)
   ];
 
-  for (const base of bases) {
+  // Eliminar duplicados
+  const uniqueBases = Array.from(new Set(bases));
+
+  for (const base of uniqueBases) {
     for (const ext of extensions) {
       const filename = `${base}.${ext}`;
       if (availableGraphs.has(filename)) return `./graphs/${filename}`;
     }
   }
   return null;
+};
+
+const GraphImage = ({ src, alt }: { src: string, alt: string }) => {
+  const [error, setError] = React.useState(false);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-red-50">
+        <span className="text-red-400 font-bold text-xs mb-1">Error de carga</span>
+        <span className="text-red-300 text-[10px] break-all">{src.split('/').pop()}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={alt} 
+      className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" 
+      onError={() => setError(true)}
+    />
+  );
 };
 
 const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], availableGraphs: Set<string>, onClose: () => void }) => {
@@ -106,7 +135,7 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {mtf3 ? (
-                          <img src={mtf3} alt={`MTF 3.0mm - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                          <GraphImage src={mtf3} alt={`MTF 3.0mm - ${lens.name}`} />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
@@ -120,7 +149,7 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {mtf45 ? (
-                          <img src={mtf45} alt={`MTF 4.5mm - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                          <GraphImage src={mtf45} alt={`MTF 4.5mm - ${lens.name}`} />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
@@ -134,7 +163,7 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
                       </div>
                       <div className="aspect-[4/3] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden group relative">
                         {defocus ? (
-                          <img src={defocus} alt={`Defocus - ${lens.name}`} className="w-full h-full object-contain mix-blend-multiply p-2 transition-transform duration-300 group-hover:scale-105" />
+                          <GraphImage src={defocus} alt={`Defocus - ${lens.name}`} />
                         ) : (
                           <span className="text-slate-300 text-xs font-bold italic">No disponible</span>
                         )}
