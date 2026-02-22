@@ -963,20 +963,25 @@ function App() {
       </main>
 
       {selectedLensIds.size > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl p-4 bg-slate-900/95 backdrop-blur-xl text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex justify-between items-center z-50 animate-in slide-in-from-bottom-5 border border-white/10">
-          <div className="flex items-center gap-5">
-            <div className="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-900/40">{selectedLensIds.size}</div>
-            <div>
-              <p className="text-sm font-black uppercase tracking-tight">Comparativa Activa</p>
-              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite alcanzado' : 'Selecciona hasta 5'}</p>
+        <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-[90%] md:max-w-2xl p-4 md:rounded-3xl bg-slate-900/95 backdrop-blur-xl text-white shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row justify-between items-center z-50 animate-in slide-in-from-bottom-5 border-t md:border border-white/10 gap-4 md:gap-0">
+          <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
+            <div className="flex items-center gap-5">
+              <div className="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-900/40">{selectedLensIds.size}</div>
+              <div>
+                <p className="text-sm font-black uppercase tracking-tight">Comparativa Activa</p>
+                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite alcanzado' : 'Selecciona hasta 5'}</p>
+              </div>
             </div>
+            <button onClick={() => setSelectedLensIds(new Set())} className="md:hidden text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Limpiar</button>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSelectedLensIds(new Set())} className="text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Limpiar</button>
-            <button onClick={() => setShowGraphsModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-slate-900/40 uppercase tracking-tight flex items-center gap-2">
-              <LineChart className="w-4 h-4" /> <span className="hidden sm:inline">Gráficas</span>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button onClick={() => setSelectedLensIds(new Set())} className="hidden md:block text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest mr-2">Limpiar</button>
+            <button onClick={() => setShowGraphsModal(true)} className="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 text-white px-4 py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-slate-900/40 uppercase tracking-tight flex items-center justify-center gap-2">
+              <LineChart className="w-4 h-4" /> <span className="inline">Gráficas</span>
             </button>
-            <button onClick={() => setShowComparison(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-900/40 uppercase tracking-tight">Comparar</button>
+            <button onClick={() => setShowComparison(true)} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-6 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-900/40 uppercase tracking-tight">
+              Comparar
+            </button>
           </div>
         </div>
       )}
