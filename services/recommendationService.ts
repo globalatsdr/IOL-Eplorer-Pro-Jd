@@ -40,26 +40,37 @@ export const ALL_RULES: Rule[] = [
 export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   const age = inputs.age ? parseInt(inputs.age, 10) : 0;
   const la = inputs.axialLength ? parseFloat(inputs.axialLength.replace(',', '.')) : 0;
-  
-  // Convertir a IDs de grupo (string)
+
   const ageG = age >= 35 && age <= 44 ? '1' : age >= 45 && age <= 54 ? '2' : age >= 55 && age <= 64 ? '3' : age >= 65 && age <= 74 ? '4' : age >= 75 && age <= 85 ? '5' : null;
   const laG = la >= 14 && la <= 18.5 ? '1' : la > 18.5 && la <= 22 ? '2' : la > 22 && la <= 24.5 ? '3' : la > 24.5 && la <= 29 ? '4' : la > 29 && la <= 35 ? '5' : null;
 
   const matches = ALL_RULES.filter(rule => {
-    const userConditions = inputs;
-    const ruleConditions = rule.conditions;
+    const rc = rule.conditions;
 
-    // Comprobar cada campo. Si la regla lo especifica, debe coincidir.
-    if (ruleConditions.ageGroup && !ruleConditions.ageGroup.includes(ageG || '')) return false;
-    if (ruleConditions.laGroup && !ruleConditions.laGroup.includes(laG || '')) return false;
-    if (ruleConditions.lensStatus && userConditions.lensStatus !== 'any' && !ruleConditions.lensStatus.includes(userConditions.lensStatus)) return false;
-    if (ruleConditions.lvc && userConditions.lvc !== 'any' && !ruleConditions.lvc.includes(userConditions.lvc)) return false;
-    if (ruleConditions.udva && userConditions.udva !== 'any' && !ruleConditions.udva.includes(userConditions.udva)) return false;
-    if (ruleConditions.contactLenses && userConditions.contactLenses !== 'any' && !ruleConditions.contactLenses.includes(userConditions.contactLenses)) return false;
-    if (ruleConditions.anteriorChamber && userConditions.anteriorChamber !== 'any' && !ruleConditions.anteriorChamber.includes(userConditions.anteriorChamber)) return false;
-    if (ruleConditions.retina && userConditions.retina !== 'any' && !ruleConditions.retina.includes(userConditions.retina)) return false;
+    // 1. Comprobación de Grupos (Edad y LA)
+    if (rc.ageGroup && !rc.ageGroup.includes(ageG || '')) return false;
+    if (rc.laGroup && !rc.laGroup.includes(laG || '')) return false;
 
-    // Si todas las condiciones especificadas en la regla se cumplen, es un match.
+    // 2. Comprobación de Estado del Cristalino (siempre tiene valor)
+    if (rc.lensStatus && inputs.lensStatus !== 'any' && !rc.lensStatus.includes(inputs.lensStatus)) return false;
+    if (rc.lensStatus && inputs.lensStatus === 'any') return false; // Si la regla lo necesita, el usuario debe elegir
+
+
+    // 3. Comprobación de Condiciones Opcionales
+    const checkOptional = (ruleValues: string[] | undefined, userValue: string) => {
+      if (!ruleValues && userValue === 'any') return true; // Ni la regla ni el usuario especifican
+      if (ruleValues && userValue === 'any') return false; // La regla requiere, pero el usuario no especifica
+      if (!ruleValues && userValue !== 'any') return false; // El usuario especifica, pero la regla no
+      if (ruleValues && userValue !== 'any') return ruleValues.includes(userValue); // Ambos especifican, deben coincidir
+      return true;
+    };
+
+    if (!checkOptional(rc.lvc, inputs.lvc)) return false;
+    if (!checkOptional(rc.udva, inputs.udva)) return false;
+    if (!checkOptional(rc.contactLenses, inputs.contactLenses)) return false;
+    if (!checkOptional(rc.anteriorChamber, inputs.anteriorChamber)) return false;
+    if (!checkOptional(rc.retina, inputs.retina)) return false;
+    
     return true;
   });
 
