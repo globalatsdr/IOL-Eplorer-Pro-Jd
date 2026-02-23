@@ -26,22 +26,20 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
 
   const handleGenerateCode = () => {
     if (!result) return alert("Por favor, seleccione un Resultado Clínico.");
-    
-    const sc: string[] = [];
-    if (lvc !== 'any') sc.push(lvc);
-    if (udva !== 'any') sc.push(udva);
-    if (contactLenses !== 'any') sc.push(contactLenses);
-    if (anteriorChamber !== 'any') sc.push(anteriorChamber);
-    if (retina === 'con_estafiloma') sc.push('estafiloma');
+
+    const conditions: any = {};
+    if (selectedAge !== null) conditions.ageGroup = [(selectedAge + 1).toString()];
+    if (selectedLA !== null) conditions.laGroup = [(selectedLA + 1).toString()];
+    if (lensStatus !== 'any') conditions.lensStatus = [lensStatus];
+    if (lvc !== 'any') conditions.lvc = [lvc];
+    if (udva !== 'any') conditions.udva = [udva];
+    if (contactLenses !== 'any') conditions.contactLenses = [contactLenses];
+    if (anteriorChamber !== 'any') conditions.anteriorChamber = [anteriorChamber];
+    if (retina !== 'any') conditions.retina = [retina];
 
     const rule = {
       result,
-      conditions: {
-        ...(selectedAge !== null && { ageGroup: [selectedAge + 1] }),
-        ...(selectedLA !== null && { laGroup: [selectedLA + 1] }),
-        ...(lensStatus !== 'any' && { lensStatus: [lensStatus] }),
-        ...(sc.length > 0 && { specialConditions: sc })
-      }
+      conditions
     };
 
     setGeneratedCode(JSON.stringify(rule, null, 2) + ",");
@@ -145,31 +143,31 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">LVC</label>
                   <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={lvc} onChange={e => setLvc(e.target.value)}>
-                    {Object.entries(LVC_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {LVC_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">UCVA</label>
                   <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={udva} onChange={e => setUdva(e.target.value)}>
-                    {Object.entries(UDVA_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {UDVA_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Lentes de Contacto</label>
                   <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={contactLenses} onChange={e => setContactLenses(e.target.value)}>
-                    {Object.entries(CONTACT_LENS_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {CONTACT_LENS_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cámara Anterior</label>
                   <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={anteriorChamber} onChange={e => setAnteriorChamber(e.target.value)}>
-                    {Object.entries(ANTERIOR_CHAMBER_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {ANTERIOR_CHAMBER_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Retina</label>
                   <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={retina} onChange={e => setRetina(e.target.value)}>
-                    {Object.entries(RETINA_OPTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {RETINA_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
                 </div>
               </div>
