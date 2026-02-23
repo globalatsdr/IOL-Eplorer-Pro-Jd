@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { CLINICAL_CONCEPTS, LVC_OPTIONS, UDVA_OPTIONS, CONTACT_LENS_OPTIONS, ANTERIOR_CHAMBER_OPTIONS, RETINA_OPTIONS } from '../constants';
 import { ArrowLeft, Code, ClipboardCheck, Info } from 'lucide-react';
 
+
+
 interface Props {
-  onBack: () => void;
+  onClose: () => void;
 }
 
-const RuleCreator: React.FC<Props> = ({ onBack }) => {
+const RuleCreator: React.FC<Props> = ({ onClose }) => {
   const [result, setResult] = useState('');
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const [selectedLA, setSelectedLA] = useState<number | null>(null);
@@ -55,8 +57,8 @@ const RuleCreator: React.FC<Props> = ({ onBack }) => {
       <div className="p-6 overflow-y-auto">
         <div className="max-w-3xl mx-auto space-y-8 pb-20">
           <div className="flex items-center justify-between">
-            <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-colors">
-              <ArrowLeft className="w-4 h-4"/> Volver al Gestor
+            <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-colors">
+              <ArrowLeft className="w-4 h-4"/> Cancelar
             </button>
             <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Nueva Regla Clínica</h3>
           </div>

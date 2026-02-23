@@ -21,9 +21,10 @@ const getOptionLabel = (options: {id: string, label: string}[], id: string) => {
 interface Props {
   rules: Rule[];
   onClose: () => void;
+  onOpenCreator: () => void;
 }
 
-const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
+const RulesManager: React.FC<Props> = ({ rules, onClose, onOpenCreator }) => {
   const renderCondition = (label: string, value: any, options?: {id: string, label: string}[]) => {
     if (!value || (Array.isArray(value) && value.length === 0)) return null;
     
@@ -50,7 +51,10 @@ const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
             <h2 className="text-lg font-black text-slate-800 tracking-tight">Gestor de Reglas Clínicas</h2>
             <span className="px-3 py-1 text-xs font-bold text-teal-800 bg-teal-100 rounded-full border border-teal-200">{rules.length} Reglas Activas</span>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500"/></button>
+          <div className="flex items-center gap-2">
+            <button onClick={onOpenCreator} className="text-[10px] bg-blue-600 text-white px-4 py-2 rounded-xl font-black hover:bg-blue-700 transition-all uppercase tracking-widest shadow-lg shadow-blue-900/10">+ Nueva Regla</button>
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500"/></button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-6 bg-slate-100/50">
           <div className="space-y-4">
