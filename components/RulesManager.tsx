@@ -46,7 +46,10 @@ const RulesManager: React.FC<Props> = ({ rules, onClose }) => {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         <div className="p-5 border-b flex justify-between items-center bg-slate-50 sticky top-0 z-10">
-          <h2 className="text-lg font-black text-slate-800 tracking-tight">Gestor de Reglas Clínicas</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-black text-slate-800 tracking-tight">Gestor de Reglas Clínicas</h2>
+            <span className="px-3 py-1 text-xs font-bold text-teal-800 bg-teal-100 rounded-full border border-teal-200">{rules.length} Reglas Activas</span>
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500"/></button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 bg-slate-100/50">
