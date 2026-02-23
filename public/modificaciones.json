@@ -30,7 +30,7 @@
     "specifications": {
       "opticConcept": "Monofocal +",
       "filter": "Violet-light & UV",
-      "note": "Lente monofocal hidrofílica estándar. Buena estabilidad en saco."
+      "note": "Lente monofocal hidrofï¿½lica estï¿½ndar. Buena estabilidad en saco."
     }
   },
   "2307": {
@@ -38,7 +38,23 @@
     "name": "A4EW0H",
     "specifications": {
       "technology": "Refractiva",
-      "note": "Tecnología EDoF no difractiva. Ideal para evitar halos nocturnos."
+      "note": "Tecnologï¿½a EDoF no difractiva. Ideal para evitar halos nocturnos."
+    }
+  },
+  "1117": {
+    "manufacturer": "Johnson and Johnson Vision",
+    "name": "DIB00",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "Tecnis Eyhance IOL with Tecnis Simplicity delivery system"
+    }
+  },
+  "1740": {
+    "manufacturer": "Johnson and Johnson Vision",
+    "name": "DIB00",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "Tecnis Eyhance Toric II IOL with Tecnis Simplicity delivery system"
     }
   }
 }
