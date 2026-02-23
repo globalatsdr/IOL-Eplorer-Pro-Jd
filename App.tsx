@@ -791,7 +791,9 @@ function App() {
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
                       {item.options ? (
                         <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value as any})}>
-                          {Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          {Array.isArray(item.options) 
+                            ? item.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)
+                            : Object.entries(item.options).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
                       ) : (
                         <input type={item.type} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})} />
@@ -810,7 +812,7 @@ function App() {
                     <div key={item.key} className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{item.label}</label>
                       <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={item.val} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, [item.key]: e.target.value})}>
-                        {Object.entries(item.options!).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        {item.options!.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                       </select>
                     </div>
                   ))}

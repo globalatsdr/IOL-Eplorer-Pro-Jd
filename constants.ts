@@ -10,40 +10,61 @@ export const CLINICAL_CONCEPTS = [
   "Full Range of Field-Continuous"
 ];
 
-export const LVC_OPTIONS = {
-  'any': 'N/A',
-  'lvc_hiper_mayor_4': 'Hipermetrópico >= 4D',
-  'lvc_hiper_menor_4': 'Hipermetrópico < 4D',
-  'lvc_miopico_2_4': 'Miópico (-2 a -4D)',
-  'lvc_miopico_5_7': 'Miópico (-5 a -7D)',
-  'lvc_miopico_8_10': 'Miópico (-8 a -10D)',
-  'kr': 'KR'
-};
+export const LVC_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'lvc_hiper_mayor_4', label: 'Hipermetrópico >= 4D' },
+  { id: 'lvc_hiper_menor_4', label: 'Hipermetrópico < 4D' },
+  { id: 'lvc_miopico_2_4', label: 'Miópico (-2 a -4D)' },
+  { id: 'lvc_miopico_5_7', label: 'Miópico (-5 a -7D)' },
+  { id: 'lvc_miopico_8_10', label: 'Miópico (-8 a -10D)' },
+  { id: 'kr', label: 'KR' },
+];
 
-export const UDVA_OPTIONS = { 
-  'any': 'N/A', 
-  'udva_menor_07': '< 0.7' 
-};
+export const UDVA_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'udva_menor_07', label: '< 0.7' },
+];
 
-export const CONTACT_LENS_OPTIONS = { 
-  'any': 'N/A', 
-  'no_usa_lc': 'No Usa LC', 
-  'apenas_tolera_lc': 'Apenas Tolera LC', 
-  'tolera_lc': 'Tolera LC' 
-};
+export const CONTACT_LENS_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'no_usa_lc', label: 'No Usa LC' },
+  { id: 'apenas_tolera_lc', label: 'Apenas Tolera LC' },
+  { id: 'tolera_lc', label: 'Tolera LC' },
+];
 
-export const ANTERIOR_CHAMBER_OPTIONS = { 
-  'any': 'N/A', 
-  'camara_estrecha': 'Estrecha', 
-  'camara_normal': 'Normal' 
-};
+export const ANTERIOR_CHAMBER_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'camara_estrecha', label: 'Estrecha' },
+  { id: 'camara_normal', label: 'Normal' },
+];
 
-export const RETINA_OPTIONS = {
-  'any': 'N/A',
-  'con_estafiloma': 'Con Estafiloma',
-  'sin_estafiloma': 'Sin Estafiloma',
-  'vitrectomia': 'Vitrectomia'
-};
+export const RETINA_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'con_estafiloma', label: 'Con Estafiloma' },
+  { id: 'sin_estafiloma', label: 'Sin Estafiloma' },
+  { id: 'vitrectomia', label: 'Vitrectomia' },
+];
+
+export const AGE_GROUPS = [
+  { id: '1', label: '< 50' },
+  { id: '2', label: '50-65' },
+  { id: '3', label: '66-75' },
+  { id: '4', label: '76-85' },
+  { id: '5', label: '> 85' },
+];
+
+export const LA_GROUPS = [
+  { id: '1', label: '< 22.5' },
+  { id: '2', label: '22.5-24.5' },
+  { id: '3', label: '24.6-26' },
+  { id: '4', label: '> 26' },
+];
+
+export const LENS_STATUS_OPTIONS = [
+  { id: 'any', label: 'N/A' },
+  { id: 'phakic', label: 'Fáquico' },
+  { id: 'pseudophakic', label: 'Pseudofáquico' },
+];
 
 
 export const IOL_XML_DATA = `<?xml version="1.0" encoding="UTF-8" ?>
