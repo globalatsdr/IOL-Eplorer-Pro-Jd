@@ -1,69 +1,9 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Lens } from '../types';
-import { getImageCandidates } from '../utils/parser';
-import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, ZoomIn, Download, Loader2 } from 'lucide-react';
+import { X, ArrowDownAZ, ArrowUpAZ, Sparkles, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-
-// --- COMPONENTE AUXILIAR MEJORADO: "Sabueso" de Imágenes ---
-const EXTENSIONS = ['png', 'jpg', 'jpeg', 'PNG', 'JPG'];
-
-const GraphImage = ({ id, manufacturer, name, onPreview }: { id: string, manufacturer: string, name: string, onPreview: (url: string) => void }) => {
-  const candidates = useMemo(() => getImageCandidates(manufacturer, name, id), [manufacturer, name, id]);
-  const [tryState, setTryState] = useState({ candidateIdx: 0, extIdx: 0 });
-  const [isError, setIsError] = useState(false);
-
-  // Reiniciar búsqueda si cambia la lente
-  useEffect(() => {
-    setTryState({ candidateIdx: 0, extIdx: 0 });
-    setIsError(false);
-  }, [id, manufacturer, name]);
-
-  const currentFilename = candidates[tryState.candidateIdx];
-  const currentExt = EXTENSIONS[tryState.extIdx];
-  const currentSrc = `./graphs/${currentFilename}.${currentExt}`;
-
-  const handleError = () => {
-    const nextExtIdx = tryState.extIdx + 1;
-    if (nextExtIdx < EXTENSIONS.length) {
-      setTryState(prev => ({ ...prev, extIdx: nextExtIdx }));
-    } else {
-      const nextCandIdx = tryState.candidateIdx + 1;
-      if (nextCandIdx < candidates.length) {
-        setTryState({ candidateIdx: nextCandIdx, extIdx: 0 });
-      } else {
-        setIsError(true);
-      }
-    }
-  };
-
-  if (isError) {
-    return (
-      <span className="text-[10px] text-slate-400 italic font-bold text-center block w-full">
-        Gráfica no disponible
-      </span>
-    );
-  }
-
-  return (
-    <div 
-      className="relative group cursor-zoom-in w-full h-full flex items-center justify-center"
-      onClick={() => onPreview(currentSrc)}
-    >
-      <img
-        src={currentSrc}
-        alt={`Gráfica ${name}`}
-        className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
-        onError={handleError}
-      />
-      <div className="absolute inset-0 bg-blue-900/0 group-hover:bg-blue-900/5 transition-colors flex items-center justify-center rounded-lg">
-         <ZoomIn className="w-6 h-6 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-sm" />
-      </div>
-    </div>
-  );
-};
-// --------------------------------------------------
 
 interface Props {
   lenses: Lens[];
@@ -75,7 +15,6 @@ interface Props {
 const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimilar }) => {
   const [sortKey, setSortKey] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   const features = useMemo(() => [
@@ -93,15 +32,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       label: 'Model Name', 
       getValue: (l: Lens) => l.name, 
       getSortValue: (l: Lens) => l.name 
-    },
-    {
-      label: 'Gráfica MTF',
-      getValue: (l: Lens) => (
-        <div className="h-40 w-full flex items-center justify-center bg-white rounded-xl border border-slate-100 p-2 shadow-sm overflow-hidden">
-          <GraphImage id={l.id} manufacturer={l.manufacturer} name={l.name} onPreview={setPreviewImage} />
-        </div>
-      ),
-      getSortValue: () => 0 
     },
     {
       label: 'Notas',
@@ -435,28 +365,6 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
           </div>
         </div>
       </div>
-
-      {/* LIGHTBOX / POPUP DE IMAGEN */}
-      {previewImage && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-8 animate-in fade-in duration-300 cursor-pointer"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div className="relative max-w-full max-h-full">
-            <img 
-              src={previewImage} 
-              alt="Full size graph" 
-              className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl bg-white"
-            />
-            <button 
-              className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
-              onClick={() => setPreviewImage(null)}
-            >
-              <X className="w-8 h-8" />
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 };
