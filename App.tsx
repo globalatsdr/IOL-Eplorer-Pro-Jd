@@ -16,6 +16,7 @@ import ComparisonView from './components/ComparisonView';
 import DualRangeSlider from './components/DualRangeSlider';
 import { getLensRecommendations, ALL_RULES } from './services/recommendationService';
 import RulesManager from './components/RulesManager';
+import RuleCreator from './components/RuleCreator';
 import { 
   Upload, 
   Lock, 
@@ -285,6 +286,7 @@ function App() {
   const [showComparison, setShowComparison] = useState(false);
   const [showGraphsModal, setShowGraphsModal] = useState(false);
   const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
+  const [isRuleCreatorOpen, setIsRuleCreatorOpen] = useState(false);
 
   const [basicFilters, setBasicFilters] = useState<BasicFilters>({
     manufacturer: 'all',
@@ -663,6 +665,7 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 sm:p-8">
+        {isRuleCreatorOpen && <RuleCreator onClose={() => setIsRuleCreatorOpen(false)} />}
         <div className="relative max-w-2xl mx-auto mb-10 shadow-xl shadow-blue-900/5 rounded-2xl overflow-hidden group">
           <Search className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
           <input 
@@ -990,7 +993,7 @@ function App() {
 
       {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findZeissEquivalent} />}
       {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
-      {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} />}
+      {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} onOpenCreator={() => { setIsRulesManagerOpen(false); setIsRuleCreatorOpen(true); }} />}
     </div>
   );
 }
