@@ -273,6 +273,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const [availableGraphs, setAvailableGraphs] = useState<Set<string>>(new Set());
+  const [excludedLenses, setExcludedLenses] = useState<string[]>([]);
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
@@ -362,6 +363,18 @@ function App() {
 
   useEffect(() => {
     const initData = async () => {
+      // Cargar lentes excluidas
+      try {
+        const excludedResponse = await fetch('./lentesexcluidas.json');
+        if (excludedResponse.ok) {
+          const excludedData = await excludedResponse.json();
+          if (Array.isArray(excludedData)) {
+            setExcludedLenses(excludedData.map(name => normalizeText(name)));
+          }
+        }
+      } catch (err) {
+        console.error("No se pudo cargar el archivo de lentes excluidas", err);
+      }
       setLoading(true);
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
       if (cachedOverrides) {
@@ -373,7 +386,11 @@ function App() {
       if (cachedXML) {
         try {
           const data = parseIOLData(cachedXML);
-          if (data.length > 0) { setBaseLenses(data); dataLoaded = true; }
+          if (data.length > 0) {
+            const filteredData = data.filter(lens => !excludedLenses.includes(normalizeText(lens.name)));
+            setBaseLenses(filteredData);
+            dataLoaded = true;
+          }
         } catch (e) {}
       }
       if (!dataLoaded) try { setBaseLenses(parseIOLData(IOL_XML_DATA)); } catch (e) {}
@@ -384,7 +401,8 @@ function App() {
           const text = await response.text();
           const newData = parseIOLData(text);
           if (newData.length > 0) {
-            setBaseLenses(newData);
+            const filteredData = newData.filter(lens => !excludedLenses.includes(normalizeText(lens.name)));
+            setBaseLenses(filteredData);
             localStorage.setItem(STORAGE_KEY_XML, text);
           }
         }
