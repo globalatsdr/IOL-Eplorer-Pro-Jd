@@ -361,53 +361,75 @@ function App() {
       .catch(err => console.error("Error loading graphs list", err));
   }, []);
 
-  useEffect(() => {
-    const initData = async () => {
-      // Cargar lentes excluidas
+  const initData = async () => {
+      setLoading(true);
+
+      // 1. Cargar lista de exclusión PRIMERO y esperar a que termine.
+      let excludedNames: string[] = [];
       try {
         const excludedResponse = await fetch('./lentesexcluidas.json');
         if (excludedResponse.ok) {
           const excludedData = await excludedResponse.json();
           if (Array.isArray(excludedData)) {
-            setExcludedLenses(excludedData.map(name => normalizeText(name)));
+            excludedNames = excludedData.map(name => normalizeText(name));
+            setExcludedLenses(excludedNames); // Actualizar estado para futuras recargas
           }
         }
       } catch (err) {
         console.error("No se pudo cargar el archivo de lentes excluidas", err);
       }
-      setLoading(true);
+
+      // 2. Cargar los overrides (modificaciones)
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
       if (cachedOverrides) {
         try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
       }
+
+      // 3. Cargar y filtrar datos de lentes
+      const loadAndFilterLenses = (data: Lens[]) => {
+        if (data.length > 0) {
+          const filteredData = data.filter(lens => !excludedNames.includes(normalizeText(lens.name)));
+          setBaseLenses(filteredData);
+          return true;
+        }
+        return false;
+      };
 
       const cachedXML = localStorage.getItem(STORAGE_KEY_XML);
       let dataLoaded = false;
       if (cachedXML) {
         try {
           const data = parseIOLData(cachedXML);
-          if (data.length > 0) {
-            const filteredData = data.filter(lens => !excludedLenses.includes(normalizeText(lens.name)));
-            setBaseLenses(filteredData);
-            dataLoaded = true;
-          }
+          dataLoaded = loadAndFilterLenses(data);
         } catch (e) {}
       }
-      if (!dataLoaded) try { setBaseLenses(parseIOLData(IOL_XML_DATA)); } catch (e) {}
+      
+      if (!dataLoaded) {
+        try {
+          const data = parseIOLData(IOL_XML_DATA);
+          loadAndFilterLenses(data);
+        } catch (e) {}
+      }
 
+      // 4. Intentar actualizar desde la fuente externa y filtrar
       try {
         const response = await fetch(EXTERNAL_DB_URL);
         if (response.ok) {
           const text = await response.text();
           const newData = parseIOLData(text);
           if (newData.length > 0) {
-            const filteredData = newData.filter(lens => !excludedLenses.includes(normalizeText(lens.name)));
-            setBaseLenses(filteredData);
+            loadAndFilterLenses(newData);
             localStorage.setItem(STORAGE_KEY_XML, text);
           }
         }
-      } catch (error) { console.log("Modo offline"); } finally { setLoading(false); }
+      } catch (error) {
+        console.log("Modo offline");
+      } finally {
+        setLoading(false);
+      }
     };
+
+  useEffect(() => {
     initData();
   }, []);
 
@@ -420,10 +442,11 @@ function App() {
       if (text) {
         try {
           const parsedData = parseIOLData(text);
-          setBaseLenses(parsedData);
+          const filteredData = parsedData.filter(lens => !excludedLenses.includes(normalizeText(lens.name)));
+          setBaseLenses(filteredData);
           localStorage.setItem(STORAGE_KEY_XML, text);
           setSelectedLensIds(new Set());
-          alert(`Base de datos actualizada: ${parsedData.length} lentes.`);
+          alert(`Base de datos actualizada: ${filteredData.length} lentes (después de excluir ${parsedData.length - filteredData.length}).`);
         } catch (err) { alert('Error al procesar el XML.'); }
       }
     };
