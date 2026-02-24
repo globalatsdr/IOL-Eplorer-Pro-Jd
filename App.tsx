@@ -255,7 +255,11 @@ const deepMerge = (target: any, source: any): any => {
     Object.keys(source).forEach(key => {
       if (isObject(source[key]) && key in target && isObject(target[key])) {
         output[key] = deepMerge(target[key], source[key]);
-      } else {
+      } else if (typeof source[key] === 'string' && source[key].trim() !== '') {
+        // No sobrescribir con strings vacíos
+        output[key] = source[key];
+      } else if (typeof source[key] !== 'string') {
+        // Para otros tipos (booleanos, números, etc.), simplemente reemplazar
         output[key] = source[key];
       }
     });
