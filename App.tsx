@@ -368,26 +368,14 @@ function App() {
   const initData = async () => {
       setLoading(true);
 
-      // 1. Cargar lista de exclusión PRIMERO y esperar a que termine.
-      let excludedNames: string[] = [];
-      try {
-        const excludedResponse = await fetch(`./lentesexcluidas.json?v=${new Date().getTime()}`);
-        if (excludedResponse.ok) {
-          const excludedData = await excludedResponse.json();
-          if (Array.isArray(excludedData)) {
-            
-            excludedNames = excludedData.map(name => normalizeText(name));
-            setExcludedLenses(excludedNames); // Actualizar estado para futuras recargas
-          } else {
-            
-          }
-        } else {
-            
-        }
-      } catch (err) {
-        
-        console.error("No se pudo cargar el archivo de lentes excluidas", err);
-      }
+      // ALTERNATIVA: Lista de exclusión directamente en el código
+      const HARDCODED_EXCLUSIONS = [
+        "AT LISA tri 839MP Korea",
+        "AT LISA tri 839MP China"
+      ];
+
+      const excludedNames = HARDCODED_EXCLUSIONS.map(name => normalizeText(name));
+      setExcludedLenses(excludedNames);
 
       // 2. Cargar los overrides (modificaciones)
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
