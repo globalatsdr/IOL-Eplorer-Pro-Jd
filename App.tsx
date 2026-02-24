@@ -371,7 +371,7 @@ function App() {
       // 1. Cargar lista de exclusión PRIMERO y esperar a que termine.
       let excludedNames: string[] = [];
       try {
-        const excludedResponse = await fetch('./lentesexcluidas.json');
+        const excludedResponse = await fetch(`./lentesexcluidas.json?v=${new Date().getTime()}`);
         if (excludedResponse.ok) {
           const excludedData = await excludedResponse.json();
           if (Array.isArray(excludedData)) {
