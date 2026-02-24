@@ -537,12 +537,12 @@ function App() {
     setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
   };
 
-  const findZeissEquivalent = (lens: Lens) => {
+  const findEquivalent = (lens: Lens, manufacturer: string) => {
     const conceptToFilter = lens.specifications.opticConcept;
     const isToric = lens.specifications.toric ? 'yes' : 'no';
     
     setBasicFilters({
-      manufacturer: 'ZEISS',
+      manufacturer: manufacturer,
       clinicalConcept: 'all',
       opticConcept: conceptToFilter,
       toric: isToric,
@@ -637,7 +637,7 @@ function App() {
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">IOL Explorer <span className="text-blue-600">Pro</span></h1>
-            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Advance Clinical Service</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Dr. Alfonso</span>
           </div>
           <a href="https://iolcon.org" target="_blank" rel="noopener noreferrer" className="ml-4 flex items-center gap-2 text-[11px] bg-slate-100 text-slate-600 px-3 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-all group">
             <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">IOLcon.org</span>
@@ -1032,7 +1032,7 @@ function App() {
         </div>
       )}
 
-      {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findZeissEquivalent} />}
+      {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findEquivalent} manufacturers={uniqueManufacturers} />}
       {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
       {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} onOpenCreator={() => { setIsRulesManagerOpen(false); setIsRuleCreatorOpen(true); }} />}
     </div>
