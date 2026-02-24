@@ -9,10 +9,11 @@ interface Props {
   lenses: Lens[];
   onClose: () => void;
   onRemove: (id: string) => void;
-  onFindSimilar: (lens: Lens) => void;
+  onFindSimilar: (lens: Lens, manufacturer: string) => void;
+  manufacturers: string[];
 }
 
-const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimilar }) => {
+const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimilar, manufacturers }) => {
   const [sortKey, setSortKey] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isExporting, setIsExporting] = useState(false);
@@ -325,14 +326,19 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
                       </div>
                       
                       {!isExporting && (
-                        <button 
-                          onClick={() => onFindSimilar(lens)}
-                          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-md border border-slate-200 transition-colors"
-                          title={`Find Zeiss lenses similar to ${lens.name}`}
-                        >
-                          <Sparkles className="w-3 h-3 text-yellow-500" />
-                          Find Zeiss Equivalent
-                        </button>
+                        <div className="flex items-center gap-1.5 w-full">
+                          <Sparkles className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                          <select 
+                            onChange={(e) => onFindSimilar(lens, e.target.value)}
+                            className="w-full text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200 transition-colors p-1.5 appearance-none text-center cursor-pointer"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Find Equivalent...</option>
+                            {manufacturers.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </th>
                   ))}
