@@ -762,6 +762,7 @@ function App() {
                   <option value="monofocal">Monofocal</option>
                   <option value="Monofocal +">Monofocal +</option>
                   <option value="EDoF">EDoF</option>
+                  <option value="bifocal">Bifocal</option>
                   <option value="multifocal">Multifocal</option>
                 </select>
               </div>
