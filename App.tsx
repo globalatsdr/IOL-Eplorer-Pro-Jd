@@ -483,8 +483,8 @@ function App() {
 
            // Solo validamos si el usuario incluyó estos campos en su JSON
            if (checkName || checkManu) {
-               const nameMatch = !checkName || normalizeText(checkName) === normalizeText(originalLens.name);
-               const manuMatch = !checkManu || normalizeText(checkManu) === normalizeText(originalLens.manufacturer);
+               const nameMatch = !checkName || normalizeText(originalLens.name).includes(normalizeText(checkName));
+               const manuMatch = !checkManu || normalizeText(originalLens.manufacturer).includes(normalizeText(checkManu));
 
                if (!nameMatch || !manuMatch) {
                    mismatches.push(`ID ${key}: Conflicto detectado. JSON espera "${checkName || checkManu}" pero XML tiene "${originalLens.name} (${originalLens.manufacturer})".`);
