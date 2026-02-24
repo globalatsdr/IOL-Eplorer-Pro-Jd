@@ -135,6 +135,16 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
       getSortValue: (l: Lens) => l.specifications.hapticDesign 
     },
     { 
+      label: 'Intended Location', 
+      getValue: (l: Lens) => l.specifications.intendedLocation || '-', 
+      getSortValue: (l: Lens) => l.specifications.intendedLocation || '' 
+    },
+    { 
+      label: 'Aberration', 
+      getValue: (l: Lens) => l.specifications.aberration || '-', 
+      getSortValue: (l: Lens) => l.specifications.aberration || '' 
+    },
+    { 
       label: 'Preloaded', 
       getValue: (l: Lens) => l.specifications.preloaded ? 'Yes' : 'No', 
       getSortValue: (l: Lens) => l.specifications.preloaded ? 1 : 0 
