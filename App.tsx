@@ -375,17 +375,17 @@ function App() {
         if (excludedResponse.ok) {
           const excludedData = await excludedResponse.json();
           if (Array.isArray(excludedData)) {
-            alert(`DEBUG: Fichero de exclusión cargado. Nombres encontrados: ${excludedData.length}`);
+            
             excludedNames = excludedData.map(name => normalizeText(name));
             setExcludedLenses(excludedNames); // Actualizar estado para futuras recargas
           } else {
-            alert('DEBUG ERROR: El fichero de exclusión no es un array válido.');
+            
           }
         } else {
-            alert(`DEBUG ERROR: No se pudo encontrar el fichero de exclusión. Estado: ${excludedResponse.status}`);
+            
         }
       } catch (err) {
-        alert(`DEBUG ERROR: Fallo al procesar el fichero de exclusión: ${(err as Error).message}`);
+        
         console.error("No se pudo cargar el archivo de lentes excluidas", err);
       }
 
