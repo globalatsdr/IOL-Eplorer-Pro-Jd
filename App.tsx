@@ -393,8 +393,7 @@ function App() {
       const loadAndFilterLenses = (data: Lens[]) => {
         if (data.length > 0) {
           const filteredData = data.filter(lens => !excludedNames.includes(normalizeText(lens.name)));
-          // Alerta de depuración temporal
-          alert(`DEBUG:\n- Lentes encontradas: ${data.length}\n- Nombres a excluir: ${excludedNames.length}\n- Lentes tras filtro: ${filteredData.length}`);
+          
           setBaseLenses(filteredData);
           return true;
         }
@@ -436,7 +435,9 @@ function App() {
     };
 
   useEffect(() => {
-    initData();
+    (async () => {
+      await initData();
+    })();
   }, []);
 
   const handleXMLUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
