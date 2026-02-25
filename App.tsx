@@ -273,7 +273,9 @@ function App() {
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
   const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
-  const [loading, setLoading] = useState(true);
+  
+  const [dataReady, setDataReady] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const [availableGraphs, setAvailableGraphs] = useState<Set<string>>(new Set());
   const [excludedLenses, setExcludedLenses] = useState<string[]>([]);
@@ -365,7 +367,7 @@ function App() {
   }, []);
 
   const initData = async () => {
-      setLoading(true);
+      
 
       // ALTERNATIVA: Lista de exclusión directamente en el código
       const HARDCODED_EXCLUSIONS = [
@@ -423,7 +425,8 @@ function App() {
       } catch (error) {
         console.log("Modo offline");
       } finally {
-        setLoading(false);
+        
+        setDataReady(true);
       }
     };
 
@@ -624,12 +627,23 @@ function App() {
   // Solo se habilitan los botones de carga si isDrAlfonsoUnlocked es true
   const areAdminActionsEnabled = isDrAlfonsoUnlocked;
 
-  if (loading) {
+  if (!hasEntered) {
     return (
       <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white">
-        <img src="/logo.png" alt="IOL Explorer Logo" className="w-64 h-64 mb-8 animate-pulse" />
-        <h1 className="text-2xl font-semibold">Cargando IOL Explorer Pro...</h1>
-        <p className="mt-2 text-sm text-gray-400">Esto puede tardar unos segundos.</p>
+        <img src="/logo.png" alt="IOL Explorer Logo" className={`w-64 h-64 mb-8 ${!dataReady ? 'animate-pulse' : ''}`} />
+        {dataReady ? (
+          <button 
+            onClick={() => setHasEntered(true)}
+            className="mt-8 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl text-lg hover:bg-blue-500 transition-transform transform hover:scale-105 shadow-lg animate-in fade-in duration-500"
+          >
+            Acceder
+          </button>
+        ) : (
+          <>
+            <h1 className="text-2xl font-semibold">Cargando IOL Explorer Pro...</h1>
+            <p className="mt-2 text-sm text-gray-400">Esto puede tardar unos segundos.</p>
+          </>
+        )}
       </div>
     );
   }
