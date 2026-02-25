@@ -630,7 +630,7 @@ function App() {
   if (!hasEntered) {
     return (
       <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white">
-        <img src="/logo.png" alt="IOL Explorer Logo" className={`w-64 h-64 mb-8 ${!dataReady ? 'animate-pulse' : ''}`} />
+        <img src="/logo.png?v=1.0" alt="IOL Explorer Logo" className={`w-64 h-64 mb-8 ${!dataReady ? 'animate-pulse' : ''}`} />
         {dataReady ? (
           <button 
             onClick={() => setHasEntered(true)}
