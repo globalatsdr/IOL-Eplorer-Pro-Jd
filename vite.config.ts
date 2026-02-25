@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   // This is crucial for GitHub Pages to find the assets
-  base: './', 
+  base: '/', 
   build: {
     rollupOptions: {
       external: ['html2canvas', 'jspdf'],
