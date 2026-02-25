@@ -28,7 +28,6 @@ import {
   Info,
   ExternalLink,
   FileJson,
-  Database,
   Trash2,
   Stethoscope,
   Sparkles,
@@ -625,7 +624,15 @@ function App() {
   // Solo se habilitan los botones de carga si isDrAlfonsoUnlocked es true
   const areAdminActionsEnabled = isDrAlfonsoUnlocked;
 
-  if (loading) return <div className="min-h-screen flex flex-col items-center justify-center text-slate-500 gap-4"><Database className="w-10 h-10 animate-pulse text-blue-500"/>Cargando IOL Explorer Pro...</div>;
+  if (loading) {
+    return (
+      <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white">
+        <img src="/logo.png" alt="IOL Explorer Logo" className="w-64 h-64 mb-8 animate-pulse" />
+        <h1 className="text-2xl font-semibold">Cargando IOL Explorer Pro...</h1>
+        <p className="mt-2 text-sm text-gray-400">Esto puede tardar unos segundos.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
