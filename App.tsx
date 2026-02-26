@@ -308,7 +308,8 @@ function App() {
     isPreloaded: false,
     isYellowFilter: false,
     hydroType: 'all',
-    keyword: ''
+    keyword: '',
+    intendedLocation: 'all'
   });
 
   const [drAlfonsoInputs, setDrAlfonsoInputs] = useState<DrAlfonsoInputs>({
@@ -347,6 +348,7 @@ function App() {
   }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
+  const uniqueLocations = useMemo(() => Array.from(new Set(lenses.map(l => l.specifications.intendedLocation))).sort(), [lenses]);
 
   useEffect(() => {
     // Cargar imágenes
@@ -535,7 +537,7 @@ function App() {
 
   const handleResetFilters = () => {
     setBasicFilters({ manufacturer: 'all', clinicalConcept: 'all', opticConcept: 'all', toric: 'all', technology: 'all' });
-    setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '' });
+    setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '', intendedLocation: 'all' });
     setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
   };
 
@@ -591,6 +593,7 @@ function App() {
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
         if (advFilters.isYellowFilter && !lens.specifications.filter.toLowerCase().includes('yellow')) return false;
         if (advFilters.hydroType !== 'all' && lens.specifications.hydro.toLowerCase() !== advFilters.hydroType) return false;
+        if (advFilters.intendedLocation !== 'all' && lens.specifications.intendedLocation !== advFilters.intendedLocation) return false;
       } else if (activeTab === FilterTab.DR_ALFONSO) {
         // Filtros Técnicos de Dr. Alfonso
         if (drAlfonsoInputs.opticConcept !== 'any' && lens.specifications.opticConcept.toLowerCase() !== drAlfonsoInputs.opticConcept.toLowerCase()) return false;
@@ -809,13 +812,20 @@ function App() {
                   onChange={(min, max) => setAdvFilters({...advFilters, filterMinSphere: min, filterMaxSphere: max})} 
                 />
               </div>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Material</label>
                   <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={advFilters.hydroType} onChange={e => setAdvFilters({...advFilters, hydroType: e.target.value})}>
                     <option value="all">Todos</option>
                     <option value="hydrophilic">Hidrofílico</option>
                     <option value="hydrophobic">Hidrofóbico</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Ubicación</label>
+                  <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" value={advFilters.intendedLocation} onChange={e => setAdvFilters({...advFilters, intendedLocation: e.target.value})}>
+                    <option value="all">Todas</option>
+                    {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col justify-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">

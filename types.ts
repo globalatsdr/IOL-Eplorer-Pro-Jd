@@ -107,6 +107,7 @@ export interface AdvancedFilters {
   isYellowFilter: boolean;
   hydroType: string; // 'all', 'hydrophilic', 'hydrophobic'
   keyword: string;
+  intendedLocation: string;
 }
 
 export interface DrAlfonsoInputs {
