@@ -285,7 +285,7 @@ function App() {
   const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
   const [passwordInput, setPasswordInput] = useState('');
   
-  const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD;
+  const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD || passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
   const isDrAlfonsoUnlocked = passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
 
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
