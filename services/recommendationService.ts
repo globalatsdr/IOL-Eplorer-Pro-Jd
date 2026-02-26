@@ -54,29 +54,20 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   const matches = ALL_RULES.filter(rule => {
     const rc = rule.conditions;
 
-    // 1. Comprobación de Grupos (Edad y LA)
+    // A rule is disqualified if any of its conditions are explicitly contradicted by the user's input.
+    // If a rule doesn't specify a condition, it matches for that condition.
+
     if (rc.ageGroup && !rc.ageGroup.includes(ageG || '')) return false;
     if (rc.laGroup && !rc.laGroup.includes(laG || '')) return false;
 
-    // 2. Comprobación de Estado del Cristalino (siempre tiene valor)
-    if (rc.lensStatus && inputs.lensStatus !== 'any' && !rc.lensStatus.includes(inputs.lensStatus)) return false;
-    // if (rc.lensStatus && inputs.lensStatus === 'any') return false; // Si la regla lo necesita, el usuario debe elegir
-
-
-    // 3. Comprobación de Condiciones Opcionales
-    const checkOptional = (ruleValues: string[] | undefined, userValue: string) => {
-      if (!ruleValues && userValue === 'any') return true; // Ni la regla ni el usuario especifican
-      if (ruleValues && userValue === 'any') return false; // La regla requiere, pero el usuario no especifica
-      if (!ruleValues && userValue !== 'any') return false; // El usuario especifica, pero la regla no
-      if (ruleValues && userValue !== 'any') return ruleValues.includes(userValue); // Ambos especifican, deben coincidir
-      return true;
-    };
-
-    if (!checkOptional(rc.lvc, inputs.lvc)) return false;
-    if (!checkOptional(rc.udva, inputs.udva)) return false;
-    if (!checkOptional(rc.contactLenses, inputs.contactLenses)) return false;
-    if (!checkOptional(rc.anteriorChamber, inputs.anteriorChamber)) return false;
-    if (!checkOptional(rc.retina, inputs.retina)) return false;
+    // For dropdowns, if the user has selected a specific value ('any' is not specific),
+    // it must be included in the rule's conditions if that condition exists.
+    if (rc.lensStatus && (inputs.lensStatus === 'any' || !rc.lensStatus.includes(inputs.lensStatus))) return false;
+    if (rc.lvc && (inputs.lvc === 'any' || !rc.lvc.includes(inputs.lvc))) return false;
+    if (rc.udva && (inputs.udva === 'any' || !rc.udva.includes(inputs.udva))) return false;
+    if (rc.contactLenses && (inputs.contactLenses === 'any' || !rc.contactLenses.includes(inputs.contactLenses))) return false;
+    if (rc.anteriorChamber && (inputs.anteriorChamber === 'any' || !rc.anteriorChamber.includes(inputs.anteriorChamber))) return false;
+    if (rc.retina && (inputs.retina === 'any' || !rc.retina.includes(inputs.retina))) return false;
     
     return true;
   });
