@@ -60,7 +60,7 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
 
     // 2. Comprobación de Estado del Cristalino (siempre tiene valor)
     if (rc.lensStatus && inputs.lensStatus !== 'any' && !rc.lensStatus.includes(inputs.lensStatus)) return false;
-    if (rc.lensStatus && inputs.lensStatus === 'any') return false; // Si la regla lo necesita, el usuario debe elegir
+    // if (rc.lensStatus && inputs.lensStatus === 'any') return false; // Si la regla lo necesita, el usuario debe elegir
 
 
     // 3. Comprobación de Condiciones Opcionales
