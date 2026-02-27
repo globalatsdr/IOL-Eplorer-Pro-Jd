@@ -378,8 +378,13 @@ function App() {
       })
       .catch(err => console.error("Error loading graphs list", err));
 
-    // Cargar lentes excluidas
-    fetch('./lentesexcluidas.json')
+    // Cargar lentes excluidas con cache-busting para evitar que el navegador use versiones antiguas
+    fetch(`./lentesexcluidas.json?t=${new Date().getTime()}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) {
