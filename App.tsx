@@ -373,19 +373,21 @@ function App() {
         if (Array.isArray(data)) setAvailableGraphs(new Set(data));
       })
       .catch(err => console.error("Error loading graphs list", err));
+
+    // Cargar lentes excluidas
+    fetch('./lentesexcluidas.json')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) {
+          const normalized = data.map((name: string) => normalizeText(name));
+          setExcludedLenses(normalized);
+        }
+      })
+      .catch(err => console.error("Error loading excluded lenses list", err));
   }, []);
 
   const initData = async () => {
       
-
-      // ALTERNATIVA: Lista de exclusión directamente en el código
-      const HARDCODED_EXCLUSIONS = [
-        "AT LISA tri 839MP Korea",
-        "AT LISA tri 839MP China"
-      ];
-
-      const excludedNames = HARDCODED_EXCLUSIONS.map(name => normalizeText(name));
-      setExcludedLenses(excludedNames);
 
       // 2. Cargar los overrides (modificaciones)
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
@@ -393,12 +395,10 @@ function App() {
         try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
       }
 
-      // 3. Cargar y filtrar datos de lentes
+      // 3. Cargar datos de lentes
       const loadAndFilterLenses = (data: Lens[]) => {
         if (data.length > 0) {
-          const filteredData = data.filter(lens => !excludedNames.includes(normalizeText(lens.name)));
-          
-          setBaseLenses(filteredData);
+          setBaseLenses(data);
           return true;
         }
         return false;
@@ -585,6 +585,9 @@ function App() {
 
   const filteredLenses = useMemo(() => {
     return lenses.filter(lens => {
+      // 1. Filtro de exclusión por nombre (desde lentesexcluidas.json)
+      if (excludedLenses.includes(normalizeText(lens.name))) return false;
+
       if (advFilters.keyword && !lens.name.toLowerCase().includes(advFilters.keyword.toLowerCase()) && !lens.manufacturer.toLowerCase().includes(advFilters.keyword.toLowerCase())) return false;
 
       if (activeTab === FilterTab.BASIC) {
