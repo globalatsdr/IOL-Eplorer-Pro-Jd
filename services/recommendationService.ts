@@ -1,7 +1,7 @@
 import { DrAlfonsoInputs, Rule, LensStatus } from '../types';
 
-export const AGE_RANGES: { [key: number]: string } = { 1: '35-44', 2: '45-54', 3: '55-64', 4: '65-74', 5: '75-85' };
-export const LA_RANGES: { [key: number]: string } = { 1: '14-18.5', 2: '>18.5-22', 3: '>22-24.5', 4: '>24.5-29', 5: '>29-35' };
+export const AGE_RANGES: { [key: number]: string } = { 1: '< 50', 2: '50-65', 3: '66-75', 4: '76-85', 5: '> 85' };
+export const LA_RANGES: { [key: number]: string } = { 1: '< 22.5', 2: '22.5-24.5', 3: '24.6-26', 4: '> 26' };
 export const LENS_STATUS_OPTIONS: LensStatus[] = ['transparente', 'presbicia', 'disfuncional', 'catarata'];
 
 /**
@@ -48,8 +48,8 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   const age = inputs.age ? parseInt(inputs.age, 10) : 0;
   const la = inputs.axialLength ? parseFloat(inputs.axialLength.replace(',', '.')) : 0;
 
-  const ageG = age >= 35 && age <= 44 ? '1' : age >= 45 && age <= 54 ? '2' : age >= 55 && age <= 64 ? '3' : age >= 65 && age <= 74 ? '4' : age >= 75 && age <= 85 ? '5' : null;
-  const laG = la >= 14 && la <= 18.5 ? '1' : la > 18.5 && la <= 22 ? '2' : la > 22 && la <= 24.5 ? '3' : la > 24.5 && la <= 29 ? '4' : la > 29 && la <= 35 ? '5' : null;
+  const ageG = age === 0 ? null : age < 50 ? '1' : age <= 65 ? '2' : age <= 75 ? '3' : age <= 85 ? '4' : '5';
+  const laG = la === 0 ? null : la < 22.5 ? '1' : la <= 24.5 ? '2' : la <= 26 ? '3' : '4';
 
   const matches = ALL_RULES.filter(rule => {
     const rc = rule.conditions;
