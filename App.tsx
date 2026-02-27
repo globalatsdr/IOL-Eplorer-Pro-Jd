@@ -716,6 +716,19 @@ function App() {
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            <button 
+              onClick={() => {
+                if(window.confirm("¿Deseas limpiar la base de datos local y recargar desde el servidor?")) {
+                  localStorage.removeItem(STORAGE_KEY_XML);
+                  window.location.reload();
+                }
+              }} 
+              disabled={!areAdminActionsEnabled}
+              className={`p-2 rounded-lg transition-all text-slate-500 ${areAdminActionsEnabled ? 'hover:bg-white hover:text-blue-600 cursor-pointer' : 'cursor-not-allowed'}`}
+              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Limpiar caché de base de datos y recargar"}
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
 
             
             {/* Candado visual sobre el grupo si está bloqueado */}
