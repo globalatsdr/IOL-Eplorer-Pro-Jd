@@ -266,10 +266,11 @@ const deepMerge = (target: any, source: any): any => {
   return output;
 };
 
-// Función auxiliar para normalizar texto y comparar de forma segura (ignora mayúsculas, espacios, guiones y guiones bajos)
+// Función auxiliar para normalizar texto y comparar de forma segura (ignora mayúsculas, espacios, guiones, guiones bajos y caracteres especiales)
 const normalizeText = (text: string) => 
   text ? text.toLowerCase().trim()
-    .replace(/[\s\-_]+/g, ' ') // Convierte espacios, guiones y guiones bajos en un solo espacio
+    .replace(/[^a-z0-9\s]/g, ' ') // Elimina todo lo que no sea letra, número o espacio (paréntesis, puntos, etc.)
+    .replace(/[\s\-_]+/g, ' ')    // Normaliza espacios y guiones
     .trim() 
   : '';
 
@@ -476,7 +477,7 @@ function App() {
 
   const handleLoadModifications = async () => {
     try {
-      const response = await fetch('./modificaciones.json');
+      const response = await fetch(`./modificaciones.json?t=${new Date().getTime()}`);
       if (!response.ok) {
         throw new Error('No se pudo cargar el archivo de modificaciones.');
       }
@@ -484,63 +485,42 @@ function App() {
       const rawJson = await response.json();
       const normalizedJson: Record<string, Partial<Lens>> = {};
       const mismatches: string[] = [];
+      const appliedCount: string[] = [];
 
-      // Normalización inteligente y VALIDACIÓN DE SEGURIDAD
+      // Procesar cada entrada del JSON
       Object.keys(rawJson).forEach(key => {
         const item = rawJson[key];
+        const normalizedKey = normalizeText(key);
         
-        // 1. Validación de Integridad (Anti-Corrupción de IDs)
-        // Si el JSON contiene 'name' o 'manufacturer', verificamos que coincida con el XML actual.
-        const originalLens = baseLenses.find(l => l.id === key);
+        // BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
+        let targetLens = baseLenses.find(l => l.id === key);
         
-        if (originalLens) {
-           const checkName = item.name || item.Name;
-           const checkManu = item.manufacturer || item.Manufacturer;
-
-           // Solo validamos si el usuario incluyó estos campos en su JSON
-           if (checkName || checkManu) {
-               const nameMatch = !checkName || normalizeText(originalLens.name).includes(normalizeText(checkName));
-               const manuMatch = !checkManu || normalizeText(originalLens.manufacturer).includes(normalizeText(checkManu));
-
-               if (!nameMatch || !manuMatch) {
-                   mismatches.push(`ID ${key}: Conflicto detectado. JSON espera "${checkName || checkManu}" pero XML tiene "${originalLens.name} (${originalLens.manufacturer})".`);
-                   return; // SALTAR esta entrada, no aplicarla.
-               }
-           }
+        if (!targetLens) {
+          // Si no se encuentra por ID, buscamos por nombre normalizado
+          targetLens = baseLenses.find(l => normalizeText(l.name) === normalizedKey || normalizeText(l.name).includes(normalizedKey));
         }
 
-        // 2. Buscar nota en raíz o en specifications (soporta 'note' y 'Notas')
-        const noteContent = 
-          item.note || 
-          item.Notas || 
-          item.specifications?.note || 
-          item.specifications?.Notas;
-
-        // 3. Si se encuentra nota, asignarla a la raíz 'note' y limpiar duplicados
-        if (noteContent) {
-          item.note = noteContent;
-          delete item.Notas; // Limpieza
-          if (item.specifications) {
-            delete item.specifications.note; // Limpieza
-            delete item.specifications.Notas; // Limpieza
-          }
+        if (targetLens) {
+          // Si encontramos la lente, guardamos la modificación usando su ID real
+          normalizedJson[targetLens.id] = item;
+          appliedCount.push(targetLens.name);
+        } else {
+          mismatches.push(key);
         }
-
-        normalizedJson[key] = item;
       });
 
       setOverrideData(normalizedJson);
       localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(normalizedJson));
       
       if (mismatches.length > 0) {
-          alert(`ATENCIÓN: Se cargaron las modificaciones, pero se ignoraron ${mismatches.length} entradas por conflictos de identidad (El ID del XML ya no coincide con tu lente):\n\n` + mismatches.slice(0, 5).join('\n') + (mismatches.length > 5 ? '\n...' : ''));
+          alert(`Se aplicaron ${appliedCount.length} modificaciones.\n\nNo se encontraron coincidencias para:\n` + mismatches.join('\n'));
       } else {
-          alert('Modificaciones aplicadas correctamente y verificadas desde el archivo interno.');
+          alert(`¡Éxito! Se aplicaron modificaciones a ${appliedCount.length} lentes correctamente.`);
       }
 
     } catch (err) { 
       console.error(err);
-      alert('Error al cargar el archivo modificaciones.json. Asegúrate de que existe en la carpeta public.'); 
+      alert('Error al cargar el archivo modificaciones.json. Asegúrate de que el formato es correcto.'); 
     }
   };
 
