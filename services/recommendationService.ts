@@ -51,26 +51,37 @@ export const getLensRecommendations = (inputs: DrAlfonsoInputs): string[] => {
   const ageG = age >= 35 && age <= 44 ? '1' : age >= 45 && age <= 54 ? '2' : age >= 55 && age <= 64 ? '3' : age >= 65 && age <= 74 ? '4' : age >= 75 && age <= 85 ? '5' : null;
   const laG = la >= 14 && la <= 18.5 ? '1' : la > 18.5 && la <= 22 ? '2' : la > 22 && la <= 24.5 ? '3' : la > 24.5 && la <= 29 ? '4' : la > 29 && la <= 35 ? '5' : null;
 
-    const matches = ALL_RULES.filter(rule => {
+  const matches = ALL_RULES.filter(rule => {
     const rc = rule.conditions;
 
-    // A rule is a match if the user's input does not contradict the rule's conditions.
-    // If an input is 'any' or null, it's considered a potential match for any condition.
+    // 1. Edad y Longitud Axial: ESTRICTOS
+    if (!ageG || !rc.ageGroup || !rc.ageGroup.includes(ageG)) return false;
+    if (!laG || !rc.laGroup || !rc.laGroup.includes(laG)) return false;
 
-    if (rc.ageGroup && ageG && !rc.ageGroup.includes(ageG)) return false;
-    if (rc.laGroup && laG && !rc.laGroup.includes(laG)) return false;
+    // 2. Cristalino (Lens Status): ESTRICTO si la regla no incluye las 4 opciones
+    const allLensOptions = ['transparente', 'presbicia', 'disfuncional', 'catarata'];
+    const isLensGeneric = rc.lensStatus && allLensOptions.every(opt => rc.lensStatus!.includes(opt as any));
     
-    if (rc.lensStatus && inputs.lensStatus !== 'any' && !rc.lensStatus.includes(inputs.lensStatus)) return false;
-    if (rc.lvc && inputs.lvc !== 'any' && !rc.lvc.includes(inputs.lvc)) return false;
-    if (rc.udva && inputs.udva !== 'any' && !rc.udva.includes(inputs.udva)) return false;
-    if (rc.contactLenses && inputs.contactLenses !== 'any' && !rc.contactLenses.includes(inputs.contactLenses)) return false;
-    if (rc.anteriorChamber && inputs.anteriorChamber !== 'any' && !rc.anteriorChamber.includes(inputs.anteriorChamber)) return false;
-    if (rc.retina && inputs.retina !== 'any' && !rc.retina.includes(inputs.retina)) return false;
+    if (!isLensGeneric) {
+      if (!rc.lensStatus || !rc.lensStatus.includes(inputs.lensStatus as any)) return false;
+    }
 
-    // Additionally, if the rule requires a specific group but the user hasn't provided enough data to calculate it,
-    // we don't match it to avoid false positives on empty inputs.
-    if (rc.ageGroup && !ageG) return false;
-    if (rc.laGroup && !laG) return false;
+    // 3. Resto de opciones (LVC, UDVA, etc.): COINCIDENCIA DE ESCENARIO EXACTO
+    // Definimos los campos adicionales
+    const extraFields = ['lvc', 'udva', 'contactLenses', 'anteriorChamber', 'retina'] as const;
+    
+    for (const field of extraFields) {
+      const userValue = inputs[field];
+      const ruleValues = rc[field];
+
+      if (userValue !== 'any') {
+        // Si el usuario ha seleccionado algo, la regla DEBE tener ese campo y debe coincidir
+        if (!ruleValues || !ruleValues.includes(userValue as any)) return false;
+      } else {
+        // Si el usuario tiene N/A, la regla NO DEBE tener ese campo definido
+        if (ruleValues && ruleValues.length > 0) return false;
+      }
+    }
 
     return true;
   });
