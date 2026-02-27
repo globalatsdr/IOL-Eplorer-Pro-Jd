@@ -252,14 +252,21 @@ const deepMerge = (target: any, source: any): any => {
   const output = { ...target };
   if (isObject(target) && isObject(source)) {
     Object.keys(source).forEach(key => {
-      if (isObject(source[key]) && key in target && isObject(target[key])) {
-        output[key] = deepMerge(target[key], source[key]);
-      } else if (typeof source[key] === 'string' && source[key].trim() !== '') {
-        // No sobrescribir con strings vacíos
-        output[key] = source[key];
-      } else if (typeof source[key] !== 'string') {
-        // Para otros tipos (booleanos, números, etc.), simplemente reemplazar
-        output[key] = source[key];
+      const sourceValue = source[key];
+      const targetValue = target[key];
+
+      if (isObject(sourceValue) && key in target && isObject(targetValue)) {
+        output[key] = deepMerge(targetValue, sourceValue);
+      } else if (sourceValue !== undefined && sourceValue !== null) {
+        // Para strings, no sobrescribir con vacíos
+        if (typeof sourceValue === 'string') {
+          if (sourceValue.trim() !== '') {
+            output[key] = sourceValue;
+          }
+        } else {
+          // Para otros tipos (booleanos, números, objetos nuevos), reemplazar/añadir
+          output[key] = sourceValue;
+        }
       }
     });
   }
@@ -489,10 +496,35 @@ function App() {
 
       // Procesar cada entrada del JSON
       Object.keys(rawJson).forEach(key => {
-        const item = rawJson[key];
+        const item = { ...rawJson[key] }; // Copia para no mutar el original
         const normalizedKey = normalizeText(key);
         
-        // BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
+        // 1. Normalización de Notas (Soporta 'note', 'notes', 'Notas', 'notas' y dentro de specifications)
+        const noteContent = 
+          item.note || 
+          item.notes || 
+          item.Notas || 
+          item.notas ||
+          item.specifications?.note || 
+          item.specifications?.notes ||
+          item.specifications?.Notas ||
+          item.specifications?.notas;
+
+        if (noteContent) {
+          item.note = noteContent;
+          // Limpiar posibles duplicados para evitar ruido en el objeto
+          delete (item as any).Notas;
+          delete (item as any).notas;
+          delete (item as any).notes;
+          if (item.specifications) {
+            delete (item.specifications as any).note;
+            delete (item.specifications as any).notes;
+            delete (item.specifications as any).Notas;
+            delete (item.specifications as any).notas;
+          }
+        }
+
+        // 2. BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
         let targetLens = baseLenses.find(l => l.id === key);
         
         if (!targetLens) {
