@@ -1,7 +1,5 @@
 {
-  "2299": {
-    "manufacturer": "1stQ",
-    "name": "611HPS",
+   "611HPS":{
     "specifications": {
       "opticConcept": "Monofocal +",
       "hapticDesign": "C-Loop MODIFICADO",
@@ -24,9 +22,7 @@
       }
     }
   },
-  "2306": {
-    "manufacturer": "1stQ",
-    "name": "A4DW0K",
+  "A4DW0K":{
     "specifications": {
       "opticConcept": "Monofocal +",
       "filter": "Violet-light & UV",
@@ -34,82 +30,60 @@
       "note": "Lente monofocal hidrof�lica est�ndar. Buena estabilidad en saco."
     }
   },
-  "2307": {
-    "manufacturer": "1stQ",
-    "name": "A4EW0H",
+  "A4EW0H":{
     "specifications": {
       "technology": "Refractiva",
       "note": "Tecnolog�a EDoF no difractiva. Ideal para evitar halos nocturnos."
     }
   },
-  "1117": {
-    "manufacturer": "Johnson and Johnson Vision",
-    "name": "DIB00",
+  "DIB00":{
     "specifications": {
       "technology": "Refractiva?",
       "note": "Tecnis Eyhance IOL with Tecnis Simplicity delivery system"
     }
   },
-  "1740": {
-    "manufacturer": "Johnson and Johnson Vision",
-    "name": "DIU",
+  "DIU":{
     "specifications": {
       "technology": "Refractiva?",
       "note": "Tecnis Eyhance Toric II IOL with Tecnis Simplicity delivery system"
     }
   },
-  "933": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION HP POD F GF",
+  "FINEVISION HP POD F GF":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "2438": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION HP Toric POD FT 49P",
+  "FINEVISION HP Toric POD FT 49P":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "927": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION MICRO F",
+  "FINEVISION MICRO F":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "928": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION POD F",
+  "FINEVISION POD F":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "929": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION Toric POD FT",
+  "FINEVISION Toric POD FT":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "1629": {
-    "manufacturer": "BVI",
-    "name": "FINEVISION Toric POD FT",
+  "FINEVISION Toric POD FT":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "1023": {
-    "manufacturer": "BVI",
-    "name": "Physiol FineVision Pod F",
+  "Physiol FineVision Pod F":{
     "specifications": {
       "technology": "Difractiva"
     }
   },
-  "1024": {
-    "manufacturer": "BVI",
-    "name": "Physiol FineVision Pod FT",
+  "Physiol FineVision Pod FT":{
     "specifications": {
       "technology": "Difractiva"
     }
