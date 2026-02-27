@@ -266,8 +266,12 @@ const deepMerge = (target: any, source: any): any => {
   return output;
 };
 
-// Función auxiliar para normalizar texto y comparar de forma segura (ignora mayúsculas y espacios)
-const normalizeText = (text: string) => text ? text.toLowerCase().trim().replace(/\s+/g, ' ') : '';
+// Función auxiliar para normalizar texto y comparar de forma segura (ignora mayúsculas, espacios, guiones y guiones bajos)
+const normalizeText = (text: string) => 
+  text ? text.toLowerCase().trim()
+    .replace(/[\s\-_]+/g, ' ') // Convierte espacios, guiones y guiones bajos en un solo espacio
+    .trim() 
+  : '';
 
 function App() {
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
