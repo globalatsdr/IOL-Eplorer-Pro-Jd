@@ -349,8 +349,8 @@ function App() {
 
     const age = drAlfonsoInputs.age ? parseInt(drAlfonsoInputs.age, 10) : 0;
     const la = drAlfonsoInputs.axialLength ? parseFloat(drAlfonsoInputs.axialLength.replace(',', '.')) : 0;
-    const ageG = age >= 35 && age <= 44 ? '1' : age >= 45 && age <= 54 ? '2' : age >= 55 && age <= 64 ? '3' : age >= 65 && age <= 74 ? '4' : age >= 75 && age <= 85 ? '5' : 'N/A';
-    const laG = la >= 14 && la <= 18.5 ? '1' : la > 18.5 && la <= 22 ? '2' : la > 22 && la <= 24.5 ? '3' : la > 24.5 && la <= 29 ? '4' : la > 29 && la <= 35 ? '5' : 'N/A';
+    const ageG = age === 0 ? 'N/A' : age < 50 ? '1' : age <= 65 ? '2' : age <= 75 ? '3' : age <= 85 ? '4' : '5';
+    const laG = la === 0 ? 'N/A' : la < 22.5 ? '1' : la <= 24.5 ? '2' : la <= 26 ? '3' : '4';
     setDebugInfo({ ageG, laG });
   }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
 
