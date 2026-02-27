@@ -319,6 +319,7 @@ function App() {
   });
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
+  const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   
   const lenses = useMemo(() => {
     if (Object.keys(overrideData).length === 0) return baseLenses;
@@ -345,6 +346,12 @@ function App() {
         setDrAlfonsoInputs(prev => ({ ...prev, opticConcept: mapped }));
       }
     }
+
+    const age = drAlfonsoInputs.age ? parseInt(drAlfonsoInputs.age, 10) : 0;
+    const la = drAlfonsoInputs.axialLength ? parseFloat(drAlfonsoInputs.axialLength.replace(',', '.')) : 0;
+    const ageG = age >= 35 && age <= 44 ? '1' : age >= 45 && age <= 54 ? '2' : age >= 55 && age <= 64 ? '3' : age >= 65 && age <= 74 ? '4' : age >= 75 && age <= 85 ? '5' : 'N/A';
+    const laG = la >= 14 && la <= 18.5 ? '1' : la > 18.5 && la <= 22 ? '2' : la > 22 && la <= 24.5 ? '3' : la > 24.5 && la <= 29 ? '4' : la > 29 && la <= 35 ? '5' : 'N/A';
+    setDebugInfo({ ageG, laG });
   }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
@@ -947,6 +954,13 @@ function App() {
                     <div>
                       <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Sin coincidencias exactas</p>
                       <p className="text-slate-400 text-[11px] font-medium max-w-xs mx-auto mt-1">Ajuste los parámetros del paciente para que el motor de reglas pueda sugerir un concepto clínico.</p>
+                      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col items-center gap-1">
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Diagnostic Info</p>
+                        <div className="flex gap-2">
+                          <span className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-400">AGE G: {debugInfo.ageG}</span>
+                          <span className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-400">LA G: {debugInfo.laG}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
