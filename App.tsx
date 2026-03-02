@@ -288,6 +288,7 @@ function App() {
   
   const [dataReady, setDataReady] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const [availableGraphs, setAvailableGraphs] = useState<Set<string>>(new Set());
   const [excludedLenses, setExcludedLenses] = useState<string[]>([]);
@@ -460,6 +461,34 @@ function App() {
       await initData();
     })();
   }, []);
+
+  // Timer for loading screen
+  useEffect(() => {
+    if (hasEntered) return;
+    
+    const duration = 4000; // 4 seconds
+    const intervalTime = 40; // update every 40ms
+    const step = 100 / (duration / intervalTime);
+    
+    const timer = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+        return prev + step;
+      });
+    }, intervalTime);
+    
+    return () => clearInterval(timer);
+  }, [hasEntered]);
+
+  // Auto-enter logic
+  useEffect(() => {
+    if (!hasEntered && dataReady && loadingProgress >= 100) {
+      setHasEntered(true);
+    }
+  }, [dataReady, loadingProgress, hasEntered]);
 
   const handleXMLUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -662,21 +691,35 @@ function App() {
 
   if (!hasEntered) {
     return (
-      <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white">
-        <img src="logo.png" alt="IOL Explorer Logo" className={`w-96 h-96 mb-8 ${!dataReady ? 'animate-pulse' : ''}`} />
-        {dataReady ? (
-          <button 
-            onClick={() => setHasEntered(true)}
-            className="mt-8 px-8 py-4 bg-blue-600 text-white font-bold rounded-xl text-lg hover:bg-blue-500 transition-transform transform hover:scale-105 shadow-lg animate-in fade-in duration-500"
-          >
-            Acceder
-          </button>
-        ) : (
-          <>
-            <h1 className="text-2xl font-semibold">Cargando IOL Explorer Pro...</h1>
-            <p className="mt-2 text-sm text-gray-400">Esto puede tardar unos segundos.</p>
-          </>
-        )}
+      <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white p-8">
+        <img 
+          src="logo.png" 
+          alt="IOL Explorer Logo" 
+          className={`w-96 h-96 mb-8 transition-all duration-1000 ${loadingProgress < 100 ? 'scale-110' : 'scale-100'}`} 
+        />
+        
+        <div className="w-full max-w-md space-y-6 flex flex-col items-center">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-black tracking-tighter">
+              IOL Explorer <span className="text-blue-500">Pro</span>
+            </h1>
+            <p className="text-blue-400/60 font-mono text-xs uppercase tracking-[0.3em] animate-pulse">
+              Cargando datos del IOL Explorer...
+            </p>
+          </div>
+
+          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-600 transition-all duration-75 ease-linear"
+              style={{ width: `${loadingProgress}%` }}
+            />
+          </div>
+          
+          <div className="flex justify-between w-full text-[10px] font-mono text-white/30 uppercase tracking-widest">
+            <span>System Initializing</span>
+            <span>{Math.round(loadingProgress)}%</span>
+          </div>
+        </div>
       </div>
     );
   }
