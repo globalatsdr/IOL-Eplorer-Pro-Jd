@@ -691,7 +691,7 @@ function App() {
 
   if (!hasEntered) {
     return (
-      <div className="w-full h-screen flex flex-col items-center justify-center bg-black text-white p-8">
+      <div className="w-full h-screen flex flex-col items-center justify-center bg-white text-slate-900 p-8">
         <img 
           src="logo.png" 
           alt="IOL Explorer Logo" 
@@ -700,22 +700,22 @@ function App() {
         
         <div className="w-full max-w-md space-y-6 flex flex-col items-center">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-black tracking-tighter">
-              IOL Explorer <span className="text-blue-500">Pro</span>
+            <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+              IOL Explorer <span className="text-blue-600">Pro</span>
             </h1>
-            <p className="text-blue-400/60 font-mono text-xs uppercase tracking-[0.3em] animate-pulse">
+            <p className="text-blue-600/60 font-mono text-xs uppercase tracking-[0.3em] animate-pulse">
               Cargando datos del IOL Explorer...
             </p>
           </div>
 
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-600 transition-all duration-75 ease-linear"
               style={{ width: `${loadingProgress}%` }}
             />
           </div>
           
-          <div className="flex justify-between w-full text-[10px] font-mono text-white/30 uppercase tracking-widest">
+          <div className="flex justify-between w-full text-[10px] font-mono text-slate-400 uppercase tracking-widest">
             <span>System Initializing</span>
             <span>{Math.round(loadingProgress)}%</span>
           </div>
