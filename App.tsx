@@ -295,7 +295,7 @@ function App() {
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
-  const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
+  const DR_ALFONSO_UNLOCK_PASSWORD = "131/";
   const [passwordInput, setPasswordInput] = useState('');
   
   const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD || passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
