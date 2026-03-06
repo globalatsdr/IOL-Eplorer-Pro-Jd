@@ -128,6 +128,11 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
                     Toric
                   </span>
                 )}
+                {lens.specifications.technology && lens.specifications.technology !== 'any' && (
+                  <span className="px-3 py-1 rounded-lg text-[10px] bg-amber-50 border border-amber-100 font-black text-amber-600 uppercase tracking-wider">
+                    {lens.specifications.technology}
+                  </span>
+                )}
                 <span className="px-3 py-1 rounded-lg text-[10px] bg-slate-100 border border-slate-200 font-bold text-slate-500 uppercase tracking-wider">
                   {lens.specifications.hydro}
                 </span>
