@@ -117,7 +117,14 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
           
           <div className="flex items-start justify-between gap-4">
             <div>
-               <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4">{lens.name}</h3>
+               <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4">
+                 {lens.name}
+                 {lens.surname && (
+                   <span className="ml-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] align-middle">
+                     {lens.surname}
+                   </span>
+                 )}
+               </h3>
                
                <div className="flex flex-wrap gap-2 mb-4">
                 <span className={`px-3 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider ${getTypeColor(lens.specifications.opticConcept)}`}>
