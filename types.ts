@@ -80,6 +80,7 @@ export interface Lens {
   id: string;
   manufacturer: string;
   name: string;
+  surname?: string; // Nombre coloquial
   note?: string; // Campo opcional para notas personalizadas
   specifications: Specifications;
   availability: Availability;

@@ -295,7 +295,7 @@ function App() {
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
-  const DR_ALFONSO_UNLOCK_PASSWORD = "131/";
+  const DR_ALFONSO_UNLOCK_PASSWORD = "3907/";
   const [passwordInput, setPasswordInput] = useState('');
   
   const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD || passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
@@ -553,7 +553,32 @@ function App() {
           }
         }
 
-        // 2. BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
+        // 2. Normalización de Surname
+        const surnameContent = 
+          item.surname || 
+          item.Surname || 
+          item.apodo || 
+          item.Apodo ||
+          item.specifications?.surname || 
+          item.specifications?.Surname ||
+          item.specifications?.apodo ||
+          item.specifications?.Apodo;
+
+        if (surnameContent) {
+          item.surname = surnameContent;
+          // Limpiar posibles duplicados
+          delete (item as any).Surname;
+          delete (item as any).apodo;
+          delete (item as any).Apodo;
+          if (item.specifications) {
+            delete (item.specifications as any).surname;
+            delete (item.specifications as any).Surname;
+            delete (item.specifications as any).apodo;
+            delete (item.specifications as any).Apodo;
+          }
+        }
+
+        // 3. BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
         let targetLens = baseLenses.find(l => l.id === key);
         
         if (!targetLens) {
@@ -638,7 +663,14 @@ function App() {
       // 1. Filtro de exclusión por nombre (desde lentesexcluidas.json)
       if (excludedLenses.includes(normalizeText(lens.name))) return false;
 
-      if (advFilters.keyword && !lens.name.toLowerCase().includes(advFilters.keyword.toLowerCase()) && !lens.manufacturer.toLowerCase().includes(advFilters.keyword.toLowerCase())) return false;
+      if (advFilters.keyword) {
+        const kw = advFilters.keyword.toLowerCase();
+        const nameMatch = lens.name.toLowerCase().includes(kw);
+        const manuMatch = lens.manufacturer.toLowerCase().includes(kw);
+        const techMatch = lens.specifications.technology?.toLowerCase().includes(kw);
+        const surnameMatch = lens.surname?.toLowerCase().includes(kw);
+        if (!nameMatch && !manuMatch && !techMatch && !surnameMatch) return false;
+      }
 
       if (activeTab === FilterTab.BASIC) {
         if (basicFilters.manufacturer !== 'all' && lens.manufacturer !== basicFilters.manufacturer) return false;
@@ -814,7 +846,7 @@ function App() {
           <Search className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
           <input 
             type="text" 
-            placeholder="Buscar por modelo, fabricante o tecnología..." 
+            placeholder="Buscar por modelo, fabricante, tecnología o surname..." 
             className="w-full pl-14 pr-6 py-5 bg-white border-none text-slate-800 placeholder:text-slate-400 font-medium focus:ring-0 text-lg"
             value={advFilters.keyword}
             onChange={e => setAdvFilters({...advFilters, keyword: e.target.value})}
