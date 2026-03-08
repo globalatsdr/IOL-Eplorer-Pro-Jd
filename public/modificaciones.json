@@ -88,5 +88,68 @@
     "specifications": {
       "technology": "Difractiva"
     }
+  },
+  "XY1-G / XY1-GP":{
+    "surname": "Vivinex Gemetric / Vivinex Gemetric Plus",
+    "specifications": {
+      "technology": "Hibrida",
+      "note": "MultiSert injector"
+    }
+  },
+   "XY1-GT / XY1-GPT":{
+    "surname": "Vivinex Gemetric Toric / Vivinex Gemetric Plus Toric",
+    "specifications": {
+      "technology": "Hibrida",
+      "note": "MultiSert injector"
+    }
+  },
+    "XY1-EM":{
+    "surname": "Vivinex Impress",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "MultiSert injector"
+    }
+  },
+   "XY1A-SP":{
+    "surname": "Vivinex Toric",
+    "specifications": {
+      "technology": "Hibrida?",
+      "note": "MultiSert injector"
+    }
+  },
+   "XC1-SP":{
+    "surname": "Vivinex MultiSert",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "MultiSert injector"
+    }
+  },
+   "XY1-SP":{
+    "surname": "Vivinex MultiSert",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "MultiSert injector"
+    }
+  },
+   "XY1A":{
+    "surname": "Vivinex Toric",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "iSert injector"
+    }
+  },
+   "XC1":{
+    "surname": "Vivinex iSert",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "iSert injector"
+    }
+  },
+   "XY1":{
+    "surname": "Vivinex iSert",
+    "specifications": {
+      "technology": "Refractiva?",
+      "note": "iSert injector"
+    }
   }
 }
