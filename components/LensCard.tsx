@@ -257,7 +257,12 @@ const LensCard: React.FC<Props> = ({ lens, isSelected, onToggleSelect, available
                     { label: 'Filtro', val: lens.specifications.filter },
                     { label: 'Ø Óptico', val: lens.specifications.opticDiameter ? `${lens.specifications.opticDiameter}mm` : '-' },
                     { label: 'Ø Haptico', val: lens.specifications.hapticDiameter ? `${lens.specifications.hapticDiameter}mm` : '-' },
-                    { label: 'Diseño Háptico', val: lens.specifications.hapticDesign },
+                    { label: 'Diseño Háptico', val: lens.specifications.mappedHapticDesign ? (
+                      <div className="flex flex-col items-end">
+                        <span className="text-blue-600 font-black">{lens.specifications.mappedHapticDesign}</span>
+                        <span className="text-[9px] text-slate-400 italic font-normal">{lens.specifications.hapticDesign}</span>
+                      </div>
+                    ) : lens.specifications.hapticDesign },
                     { label: 'Incisión Sug.', val: lens.specifications.incisionWidth ? `${lens.specifications.incisionWidth}mm` : '-' },
                     { label: 'Ind. Refrac.', val: lens.specifications.refractiveIndex || '-' },
                     { label: 'Núm. Abbe', val: lens.specifications.abbeNumber || '-' }

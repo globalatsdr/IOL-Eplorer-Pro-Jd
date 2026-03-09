@@ -144,8 +144,13 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
     },
     { 
       label: 'Haptic Design', 
-      getValue: (l: Lens) => l.specifications.hapticDesign, 
-      getSortValue: (l: Lens) => l.specifications.hapticDesign 
+      getValue: (l: Lens) => l.specifications.mappedHapticDesign ? (
+        <div className="flex flex-col">
+          <span className="font-bold text-blue-800">{l.specifications.mappedHapticDesign}</span>
+          <span className="text-[10px] text-slate-400 italic">{l.specifications.hapticDesign}</span>
+        </div>
+      ) : l.specifications.hapticDesign, 
+      getSortValue: (l: Lens) => l.specifications.mappedHapticDesign || l.specifications.hapticDesign 
     },
     { 
       label: 'Intended Location', 
