@@ -1,0 +1,6 @@
+{
+  "C-Loop": ["C-loop", "Modified C-loop", "Open C-loop", "Super C-loop"],
+  "Plate": ["Plate haptic", "4-loop plate", "Monoblock plate"],
+  "3-Piece": ["3-piece", "3-piece C-loop", "Multipiece"],
+  "Other": ["Iris claw", "Scleral fixated"]
+}
