@@ -10,7 +10,7 @@ import {
   RETINA_OPTIONS 
 } from './constants';
 import { parseIOLData } from './utils/parser';
-import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs } from './types';
+import { Lens, FilterTab, BasicFilters, AdvancedFilters, DrAlfonsoInputs, EquivalentSettings } from './types';
 import LensCard from './components/LensCard';
 import ComparisonView from './components/ComparisonView';
 import DualRangeSlider from './components/DualRangeSlider';
@@ -312,7 +312,10 @@ function App() {
     clinicalConcept: 'all',
     opticConcept: 'all',
     toric: 'all',
-    technology: 'all'
+    technology: 'all',
+    aberration: 'all',
+    material: 'all',
+    hapticDesign: 'all'
   });
 
   const [advFilters, setAdvFilters] = useState<AdvancedFilters>({
@@ -618,21 +621,30 @@ function App() {
   };
 
   const handleResetFilters = () => {
-    setBasicFilters({ manufacturer: 'all', clinicalConcept: 'all', opticConcept: 'all', toric: 'all', technology: 'all' });
+    setBasicFilters({ 
+      manufacturer: 'all', 
+      clinicalConcept: 'all', 
+      opticConcept: 'all', 
+      toric: 'all', 
+      technology: 'all',
+      aberration: 'all',
+      material: 'all',
+      hapticDesign: 'all'
+    });
     setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '', intendedLocation: 'all' });
     setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
   };
 
-  const findEquivalent = (lens: Lens, manufacturer: string) => {
-    const conceptToFilter = lens.specifications.opticConcept;
-    const isToric = lens.specifications.toric ? 'yes' : 'no';
-    
+  const findEquivalent = (lens: Lens, manufacturer: string, settings: EquivalentSettings) => {
     setBasicFilters({
       manufacturer: manufacturer,
       clinicalConcept: 'all',
-      opticConcept: conceptToFilter,
-      toric: isToric,
-      technology: 'all'
+      opticConcept: settings.opticConcept ? lens.specifications.opticConcept : 'all',
+      toric: settings.toric ? (lens.specifications.toric ? 'yes' : 'no') : 'all',
+      technology: settings.technology ? (lens.specifications.technology || 'all') : 'all',
+      aberration: settings.aberration ? (lens.specifications.aberration || 'all') : 'all',
+      material: settings.material ? (lens.specifications.opticMaterial || 'all') : 'all',
+      hapticDesign: settings.hapticDesign ? (lens.specifications.hapticDesign || 'all') : 'all'
     });
     
     setAdvFilters(prev => ({
@@ -680,6 +692,10 @@ function App() {
           if (basicFilters.toric === 'yes' && !isToric) return false;
           if (basicFilters.toric === 'no' && isToric) return false;
         }
+        if (basicFilters.technology !== 'all' && lens.specifications.technology?.toLowerCase() !== basicFilters.technology.toLowerCase()) return false;
+        if (basicFilters.aberration !== 'all' && lens.specifications.aberration?.toLowerCase() !== basicFilters.aberration.toLowerCase()) return false;
+        if (basicFilters.material !== 'all' && lens.specifications.opticMaterial?.toLowerCase() !== basicFilters.material.toLowerCase()) return false;
+        if (basicFilters.hapticDesign !== 'all' && lens.specifications.hapticDesign?.toLowerCase() !== basicFilters.hapticDesign.toLowerCase()) return false;
       } else if (activeTab === FilterTab.ADVANCED) {
         if (lens.availability.minSphere > advFilters.filterMinSphere || lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;

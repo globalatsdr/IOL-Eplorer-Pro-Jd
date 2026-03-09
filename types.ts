@@ -95,10 +95,13 @@ export enum FilterTab {
 
 export interface BasicFilters {
   manufacturer: string;
-  clinicalConcept: string; // New field
+  clinicalConcept: string;
   opticConcept: string;
   toric: string; // 'all', 'yes', 'no'
   technology: string;
+  aberration: string;
+  material: string;
+  hapticDesign: string;
 }
 
 export interface AdvancedFilters {
@@ -128,4 +131,13 @@ export interface DrAlfonsoInputs {
   contactLenses: string;
   anteriorChamber: string;
   retina: string;
+}
+
+export interface EquivalentSettings {
+  opticConcept: boolean;
+  toric: boolean;
+  technology: boolean;
+  aberration: boolean;
+  material: boolean;
+  hapticDesign: boolean;
 }
