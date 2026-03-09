@@ -292,6 +292,7 @@ function App() {
   const [availableImages, setAvailableImages] = useState<Set<string>>(new Set());
   const [availableGraphs, setAvailableGraphs] = useState<Set<string>>(new Set());
   const [excludedLenses, setExcludedLenses] = useState<string[]>([]);
+  const [hapticMapping, setHapticMapping] = useState<Record<string, string[]>>({});
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
@@ -338,11 +339,34 @@ function App() {
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   
   const lenses = useMemo(() => {
-    if (Object.keys(overrideData).length === 0) return baseLenses;
-    return baseLenses.map(lens => 
+    let processed = baseLenses;
+    
+    // Aplicar mapeo de hápticos
+    if (Object.keys(hapticMapping).length > 0) {
+      processed = processed.map(lens => {
+        const rawHaptic = lens.specifications.hapticDesign;
+        let mapped = 'Other';
+        for (const [category, variants] of Object.entries(hapticMapping)) {
+          if (variants.some(v => v.toLowerCase() === rawHaptic.toLowerCase())) {
+            mapped = category;
+            break;
+          }
+        }
+        return {
+          ...lens,
+          specifications: {
+            ...lens.specifications,
+            mappedHapticDesign: mapped
+          }
+        };
+      });
+    }
+
+    if (Object.keys(overrideData).length === 0) return processed;
+    return processed.map(lens => 
       overrideData[lens.id] ? deepMerge(lens, overrideData[lens.id]) : lens
     );
-  }, [baseLenses, overrideData]);
+  }, [baseLenses, overrideData, hapticMapping]);
 
   // Efecto para obtener recomendaciones y sincronizar Concepto Óptico
   useEffect(() => {
@@ -416,7 +440,13 @@ function App() {
         try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
       }
 
-      // 3. Cargar datos de lentes
+      // 3. Cargar mapeo de hápticos
+      fetch('/haptic_mapping.json')
+        .then(res => res.ok ? res.json() : {})
+        .then(mapping => setHapticMapping(mapping))
+        .catch(err => console.error("Error loading haptic mapping", err));
+
+      // 4. Cargar datos de lentes
       const loadAndFilterLenses = (data: Lens[]) => {
         if (data.length > 0) {
           setBaseLenses(data);
@@ -644,7 +674,7 @@ function App() {
       technology: settings.technology ? (lens.specifications.technology || 'all') : 'all',
       aberration: settings.aberration ? (lens.specifications.aberration || 'all') : 'all',
       material: settings.material ? (lens.specifications.opticMaterial || 'all') : 'all',
-      hapticDesign: settings.hapticDesign ? (lens.specifications.hapticDesign || 'all') : 'all'
+      hapticDesign: settings.hapticDesign ? (lens.specifications.mappedHapticDesign || 'all') : 'all'
     });
     
     setAdvFilters(prev => ({
@@ -695,7 +725,7 @@ function App() {
         if (basicFilters.technology !== 'all' && lens.specifications.technology?.toLowerCase() !== basicFilters.technology.toLowerCase()) return false;
         if (basicFilters.aberration !== 'all' && lens.specifications.aberration?.toLowerCase() !== basicFilters.aberration.toLowerCase()) return false;
         if (basicFilters.material !== 'all' && lens.specifications.opticMaterial?.toLowerCase() !== basicFilters.material.toLowerCase()) return false;
-        if (basicFilters.hapticDesign !== 'all' && lens.specifications.hapticDesign?.toLowerCase() !== basicFilters.hapticDesign.toLowerCase()) return false;
+        if (basicFilters.hapticDesign !== 'all' && lens.specifications.mappedHapticDesign !== basicFilters.hapticDesign) return false;
       } else if (activeTab === FilterTab.ADVANCED) {
         if (lens.availability.minSphere > advFilters.filterMinSphere || lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
@@ -709,12 +739,8 @@ function App() {
         if (drAlfonsoInputs.technology !== 'any' && lens.specifications.technology?.toLowerCase() !== drAlfonsoInputs.technology.toLowerCase()) return false;
         
         if (drAlfonsoInputs.hapticDesign !== 'any') {
-            const h = lens.specifications.hapticDesign.toLowerCase();
-            const filter = drAlfonsoInputs.hapticDesign.toLowerCase();
-            if (filter === 'c-loop' && !h.includes('c loop') && !h.includes('c-loop')) return false;
-            if (filter === 'plato' && !h.includes('plate') && !h.includes('4 loop') && !h.includes('square')) return false;
-            if (filter === '3 piezas' && !h.includes('3-piece') && !h.includes('3 piece')) return false;
-            if (filter === 'lamina' && !h.includes('lamina')) return false;
+            const mapped = lens.specifications.mappedHapticDesign;
+            if (mapped !== drAlfonsoInputs.hapticDesign) return false;
         }
         
         if (drAlfonsoInputs.lensMaterial !== 'any') {
@@ -890,7 +916,8 @@ function App() {
               Limpiar Filtros
             </button>
           {activeTab === FilterTab.BASIC && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="space-y-2">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Fabricante</label>
                 <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none" value={basicFilters.manufacturer} onChange={e => setBasicFilters({...basicFilters, manufacturer: e.target.value})}>
@@ -934,6 +961,45 @@ function App() {
                 </select>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8 pt-8 border-t border-slate-100">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tecnología</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.technology} onChange={e => setBasicFilters({...basicFilters, technology: e.target.value})}>
+                  <option value="all">Cualquiera</option>
+                  <option value="refractiva">Refractiva</option>
+                  <option value="difractiva">Difractiva</option>
+                  <option value="hibrida">Híbrida</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Aberración</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.aberration} onChange={e => setBasicFilters({...basicFilters, aberration: e.target.value})}>
+                  <option value="all">Cualquiera</option>
+                  <option value="asferica">Asférica</option>
+                  <option value="esferica">Esférica</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Material</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.material} onChange={e => setBasicFilters({...basicFilters, material: e.target.value})}>
+                  <option value="all">Cualquiera</option>
+                  <option value="hidrofobico">Hidrofóbico</option>
+                  <option value="hidrofilico">Hidrofílico</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Diseño Háptico</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={basicFilters.hapticDesign} onChange={e => setBasicFilters({...basicFilters, hapticDesign: e.target.value})}>
+                  <option value="all">Cualquiera</option>
+                  <option value="C-Loop">C-Loop</option>
+                  <option value="Plate">Plato (Plate)</option>
+                  <option value="3-Piece">3 Piezas</option>
+                  <option value="Other">Otros / Especiales</option>
+                </select>
+              </div>
+            </div>
+          </>
           )}
 
           {activeTab === FilterTab.ADVANCED && (
@@ -1131,10 +1197,10 @@ function App() {
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Diseño Háptico</label>
                     <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})}>
                       <option value="any">Cualquiera</option>
-                      <option value="c-loop">C-Loop</option>
-                      <option value="plato">Plato</option>
-                      <option value="lamina">Lámina Modificada</option>
-                      <option value="3 piezas">3 Piezas</option>
+                      <option value="C-Loop">C-Loop</option>
+                      <option value="Plate">Plato (Plate)</option>
+                      <option value="3-Piece">3 Piezas</option>
+                      <option value="Other">Otros / Especiales</option>
                     </select>
                   </div>
 

@@ -49,6 +49,7 @@ export interface Specifications {
   hapticDiameter: number | null;
   opticConcept: string;
   hapticDesign: string;
+  mappedHapticDesign?: string;
   intendedLocation: string;
   opticDesign: string;
   aberration: string;
