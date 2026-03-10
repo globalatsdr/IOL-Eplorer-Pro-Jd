@@ -341,26 +341,28 @@ function App() {
   const lenses = useMemo(() => {
     let processed = baseLenses;
     
-    // Aplicar mapeo de hápticos
-    if (Object.keys(hapticMapping).length > 0) {
-      processed = processed.map(lens => {
-        const rawHaptic = lens.specifications.hapticDesign;
-        let mapped = 'Other';
+    // Aplicar mapeo de hápticos (siempre, para asegurar que mappedHapticDesign existe)
+    processed = processed.map(lens => {
+      const rawHaptic = (lens.specifications.hapticDesign || '').trim();
+      let mapped = 'Other';
+      
+      if (Object.keys(hapticMapping).length > 0) {
         for (const [category, variants] of Object.entries(hapticMapping)) {
-          if (variants.some(v => v.toLowerCase() === rawHaptic.toLowerCase())) {
+          if (Array.isArray(variants) && variants.some(v => v.toLowerCase() === rawHaptic.toLowerCase())) {
             mapped = category;
             break;
           }
         }
-        return {
-          ...lens,
-          specifications: {
-            ...lens.specifications,
-            mappedHapticDesign: mapped
-          }
-        };
-      });
-    }
+      }
+      
+      return {
+        ...lens,
+        specifications: {
+          ...lens.specifications,
+          mappedHapticDesign: mapped
+        }
+      };
+    });
 
     if (Object.keys(overrideData).length === 0) return processed;
     return processed.map(lens => 
@@ -440,10 +442,13 @@ function App() {
         try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
       }
 
-      // 3. Cargar mapeo de hápticos
-      fetch('/haptic_mapping.json')
+      // 3. Cargar mapeo de hápticos con cache-busting
+      fetch(`./haptic_mapping.json?t=${new Date().getTime()}`)
         .then(res => res.ok ? res.json() : {})
-        .then(mapping => setHapticMapping(mapping))
+        .then(mapping => {
+          console.log("Haptic mapping loaded:", Object.keys(mapping));
+          setHapticMapping(mapping);
+        })
         .catch(err => console.error("Error loading haptic mapping", err));
 
       // 4. Cargar datos de lentes
@@ -725,7 +730,10 @@ function App() {
         if (basicFilters.technology !== 'all' && lens.specifications.technology?.toLowerCase() !== basicFilters.technology.toLowerCase()) return false;
         if (basicFilters.aberration !== 'all' && lens.specifications.aberration?.toLowerCase() !== basicFilters.aberration.toLowerCase()) return false;
         if (basicFilters.material !== 'all' && lens.specifications.opticMaterial?.toLowerCase() !== basicFilters.material.toLowerCase()) return false;
-        if (basicFilters.hapticDesign !== 'all' && lens.specifications.mappedHapticDesign !== basicFilters.hapticDesign) return false;
+        if (basicFilters.hapticDesign !== 'all') {
+          const mapped = lens.specifications.mappedHapticDesign;
+          if (mapped !== basicFilters.hapticDesign) return false;
+        }
       } else if (activeTab === FilterTab.ADVANCED) {
         if (lens.availability.minSphere > advFilters.filterMinSphere || lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
