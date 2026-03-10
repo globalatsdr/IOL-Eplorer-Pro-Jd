@@ -1,7 +1,51 @@
 {
-  "C-Loop": ["C-loop", "Modified C-loop", "Open C-loop", "Super C-loop"],
-  "Plate": ["Plate haptic", "4-loop plate", "plate haptik design"],
-  "Lamina Modificada": ["Fenestrated C-loop", "4 closed haptics", "4 squared closed loops"],
-  "3-Piece": ["3-piece", "3-piece C-loop", "Multipiece"],
-  "Other": ["Iris claw", "Scleral fixated"]
+  "C-Loop": [
+    "C-loop",
+    "C-Loop",
+    "C loop",
+    "C Loop",
+    "Modified C-loop",
+    "Modified C-Loop",
+    "Open C-loop",
+    "Open C-Loop",
+    "Super C-loop",
+    "Super C-Loop",
+    "C-loop haptic",
+    "C-Loop haptic",
+    "C-Loop Haptic",
+    "One-piece C-loop",
+    "One-piece C-Loop"
+  ],
+  "Plate": [
+    "Plate haptic",
+    "Plate Haptic",
+    "4-loop plate",
+    "4-loop Plate",
+    "Monoblock plate",
+    "Monoblock Plate",
+    "Plate",
+    "plate",
+    "4-loop",
+    "4-Loop",
+    "Square",
+    "square"
+  ],
+  "3-Piece": [
+    "3-piece",
+    "3-Piece",
+    "3-piece C-loop",
+    "3-piece C-Loop",
+    "3-Piece C-Loop",
+    "Multipiece",
+    "Multi-piece"
+  ],
+  "Other": [
+    "Iris claw",
+    "Iris Claw",
+    "Scleral fixated",
+    "Scleral Fixated",
+    "Lamina",
+    "Other",
+    "other"
+  ]
 }
