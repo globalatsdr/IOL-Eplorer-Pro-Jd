@@ -42,6 +42,18 @@
       "note": "Tecnis Eyhance IOL with Tecnis Simplicity delivery system"
     }
   },
+   "DEN00V":{
+   "surname": "Tecnis PureSee",
+    "specifications": {
+      "technology": "Refractiva"
+   }
+  },
+    "DET":{
+   "surname": "Tecnis PureSee Toric",
+    "specifications": {
+      "technology": "Refractiva"
+   }
+  },
   "DIU":{
     "surname": "Tecnis Eyhance Toric II",
     "specifications": {
