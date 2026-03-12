@@ -121,7 +121,7 @@ export interface DrAlfonsoInputs {
   lensStatus: 'any' | 'transparente' | 'presbicia' | 'disfuncional' | 'catarata' | 'otro';
   refraction: 'any' | 'hipermetrope_extremo' | 'hipermetrope_alto' | 'emetrope' | 'miope_alto' | 'miope_extremo';
   lensMaterial: 'any' | 'hidrofilico' | 'hidrofobico';
-  hapticDesign: string;
+  hapticDesign: string[];
   opticConcept: string;
   toric: 'any' | 'yes' | 'no';
   technology: string;
@@ -132,6 +132,7 @@ export interface DrAlfonsoInputs {
   contactLenses: string;
   anteriorChamber: string;
   retina: string;
+  ata: string;
 }
 
 export interface EquivalentSettings {

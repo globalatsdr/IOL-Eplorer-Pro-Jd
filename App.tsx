@@ -331,8 +331,9 @@ function App() {
 
   const [drAlfonsoInputs, setDrAlfonsoInputs] = useState<DrAlfonsoInputs>({
     age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any',
-    hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any',
+    hapticDesign: [], opticConcept: 'any', toric: 'any', technology: 'any',
     lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any',
+    ata: '',
   });
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
@@ -395,6 +396,22 @@ function App() {
     const laG = la === 0 ? 'N/A' : la < 22.5 ? '1' : la <= 24.5 ? '2' : la <= 26 ? '3' : '4';
     setDebugInfo({ ageG, laG });
   }, [drAlfonsoInputs.age, drAlfonsoInputs.axialLength, drAlfonsoInputs.lensStatus, drAlfonsoInputs.lvc, drAlfonsoInputs.udva, drAlfonsoInputs.contactLenses, drAlfonsoInputs.anteriorChamber, drAlfonsoInputs.retina]);
+
+  // Efecto para Angulo-Angulo (AtA) -> Diseño Háptico
+  useEffect(() => {
+    const ataVal = parseFloat(drAlfonsoInputs.ata.replace(',', '.'));
+    if (isNaN(ataVal)) return;
+
+    const newHaptics: string[] = [];
+    if (ataVal <= 12) newHaptics.push('C-Loop');
+    if (ataVal >= 12) newHaptics.push('Plate');
+    if (ataVal > 11.5 && ataVal < 12.5) newHaptics.push('Lamina Modificada');
+
+    setDrAlfonsoInputs(prev => ({
+      ...prev,
+      hapticDesign: newHaptics
+    }));
+  }, [drAlfonsoInputs.ata]);
 
   const uniqueManufacturers = useMemo(() => Array.from(new Set(lenses.map(l => l.manufacturer))).sort(), [lenses]);
   const uniqueLocations = useMemo(() => Array.from(new Set(lenses.map(l => l.specifications.intendedLocation))).sort(), [lenses]);
@@ -667,7 +684,23 @@ function App() {
       hapticDesign: 'all'
     });
     setAdvFilters({ filterMinSphere: 10, filterMaxSphere: 30, isPreloaded: false, isYellowFilter: false, hydroType: 'all', keyword: '', intendedLocation: 'all' });
-    setDrAlfonsoInputs({ age: '', axialLength: '', lensStatus: 'any', refraction: 'any', lensMaterial: 'any', hapticDesign: 'any', opticConcept: 'any', toric: 'any', technology: 'any', lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any' });
+    setDrAlfonsoInputs({ 
+      age: '', 
+      axialLength: '', 
+      lensStatus: 'any', 
+      refraction: 'any', 
+      lensMaterial: 'any', 
+      hapticDesign: [], 
+      opticConcept: 'any', 
+      toric: 'any', 
+      technology: 'any', 
+      lvc: 'any', 
+      udva: 'any', 
+      contactLenses: 'any', 
+      anteriorChamber: 'any', 
+      retina: 'any',
+      ata: ''
+    });
   };
 
   const findEquivalent = (lens: Lens, manufacturer: string, settings: EquivalentSettings) => {
@@ -746,9 +779,9 @@ function App() {
         
         if (drAlfonsoInputs.technology !== 'any' && lens.specifications.technology?.toLowerCase() !== drAlfonsoInputs.technology.toLowerCase()) return false;
         
-        if (drAlfonsoInputs.hapticDesign !== 'any') {
+        if (drAlfonsoInputs.hapticDesign.length > 0) {
             const mapped = lens.specifications.mappedHapticDesign;
-            if (mapped !== drAlfonsoInputs.hapticDesign) return false;
+            if (mapped && !drAlfonsoInputs.hapticDesign.includes(mapped)) return false;
         }
         
         if (drAlfonsoInputs.lensMaterial !== 'any') {
@@ -1102,6 +1135,19 @@ function App() {
                     </div>
                   ))}
                 </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Angulo-Angulo (AtA)</label>
+                    <input 
+                      type="text" 
+                      placeholder="mm"
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
+                      value={drAlfonsoInputs.ata} 
+                      onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, ata: e.target.value})} 
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Bloque 2: Resultados Reales */}
@@ -1203,13 +1249,49 @@ function App() {
 
                   <div className="space-y-2">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Diseño Háptico</label>
-                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none" value={drAlfonsoInputs.hapticDesign} onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, hapticDesign: e.target.value})}>
-                      <option value="any">Cualquiera</option>
-                      <option value="C-Loop">C-Loop</option>
-                      <option value="Plate">Plato (Plate)</option>
-                      <option value="3-Piece">3 Piezas</option>
-                      <option value="Other">Otros / Especiales</option>
-                    </select>
+                    <div className="relative group">
+                      <div className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold min-h-[48px] flex flex-wrap gap-1 items-center">
+                        {drAlfonsoInputs.hapticDesign.length === 0 ? (
+                          <span className="text-slate-400">Cualquiera</span>
+                        ) : (
+                          drAlfonsoInputs.hapticDesign.map(h => (
+                            <span key={h} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1">
+                              {h}
+                              <button onClick={() => setDrAlfonsoInputs(prev => ({ ...prev, hapticDesign: prev.hapticDesign.filter(x => x !== h) }))} className="hover:text-blue-900">×</button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all p-2 space-y-1">
+                        {['C-Loop', 'Plate', '3-Piece', 'Lamina Modificada', 'Other'].map(option => (
+                          <label key={option} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              checked={drAlfonsoInputs.hapticDesign.includes(option)}
+                              onChange={e => {
+                                const checked = e.target.checked;
+                                setDrAlfonsoInputs(prev => ({
+                                  ...prev,
+                                  hapticDesign: checked 
+                                    ? [...prev.hapticDesign, option]
+                                    : prev.hapticDesign.filter(h => h !== option)
+                                }));
+                              }}
+                            />
+                            <span className="text-xs font-bold text-slate-700">{option === 'Plate' ? 'Plato (Plate)' : option}</span>
+                          </label>
+                        ))}
+                        {drAlfonsoInputs.hapticDesign.length > 0 && (
+                          <button 
+                            onClick={() => setDrAlfonsoInputs(prev => ({ ...prev, hapticDesign: [] }))}
+                            className="w-full text-center py-1.5 text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 rounded-lg transition-colors mt-1"
+                          >
+                            Limpiar Selección
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
