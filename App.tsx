@@ -341,6 +341,7 @@ function App() {
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
+  const [customAtaImage, setCustomAtaImage] = useState<string | null>(null);
   const ataAssets = ['/ata_info.png', '/ata_info.PNG', '/ata_info.jpg', '/ata_info.jpeg', '/ata_info.pdf'];
 
   useEffect(() => {
@@ -1392,8 +1393,14 @@ function App() {
               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
                 <Info className="w-6 h-6 text-blue-600" /> Información Angulo-Angulo (AtA)
               </h3>
-              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative">
-                {ataAssetIndex < ataAssets.length ? (
+              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative group/img">
+                {customAtaImage ? (
+                  <img 
+                    src={customAtaImage} 
+                    alt="Información AtA Personalizada" 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : ataAssetIndex < ataAssets.length ? (
                   ataAssets[ataAssetIndex].toLowerCase().endsWith('.pdf') ? (
                     <iframe 
                       src={ataAssets[ataAssetIndex]} 
@@ -1410,13 +1417,34 @@ function App() {
                     />
                   )
                 ) : (
-                  <img 
-                    src="https://picsum.photos/seed/medical/800/450?blur=2" 
-                    alt="Información AtA Fallback" 
-                    className="max-w-full max-h-full object-contain"
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="text-center p-6">
+                    <p className="text-slate-400 text-xs font-bold mb-4">No se encontró el archivo ata_info en /public</p>
+                    <img 
+                      src="https://picsum.photos/seed/medical/800/450?blur=2" 
+                      alt="Información AtA Fallback" 
+                      className="max-w-full max-h-full object-contain opacity-50"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
                 )}
+                
+                <label className="absolute bottom-4 right-4 bg-white/90 backdrop-blur shadow-lg border border-slate-200 px-3 py-2 rounded-xl cursor-pointer hover:bg-white transition-all opacity-0 group-hover/img:opacity-100 flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Cargar archivo</span>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*,.pdf" 
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setCustomAtaImage(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
               </div>
               <div className="mt-6 space-y-4">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
