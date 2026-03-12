@@ -340,6 +340,12 @@ function App() {
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
+  const [ataAssetIndex, setAtaAssetIndex] = useState(0);
+  const ataAssets = ['/ata_info.png', '/ata_info.PNG', '/ata_info.jpg', '/ata_info.jpeg', '/ata_info.pdf'];
+
+  useEffect(() => {
+    if (isAtAModalOpen) setAtaAssetIndex(0);
+  }, [isAtAModalOpen]);
   
   const lenses = useMemo(() => {
     let processed = baseLenses;
@@ -1386,16 +1392,31 @@ function App() {
               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
                 <Info className="w-6 h-6 text-blue-600" /> Información Angulo-Angulo (AtA)
               </h3>
-              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center">
-                <img 
-                  src="/ata_info.png" 
-                  alt="Información AtA" 
-                  className="max-w-full max-h-full object-contain"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/medical/800/450?blur=2';
-                  }}
-                />
+              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative">
+                {ataAssetIndex < ataAssets.length ? (
+                  ataAssets[ataAssetIndex].toLowerCase().endsWith('.pdf') ? (
+                    <iframe 
+                      src={ataAssets[ataAssetIndex]} 
+                      className="w-full h-full border-none"
+                      title="AtA Info PDF"
+                    />
+                  ) : (
+                    <img 
+                      src={ataAssets[ataAssetIndex]} 
+                      alt="Información AtA" 
+                      className="max-w-full max-h-full object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={() => setAtaAssetIndex(prev => prev + 1)}
+                    />
+                  )
+                ) : (
+                  <img 
+                    src="https://picsum.photos/seed/medical/800/450?blur=2" 
+                    alt="Información AtA Fallback" 
+                    className="max-w-full max-h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
               </div>
               <div className="mt-6 space-y-4">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
