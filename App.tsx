@@ -34,7 +34,8 @@ import {
   ArrowRightCircle,
   Settings2,
   LineChart,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 
 // ... (existing imports)
@@ -338,6 +339,7 @@ function App() {
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
+  const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
   
   const lenses = useMemo(() => {
     let processed = baseLenses;
@@ -1138,7 +1140,12 @@ function App() {
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Angulo-Angulo (AtA)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
+                      Angulo-Angulo (AtA)
+                      <button onClick={() => setIsAtAModalOpen(true)} className="text-teal-600 hover:text-teal-700 transition-colors">
+                        <HelpCircle className="w-3 h-3" />
+                      </button>
+                    </label>
                     <input 
                       type="text" 
                       placeholder="mm"
@@ -1365,6 +1372,54 @@ function App() {
       {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findEquivalent} manufacturers={uniqueManufacturers} />}
       {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
       {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} onOpenCreator={() => { setIsRulesManagerOpen(false); setIsRuleCreatorOpen(true); }} />}
+      
+      {isAtAModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setIsAtAModalOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setIsAtAModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+            <div className="p-8">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
+                <Info className="w-6 h-6 text-blue-600" /> Información Angulo-Angulo (AtA)
+              </h3>
+              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center">
+                <img 
+                  src="/ata_info.png" 
+                  alt="Información AtA" 
+                  className="max-w-full max-h-full object-contain"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/medical/800/450?blur=2';
+                  }}
+                />
+              </div>
+              <div className="mt-6 space-y-4">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  El valor Angulo-Angulo (AtA) es fundamental para determinar el diseño háptico más adecuado para la estabilidad de la lente intraocular.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">≤ 12mm</p>
+                    <p className="text-xs font-bold text-teal-700">C-Loop</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">≥ 12mm</p>
+                    <p className="text-xs font-bold text-blue-700">Plate</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">11.5 - 12.5mm</p>
+                    <p className="text-xs font-bold text-amber-700">Lamina Mod.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
