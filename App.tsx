@@ -347,6 +347,24 @@ function App() {
   useEffect(() => {
     if (isAtAModalOpen) setAtaAssetIndex(0);
   }, [isAtAModalOpen]);
+
+  // Persistencia de imagen AtA personalizada
+  useEffect(() => {
+    const saved = localStorage.getItem('custom_ata_image');
+    if (saved) setCustomAtaImage(saved);
+  }, []);
+
+  useEffect(() => {
+    if (customAtaImage) {
+      try {
+        localStorage.setItem('custom_ata_image', customAtaImage);
+      } catch (e) {
+        console.warn("No se pudo guardar la imagen en localStorage (posiblemente demasiado grande)");
+      }
+    } else {
+      localStorage.removeItem('custom_ata_image');
+    }
+  }, [customAtaImage]);
   
   const lenses = useMemo(() => {
     let processed = baseLenses;
@@ -1428,23 +1446,34 @@ function App() {
                   </div>
                 )}
                 
-                <label className="absolute bottom-4 right-4 bg-white/90 backdrop-blur shadow-lg border border-slate-200 px-3 py-2 rounded-xl cursor-pointer hover:bg-white transition-all opacity-0 group-hover/img:opacity-100 flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-blue-600" />
-                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Cargar archivo</span>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*,.pdf" 
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setCustomAtaImage(reader.result as string);
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
+                <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover/img:opacity-100 transition-all">
+                  {customAtaImage && (
+                    <button 
+                      onClick={() => setCustomAtaImage(null)}
+                      className="bg-red-50/90 backdrop-blur shadow-lg border border-red-100 px-3 py-2 rounded-xl hover:bg-red-50 transition-all flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <span className="text-[10px] font-black text-red-700 uppercase tracking-widest">Eliminar</span>
+                    </button>
+                  )}
+                  <label className="bg-white/90 backdrop-blur shadow-lg border border-slate-200 px-3 py-2 rounded-xl cursor-pointer hover:bg-white transition-all flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-blue-600" />
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{customAtaImage ? 'Cambiar' : 'Cargar archivo'}</span>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*,.pdf" 
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setCustomAtaImage(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="mt-6 space-y-4">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
