@@ -8,7 +8,7 @@
     "Modified C-Loop",
     "Open C-loop",
     "Open C-Loop",
-    "STABLEFORCE",
+    "Super C-loop",
     "Super C-Loop",
     "C-loop haptic",
     "C-Loop haptic",
@@ -38,6 +38,11 @@
     "3-Piece C-Loop",
     "Multipiece",
     "Multi-piece"
+  ],
+  "Lamina Modificada": [
+    "Lamina",
+    "Lamina Modificada",
+    "Modified Lamina"
   ],
   "Other": [
     "Iris claw",
