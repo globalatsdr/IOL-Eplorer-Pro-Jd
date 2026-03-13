@@ -36,6 +36,7 @@
       "note": "Tecnolog�a EDoF no difractiva. Ideal para evitar halos nocturnos."
     }
   },
+   // 	Johnson and Johnson Vision
   "DIB00":{
     "specifications": {
       "technology": "Refractiva?",
@@ -62,9 +63,15 @@
     }
   },
    "DXR00V":{
-    "surname": "Tecnis Symfony",
+    "surname": "Tecnis Symfony OptiBlue",
     "specifications": {
       "technology": "Difractiva"
+    }
+  },
+    "DXW":{
+    "surname": "Tecnis Symfony OptiBlue Toric",
+    "specifications": {
+      "technology": "Difractiva?"
     }
   },
    "ZXR00":{
@@ -74,11 +81,23 @@
       "note": "indicated for primary implantation for the visual correction of aphakia, in adult patients with less than 1 diopter of pre-existing corneal astigmatism, in whom a cataractous lens has been removed"
    }
   },
+   "ZXR00V":{
+    "surname": "Tecnis Symfony OptiBlue IOL with InteliLight",
+    "specifications": {
+      "technology": "Difractiva?"
+   }
+  },
    "ZXT":{
     "surname": "Tecnis Symfony Toric",
     "specifications": {
       "technology": "Difractiva",
       "note": "are indicated for primary implantation for the visual correction of aphakia and for reduction of residual refractive astigmatism in adult patients with greater than or equal to 1 diopter of preoperative corneal astigmatism"
+   }
+  },
+   "ZXW":{
+    "surname": "Tecnis Symfony OptiBlue Toric II with InteliLight",
+    "specifications": {
+      "technology": "Difractiva?"
    }
   },
   "FINEVISION HP POD F GF":{
