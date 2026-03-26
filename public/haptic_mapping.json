@@ -1,48 +1,49 @@
 {
   "C-Loop": [
     "C-loop",
-    "C-Loop",
-    "C loop",
-    "C Loop",
-    "Modified C-loop",
-    "Modified C-Loop",
-    "Open C-loop",
-    "Open C-Loop",
-    "Super C-loop",
-    "Super C-Loop",
-    "C-loop haptic",
-    "C-Loop haptic",
-    "C-Loop Haptic",
-    "One-piece C-loop",
-    "One-piece C-Loop"
+    "C loop 9° angled",
+    "STABLEFORCE",
+    "Closed C-loop",
+    "C loop, 5° angle",
+    "C-Loop"
   ],
   "Plate": [
-    "Plate haptic",
-    "Plate Haptic",
-    "4-loop plate",
-    "4-loop Plate",
-    "Monoblock plate",
-    "Monoblock Plate",
     "Plate",
-    "plate",
+    "plate haptic",
+    "four-point-haptic",
+    "4 haptics",
+    "plate haptik design",
+    "4-point fixation",
+    "4-haptic. MICS",
+    "4-haptic MICS",
     "4-loop",
     "4-Loop",
     "Square",
     "square"
   ],
   "3-Piece": [
-    "3-piece",
-    "3-Piece",
-    "3-piece C-loop",
-    "3-piece C-Loop",
-    "3-Piece C-Loop",
-    "Multipiece",
-    "Multi-piece"
+    "C-Loop. 3-piece",
+    "3-piece C-loop"
   ],
   "Lamina Modificada": [
-    "Lamina",
-    "Lamina Modificada",
-    "Modified Lamina"
+    "4-loop",
+    "4 loops Square",
+    "C MODIFIED",
+    "4 closed loops",
+    "Double C-loop",
+    "Fenestrated C-loop",
+    "4 closed haptics",
+    "2 C-loops",
+    "4 squared closed loops",
+    "Modified C-loop",
+    "Modified C",
+    "fenestrated C-loop",
+    "Fenestrated C loop",
+    "4 closed loops, MICS",
+    "4-loop, MICS"
+  ],
+  "Plato Modificado": [
+    
   ],
   "Other": [
     "Iris claw",
