@@ -314,23 +314,38 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
               {/* Controles de Ordenamiento */}
-              <div className="flex items-center gap-2 text-sm bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
-                  <span className="text-gray-500 pl-2 font-medium">Sort by:</span>
+              <div className="flex items-center gap-2 text-sm bg-blue-50 p-2 rounded-xl border border-blue-200 shadow-md ring-1 ring-blue-500/10">
+                  <span className="text-blue-700 pl-2 font-black uppercase tracking-tighter text-[11px]">Sort by:</span>
                   <select 
-                    className="bg-transparent border-none text-gray-700 font-medium focus:ring-0 cursor-pointer text-sm py-1"
+                    className="bg-transparent border-none text-blue-900 font-bold focus:ring-0 cursor-pointer text-sm py-1 pr-8"
                     value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSortKey(val);
+                      if (val) {
+                        const rowId = `row-${val.replace(/\s+/g, '-').toLowerCase()}`;
+                        setTimeout(() => {
+                           const el = document.getElementById(rowId);
+                           if (el) {
+                             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                             // Resaltado temporal
+                             el.classList.add('bg-blue-100/50');
+                             setTimeout(() => el.classList.remove('bg-blue-100/50'), 2000);
+                           }
+                        }, 100);
+                      }
+                    }}
                   >
                     <option value="">Default Order</option>
                     {features.map(f => (
                       <option key={f.label} value={f.label}>{f.label}</option>
                     ))}
                   </select>
-                  <div className="h-4 w-px bg-gray-200 mx-1"></div>
+                  <div className="h-5 w-px bg-blue-200 mx-1"></div>
                   <button 
                     onClick={toggleDirection}
                     disabled={!sortKey}
-                    className={`p-1.5 rounded-md transition-colors ${!sortKey ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 text-blue-600'}`}
+                    className={`p-2 rounded-lg transition-all ${!sortKey ? 'opacity-30 cursor-not-allowed text-gray-400' : 'hover:bg-blue-100 text-blue-600 bg-white shadow-sm border border-blue-100'}`}
                     title={sortDirection === 'asc' ? "Ascending" : "Descending"}
                   >
                     {sortDirection === 'asc' 
@@ -415,7 +430,11 @@ const ComparisonView: React.FC<Props> = ({ lenses, onClose, onRemove, onFindSimi
               </thead>
               <tbody>
                 {features.map((feature, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors group/row">
+                  <tr 
+                    key={idx} 
+                    id={`row-${feature.label.replace(/\s+/g, '-').toLowerCase()}`}
+                    className="hover:bg-gray-50 transition-colors group/row"
+                  >
                     <td className="p-4 border-b border-gray-100 font-medium text-gray-500 bg-gray-50 sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover/row:bg-gray-100 transition-colors">
                       {feature.label}
                     </td>
