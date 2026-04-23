@@ -335,6 +335,7 @@ function App() {
     hapticDesign: [], opticConcept: 'any', toric: 'any', technology: 'any',
     lvc: 'any', udva: 'any', contactLenses: 'any', anteriorChamber: 'any', retina: 'any',
     ata: '',
+    iolDiopters: '',
   });
   
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
@@ -707,7 +708,8 @@ function App() {
       contactLenses: 'any', 
       anteriorChamber: 'any', 
       retina: 'any',
-      ata: ''
+      ata: '',
+      iolDiopters: ''
     });
   };
 
@@ -802,6 +804,13 @@ function App() {
           const isToric = lens.specifications.toric;
           if (drAlfonsoInputs.toric === 'yes' && !isToric) return false;
           if (drAlfonsoInputs.toric === 'no' && isToric) return false;
+        }
+
+        if (drAlfonsoInputs.iolDiopters) {
+          const diop = parseFloat(drAlfonsoInputs.iolDiopters.replace(',', '.'));
+          if (!isNaN(diop)) {
+              if (diop < lens.availability.minSphere || diop > lens.availability.maxSphere) return false;
+          }
         }
       }
       return true;
@@ -1314,6 +1323,17 @@ function App() {
                       <option value="hidrofobico">Hidrofóbico</option>
                       <option value="hidrofilico">Hidrofílico</option>
                     </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Dioptrías IOL</label>
+                    <input 
+                      type="text"
+                      placeholder="Ej: 21.5"
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={drAlfonsoInputs.iolDiopters}
+                      onChange={e => setDrAlfonsoInputs({...drAlfonsoInputs, iolDiopters: e.target.value})}
+                    />
                   </div>
                 </div>
 

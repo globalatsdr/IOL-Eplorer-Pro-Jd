@@ -133,6 +133,7 @@ export interface DrAlfonsoInputs {
   anteriorChamber: string;
   retina: string;
   ata: string;
+  iolDiopters: string;
 }
 
 export interface EquivalentSettings {
