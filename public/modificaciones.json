@@ -61,6 +61,12 @@
       "note": "with Tecnis Simplicity delivery system"
     }
   },
+   "DRN00V":{
+    "surname": "Tecnis Odyssey",
+    "specifications": {
+      "technology": "Difractiva"
+    }
+  },
    "DXR00V":{
     "surname": "Tecnis Symfony OptiBlue",
     "specifications": {
