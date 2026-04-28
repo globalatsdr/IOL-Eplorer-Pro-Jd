@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IOL_XML_DATA, 
   CLINICAL_CONCEPTS, 
