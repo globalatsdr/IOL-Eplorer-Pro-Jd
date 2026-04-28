@@ -37,7 +37,6 @@ import {
   LineChart,
   X,
   HelpCircle,
-  Shield,
   CheckCircle2,
   Save,
   Download,
@@ -1788,14 +1787,7 @@ function App() {
                           <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-4">
-                         {['_H', '_M', '_E', '_I', '_G'].map(suffix => (
-                           <div key={suffix} className="text-[9px] text-white/20 font-mono flex items-center gap-1.5">
-                             <Shield className="w-2.5 h-2.5" />
-                             ioladmin{suffix}
-                           </div>
-                         ))}
-                      </div>
+
                     </div>
                   ) : (
                     <div className="space-y-6">
