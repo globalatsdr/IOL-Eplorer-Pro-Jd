@@ -642,7 +642,38 @@ function App() {
           }
         }
 
-        // 3. BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
+        // 3. Normalización de Abbe Number
+        const abbeContent = 
+          item.abbeNumber ?? 
+          item.AbbeNumber ?? 
+          item.abbenumber ?? 
+          item['Abbe Number'] ??
+          item.specifications?.abbeNumber ?? 
+          item.specifications?.AbbeNumber ??
+          item.specifications?.abbenumber ??
+          item.specifications?.['Abbe Number'];
+
+        if (abbeContent !== undefined && abbeContent !== null) {
+          if (!item.specifications) item.specifications = {};
+          const parsedAbbe = typeof abbeContent === 'string' ? parseFloat(abbeContent.replace(',', '.')) : abbeContent;
+          if (!isNaN(parsedAbbe)) {
+            item.specifications.abbeNumber = parsedAbbe;
+          }
+          
+          // Limpiar duplicados en raíz
+          delete (item as any).abbeNumber;
+          delete (item as any).AbbeNumber;
+          delete (item as any).abbenumber;
+          delete (item as any)['Abbe Number'];
+          // Limpiar duplicados en specifications
+          if (item.specifications) {
+             delete (item.specifications as any).AbbeNumber;
+             delete (item.specifications as any).abbenumber;
+             delete (item.specifications as any)['Abbe Number'];
+          }
+        }
+
+        // 4. BUSCAR LA LENTE: Primero por ID (por si acaso), luego por NOMBRE (más robusto)
         let targetLens = baseLenses.find(l => l.id === key);
         
         if (!targetLens) {
