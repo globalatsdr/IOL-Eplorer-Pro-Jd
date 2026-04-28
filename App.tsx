@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   IOL_XML_DATA, 
   CLINICAL_CONCEPTS, 
@@ -341,6 +342,7 @@ function App() {
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
   const ataAssets = ['ata_info.png', 'ata_info.PNG', 'ata_info.jpg', 'ata_info.jpeg', 'ata_info.pdf'];
 
@@ -893,9 +895,12 @@ function App() {
 
       <header className="bg-black border-b border-white/10 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+          <button 
+            onClick={() => setIsSidePanelOpen(true)} 
+            className="w-14 h-14 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform active:scale-95 focus:outline-none"
+          >
              <img src="logo.png" alt="IOL Explorer Logo" className="w-full h-full object-contain" />
-          </div>
+          </button>
           <div className="flex flex-col">
             <h1 className="text-xl font-black text-white tracking-tight leading-none">IOL Explorer <span className="text-blue-500">Pro</span></h1>
             <span className="text-[10px] text-white/50 font-bold uppercase mt-1 tracking-widest">Dr. Alfonso</span>
@@ -1495,6 +1500,64 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Panel Lateral Derecho */}
+      <AnimatePresence>
+        {isSidePanelOpen && (
+          <>
+            {/* Backdrop con desenfoque */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidePanelOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            />
+            
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 h-full w-full max-w-sm bg-black/90 backdrop-blur-xl z-[70] shadow-2xl border-l border-white/10 flex flex-col"
+            >
+              <div className="p-8 flex flex-col h-full">
+                <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <Settings2 className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Opciones Avanzadas</h2>
+                  </div>
+                  <button 
+                    onClick={() => setIsSidePanelOpen(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
+                  {/* Espacio para futuras opciones */}
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <Sparkles className="w-8 h-8 text-blue-500/50 mx-auto mb-4" />
+                    <p className="text-sm text-white/40 font-medium">Próximamente más opciones de configuración para IOL Explorer Pro.</p>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-8 border-t border-white/5">
+                  <div className="flex items-center gap-3 text-white/30 mb-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Versión 2.0 Enterprise</span>
+                  </div>
+                  <p className="text-[10px] text-white/20 italic">Desarrollado para alta precisión oftalmológica.</p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
