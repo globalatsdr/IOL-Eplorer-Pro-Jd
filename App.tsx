@@ -247,6 +247,7 @@ const GraphsModal = ({ lenses, availableGraphs, onClose }: { lenses: Lens[], ava
 const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Database/refs/heads/main/IOLexport.xml";
 const STORAGE_KEY_XML = 'iol_data_cache_v3';
 const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v2';
+const STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE = 'iol_haptic_mapping_override_v1';
 
 const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
 
@@ -343,6 +344,10 @@ function App() {
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [hapticMapText, setHapticMapText] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
   const ataAssets = ['ata_info.png', 'ata_info.PNG', 'ata_info.jpg', 'ata_info.jpeg', 'ata_info.pdf'];
 
@@ -475,7 +480,20 @@ function App() {
         .then(res => res.ok ? res.json() : {})
         .then(mapping => {
           console.log("Haptic mapping loaded:", Object.keys(mapping));
-          setHapticMapping(mapping);
+          
+          // Aplicar overrides locales si existen
+          const cachedHapticOverride = localStorage.getItem(STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE);
+          if (cachedHapticOverride) {
+            try {
+              const override = JSON.parse(cachedHapticOverride);
+              const merged = { ...mapping, ...override };
+              setHapticMapping(merged);
+            } catch (e) {
+              setHapticMapping(mapping);
+            }
+          } else {
+            setHapticMapping(mapping);
+          }
         })
         .catch(err => console.error("Error loading haptic mapping", err));
 
@@ -1539,6 +1557,118 @@ function App() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
+                  {!isAdminAuthenticated ? (
+                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Lock className="w-4 h-4 text-amber-400" />
+                        <h3 className="text-sm font-black text-white/80 uppercase">Acceso Restringido</h3>
+                      </div>
+                      <p className="text-xs text-white/40">Introduce la contraseña de administrador para gestionar el mapeo de hápticos.</p>
+                      <div className="flex gap-2">
+                        <input 
+                          type="password"
+                          value={adminPasswordInput}
+                          onChange={(e) => setAdminPasswordInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && adminPasswordInput === 'ioladmin2026') {
+                              setIsAdminAuthenticated(true);
+                              setHapticMapText(JSON.stringify(hapticMapping, null, 2));
+                            }
+                          }}
+                          placeholder="Password"
+                          className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button 
+                          onClick={() => {
+                            if (adminPasswordInput === 'ioladmin2026') {
+                              setIsAdminAuthenticated(true);
+                              setHapticMapText(JSON.stringify(hapticMapping, null, 2));
+                            } else {
+                              alert('Contraseña incorrecta');
+                            }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-500 p-2 rounded-lg text-white transition-colors"
+                        >
+                          <ArrowRightCircle className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest">Haptic Mapping (JSON)</h3>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              try {
+                                const parsed = JSON.parse(hapticMapText);
+                                localStorage.setItem(STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE, JSON.stringify(parsed));
+                                setHapticMapping(parsed);
+                                setSaveStatus('success');
+                                setTimeout(() => setSaveStatus('idle'), 3000);
+                              } catch (e) {
+                                setSaveStatus('error');
+                                setTimeout(() => setSaveStatus('idle'), 3000);
+                                alert('JSON inválido. Revisa el formato.');
+                              }
+                            }}
+                            className={`p-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${
+                              saveStatus === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
+                            }`}
+                          >
+                            <FileJson className="w-4 h-4" />
+                            {saveStatus === 'success' ? 'Guardado' : 'Guardar'}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const blob = new Blob([hapticMapText], { type: 'application/json' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'haptic_mapping.json';
+                              a.click();
+                            }}
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all"
+                            title="Descargar JSON"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="relative group">
+                        <textarea 
+                          value={hapticMapText}
+                          onChange={(e) => setHapticMapText(e.target.value)}
+                          spellCheck={false}
+                          className="w-full h-96 bg-[#0a0a0a] border border-white/10 rounded-xl p-4 text-xs font-mono text-blue-300 outline-none focus:ring-1 focus:ring-blue-500/50 custom-scrollbar resize-none"
+                        />
+                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <span className="text-[10px] text-white/20 bg-black/50 px-2 py-1 rounded">Editor Pro</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex gap-3">
+                          <Info className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-bold text-amber-500 uppercase">Aviso de Persistencia</p>
+                            <p className="text-[10px] text-white/50 leading-relaxed text-pretty">
+                              Los cambios se guardan localmente en tu navegador. Para que afecten a todos los usuarios, debes descargar el archivo y subirlo al servidor web (reemplazando haptic_mapping.json).
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => setIsAdminAuthenticated(false)}
+                        className="w-full p-3 rounded-xl border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/5 transition-all text-[11px] font-bold uppercase tracking-widest"
+                      >
+                        Cerrar Sesión Admin
+                      </button>
+                    </div>
+                  )}
+
                   {/* Espacio para futuras opciones */}
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
                     <Sparkles className="w-8 h-8 text-blue-500/50 mx-auto mb-4" />
