@@ -36,7 +36,12 @@ import {
   Settings2,
   LineChart,
   X,
-  HelpCircle
+  HelpCircle,
+  Shield,
+  CheckCircle2,
+  Save,
+  Download,
+  LogOut
 } from 'lucide-react';
 
 // ... (existing imports)
@@ -248,6 +253,10 @@ const EXTERNAL_DB_URL = "https://raw.githubusercontent.com/globalatsdr/IOLs-Data
 const STORAGE_KEY_XML = 'iol_data_cache_v3';
 const STORAGE_KEY_OVERRIDES = 'iol_override_data_cache_v2';
 const STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE = 'iol_haptic_mapping_override_v1';
+const STORAGE_KEY_MODIFICACIONES_OVERRIDE = 'iol_modificaciones_override_v1';
+const STORAGE_KEY_EXCLUIDAS_OVERRIDE = 'iol_excluidas_override_v1';
+const STORAGE_KEY_IMAGES_OVERRIDE = 'iol_images_override_v1';
+const STORAGE_KEY_GRAPHS_OVERRIDE = 'iol_graphs_override_v1';
 
 const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
 
@@ -345,11 +354,126 @@ function App() {
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminMode, setAdminMode] = useState<'H' | 'M' | 'E' | 'I' | 'G' | null>(null);
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [hapticMapText, setHapticMapText] = useState('');
+  const [adminEditorText, setAdminEditorText] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
   const ataAssets = ['ata_info.png', 'ata_info.PNG', 'ata_info.jpg', 'ata_info.jpeg', 'ata_info.pdf'];
+
+  const handleAdminLogin = async () => {
+    const pw = adminPasswordInput;
+    let mode: 'H' | 'M' | 'E' | 'I' | 'G' | null = null;
+    let content = '';
+
+    if (pw === 'ioladmin_H') {
+      mode = 'H';
+      content = JSON.stringify(hapticMapping, null, 2);
+    } else if (pw === 'ioladmin_M') {
+      mode = 'M';
+      // Cargar de cache o fetch
+      const cached = localStorage.getItem(STORAGE_KEY_MODIFICACIONES_OVERRIDE);
+      if (cached) content = cached;
+      else {
+         const res = await fetch('./modificaciones.json').catch(() => null);
+         if (res && res.ok) content = await res.text();
+         else content = '[]';
+      }
+    } else if (pw === 'ioladmin_E') {
+      mode = 'E';
+      const cached = localStorage.getItem(STORAGE_KEY_EXCLUIDAS_OVERRIDE);
+      if (cached) content = cached;
+      else {
+         const res = await fetch('./lentesexcluidas.json').catch(() => null);
+         if (res && res.ok) content = await res.text();
+         else content = '[]';
+      }
+    } else if (pw === 'ioladmin_I') {
+      mode = 'I';
+      const cached = localStorage.getItem(STORAGE_KEY_IMAGES_OVERRIDE);
+      if (cached) content = cached;
+      else {
+         const res = await fetch('./lens_images.json').catch(() => null);
+         if (res && res.ok) content = await res.text();
+         else content = '[]';
+      }
+    } else if (pw === 'ioladmin_G') {
+      mode = 'G';
+      const cached = localStorage.getItem(STORAGE_KEY_GRAPHS_OVERRIDE);
+      if (cached) content = cached;
+      else {
+         const res = await fetch('./lens_graphs.json').catch(() => null);
+         if (res && res.ok) content = await res.text();
+         else content = '[]';
+      }
+    }
+
+    if (mode) {
+      setIsAdminAuthenticated(true);
+      setAdminMode(mode);
+      setAdminEditorText(content);
+      // Opcional: No limpiar el input aquí si queremos mantenerlo? 
+      // El usuario pidió "que al cerrar sesión, se quite la contraseña del cuadro de texto"
+      // Así que lo limpiamos al cerrar sesión.
+    } else {
+      alert('Contraseña incorrecta');
+    }
+  };
+
+  const handleAdminSave = () => {
+    try {
+      const parsed = JSON.parse(adminEditorText);
+      let key = '';
+      if (adminMode === 'H') {
+        key = STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE;
+        setHapticMapping(parsed);
+      } else if (adminMode === 'M') {
+        key = STORAGE_KEY_MODIFICACIONES_OVERRIDE;
+        // La actualización de overrideData requiere baseLenses cargado
+        // Re-ejecutamos una lógica similar a handleLoadModifications pero desde el string editado
+        const normalizedJson: Record<string, Partial<Lens>> = {};
+        Object.keys(parsed).forEach(k => {
+          const matched = baseLenses.find(l => normalizeText(l.name) === normalizeText(k));
+          if (matched) normalizedJson[matched.id] = parsed[k];
+        });
+        setOverrideData(prev => ({ ...prev, ...normalizedJson }));
+      } else if (adminMode === 'E') {
+        key = STORAGE_KEY_EXCLUIDAS_OVERRIDE;
+        setExcludedLenses(parsed.map((n: string) => normalizeText(n)));
+      } else if (adminMode === 'I') {
+        key = STORAGE_KEY_IMAGES_OVERRIDE;
+        setAvailableImages(new Set(parsed));
+      } else if (adminMode === 'G') {
+        key = STORAGE_KEY_GRAPHS_OVERRIDE;
+        setAvailableGraphs(new Set(parsed));
+      }
+
+      if (key) {
+        localStorage.setItem(key, JSON.stringify(parsed));
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } catch (e) {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      alert('Error: JSON inválido. Verifique el formato.');
+    }
+  };
+
+  const handleAdminDownload = () => {
+    const filename = adminMode === 'H' ? 'haptic_mapping.json' :
+                     adminMode === 'M' ? 'modificaciones.json' :
+                     adminMode === 'E' ? 'lentesexcluidas.json' :
+                     adminMode === 'I' ? 'lens_images.json' :
+                     'lens_graphs.json';
+    const blob = new Blob([adminEditorText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     if (isAtAModalOpen) setAtaAssetIndex(0);
@@ -437,6 +561,16 @@ function App() {
     fetch('./lens_images.json')
       .then(res => res.ok ? res.json() : [])
       .then(data => {
+        const cached = localStorage.getItem(STORAGE_KEY_IMAGES_OVERRIDE);
+        if (cached) {
+          try {
+            const override = JSON.parse(cached);
+            if (Array.isArray(override)) {
+              setAvailableImages(new Set(override));
+              return;
+            }
+          } catch(e) {}
+        }
         if (Array.isArray(data)) setAvailableImages(new Set(data));
       })
       .catch(err => console.error("Error loading image list", err));
@@ -445,11 +579,21 @@ function App() {
     fetch('./lens_graphs.json')
       .then(res => res.ok ? res.json() : [])
       .then(data => {
+        const cached = localStorage.getItem(STORAGE_KEY_GRAPHS_OVERRIDE);
+        if (cached) {
+          try {
+            const override = JSON.parse(cached);
+            if (Array.isArray(override)) {
+              setAvailableGraphs(new Set(override));
+              return;
+            }
+          } catch(e) {}
+        }
         if (Array.isArray(data)) setAvailableGraphs(new Set(data));
       })
       .catch(err => console.error("Error loading graphs list", err));
 
-    // Cargar lentes excluidas con cache-busting para evitar que el navegador use versiones antiguas
+    // Cargar lentes excluidas
     fetch(`./lentesexcluidas.json?t=${new Date().getTime()}`, {
       headers: {
         'Cache-Control': 'no-cache',
@@ -458,8 +602,16 @@ function App() {
     })
       .then(res => res.ok ? res.json() : [])
       .then(data => {
-        if (Array.isArray(data)) {
-          const normalized = data.map((name: string) => normalizeText(name));
+        const cached = localStorage.getItem(STORAGE_KEY_EXCLUIDAS_OVERRIDE);
+        let finalData = data;
+        if (cached) {
+          try {
+            const override = JSON.parse(cached);
+            if (Array.isArray(override)) finalData = override;
+          } catch(e) {}
+        }
+        if (Array.isArray(finalData)) {
+          const normalized = finalData.map((name: string) => normalizeText(name));
           setExcludedLenses(normalized);
         }
       })
@@ -470,9 +622,57 @@ function App() {
       
 
       // 2. Cargar los overrides (modificaciones)
+      const applyModifications = (rawJson: any) => {
+        const normalizedJson: Record<string, Partial<Lens>> = {};
+        Object.keys(rawJson).forEach(key => {
+          const item = { ...rawJson[key] };
+          const normalizedKey = normalizeText(key);
+          
+          const noteContent = item.note || item.notes || item.Notas || item.notas ||
+            item.specifications?.note || item.specifications?.notes || item.specifications?.Notas || item.specifications?.notas;
+          if (noteContent) {
+            item.note = noteContent;
+            if (item.specifications) {
+              delete (item.specifications as any).note; delete (item.specifications as any).notes;
+              delete (item.specifications as any).Notas; delete (item.specifications as any).notas;
+            }
+          }
+
+          const surnameContent = item.surname || item.Surname || item.apodo || item.Apodo ||
+            item.specifications?.surname || item.specifications?.Surname || item.specifications?.apodo || item.specifications?.Apodo;
+          if (surnameContent) {
+            item.surname = surnameContent;
+            if (item.specifications) {
+              delete (item.specifications as any).surname; delete (item.specifications as any).Surname;
+              delete (item.specifications as any).apodo; delete (item.specifications as any).Apodo;
+            }
+          }
+
+          const abbeContent = item.abbeNumber ?? item.AbbeNumber ?? item.abbenumber ?? item['Abbe Number'] ??
+            item.specifications?.abbeNumber ?? item.specifications?.AbbeNumber ?? item.specifications?.abbenumber ?? item.specifications?.['Abbe Number'];
+          if (abbeContent !== undefined && abbeContent !== null) {
+            if (!item.specifications) item.specifications = {};
+            const parsedAbbe = typeof abbeContent === 'string' ? parseFloat(abbeContent.replace(',', '.')) : abbeContent;
+            if (!isNaN(parsedAbbe)) item.specifications.abbeNumber = parsedAbbe;
+          }
+
+          // Buscar lente por nombre normalizado
+          const matchedLens = baseLenses.find(l => normalizeText(l.name) === normalizedKey);
+          if (matchedLens) {
+            normalizedJson[matchedLens.id] = item;
+          }
+        });
+        setOverrideData(prev => ({ ...prev, ...normalizedJson }));
+      };
+
       const cachedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES);
       if (cachedOverrides) {
         try { setOverrideData(JSON.parse(cachedOverrides)); } catch (e) {}
+      }
+      
+      const editorMOverride = localStorage.getItem(STORAGE_KEY_MODIFICACIONES_OVERRIDE);
+      if (editorMOverride) {
+        try { applyModifications(JSON.parse(editorMOverride)); } catch (e) {}
       }
 
       // 3. Cargar mapeo de hápticos con cache-busting
@@ -1563,108 +1763,114 @@ function App() {
                         <Lock className="w-4 h-4 text-amber-400" />
                         <h3 className="text-sm font-black text-white/80 uppercase">Acceso Restringido</h3>
                       </div>
-                      <p className="text-xs text-white/40">Introduce la contraseña de administrador para gestionar el mapeo de hápticos.</p>
-                      <div className="flex gap-2">
-                        <input 
-                          type="password"
-                          value={adminPasswordInput}
-                          onChange={(e) => setAdminPasswordInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && adminPasswordInput === 'ioladmin2026') {
-                              setIsAdminAuthenticated(true);
-                              setHapticMapText(JSON.stringify(hapticMapping, null, 2));
-                            }
-                          }}
-                          placeholder="Password"
-                          className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                      <p className="text-xs text-white/40 leading-relaxed font-medium">Introduce la contraseña maestra para habilitar el editor de datos correspondiente.</p>
+                      <div className="flex flex-col gap-3">
+                        <div className="relative">
+                          <input 
+                            type="password"
+                            value={adminPasswordInput}
+                            onChange={(e) => setAdminPasswordInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleAdminLogin();
+                            }}
+                            placeholder="Introduce password..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                          </div>
+                        </div>
                         <button 
-                          onClick={() => {
-                            if (adminPasswordInput === 'ioladmin2026') {
-                              setIsAdminAuthenticated(true);
-                              setHapticMapText(JSON.stringify(hapticMapping, null, 2));
-                            } else {
-                              alert('Contraseña incorrecta');
-                            }
-                          }}
-                          className="bg-blue-600 hover:bg-blue-500 p-2 rounded-lg text-white transition-colors"
+                          onClick={handleAdminLogin}
+                          className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-white font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 group"
                         >
-                          <ArrowRightCircle className="w-5 h-5" />
+                          Autenticar
+                          <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                         {['_H', '_M', '_E', '_I', '_G'].map(suffix => (
+                           <div key={suffix} className="text-[9px] text-white/20 font-mono flex items-center gap-1.5">
+                             <Shield className="w-2.5 h-2.5" />
+                             ioladmin{suffix}
+                           </div>
+                         ))}
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest">Haptic Mapping (JSON)</h3>
+                        <div className="flex flex-col">
+                           <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                             {adminMode === 'H' ? 'Haptic Mapping' : 
+                              adminMode === 'M' ? 'Modificaciones' : 
+                              adminMode === 'E' ? 'Lentes Excluidas' : 
+                              adminMode === 'I' ? 'Lens Images' : 
+                              'Lens Graphs'}
+                           </h3>
+                           <div className="flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                             <span className="text-[11px] font-medium text-white/60">Sesión Activa</span>
+                           </div>
+                        </div>
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => {
-                              try {
-                                const parsed = JSON.parse(hapticMapText);
-                                localStorage.setItem(STORAGE_KEY_HAPTIC_MAPPING_OVERRIDE, JSON.stringify(parsed));
-                                setHapticMapping(parsed);
-                                setSaveStatus('success');
-                                setTimeout(() => setSaveStatus('idle'), 3000);
-                              } catch (e) {
-                                setSaveStatus('error');
-                                setTimeout(() => setSaveStatus('idle'), 3000);
-                                alert('JSON inválido. Revisa el formato.');
-                              }
-                            }}
-                            className={`p-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${
+                            onClick={handleAdminSave}
+                            className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-tight transition-all shadow-lg ${
                               saveStatus === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
                             }`}
                           >
-                            <FileJson className="w-4 h-4" />
-                            {saveStatus === 'success' ? 'Guardado' : 'Guardar'}
+                            {saveStatus === 'success' ? (
+                              <><CheckCircle2 className="w-4 h-4" /> Guardado</>
+                            ) : (
+                              <><Save className="w-4 h-4" /> Guardar</>
+                            )}
                           </button>
                           <button 
-                            onClick={() => {
-                              const blob = new Blob([hapticMapText], { type: 'application/json' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = 'haptic_mapping.json';
-                              a.click();
-                            }}
-                            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all"
+                            onClick={handleAdminDownload}
+                            className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all shadow-sm"
                             title="Descargar JSON"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <Download className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
 
                       <div className="relative group">
                         <textarea 
-                          value={hapticMapText}
-                          onChange={(e) => setHapticMapText(e.target.value)}
+                          value={adminEditorText}
+                          onChange={(e) => setAdminEditorText(e.target.value)}
                           spellCheck={false}
-                          className="w-full h-96 bg-[#0a0a0a] border border-white/10 rounded-xl p-4 text-xs font-mono text-blue-300 outline-none focus:ring-1 focus:ring-blue-500/50 custom-scrollbar resize-none"
+                          className="w-full h-[450px] bg-black/60 border border-white/10 rounded-2xl p-6 text-[11px] font-mono text-blue-300 outline-none focus:ring-1 focus:ring-blue-500/50 custom-scrollbar resize-none leading-relaxed"
                         />
-                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <span className="text-[10px] text-white/20 bg-black/50 px-2 py-1 rounded">Editor Pro</span>
+                        <div className="absolute top-4 right-4 pointer-events-none opacity-40">
+                           <FileJson className="w-5 h-5 text-blue-500" />
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                        <div className="flex gap-3">
-                          <Info className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                          <div className="space-y-1">
-                            <p className="text-[11px] font-bold text-amber-500 uppercase">Aviso de Persistencia</p>
-                            <p className="text-[10px] text-white/50 leading-relaxed text-pretty">
-                              Los cambios se guardan localmente en tu navegador. Para que afecten a todos los usuarios, debes descargar el archivo y subirlo al servidor web (reemplazando haptic_mapping.json).
+                      <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-sm">
+                        <div className="flex gap-4">
+                          <Info className="w-5 h-5 text-amber-500/80 flex-shrink-0" />
+                          <div className="space-y-1.5">
+                            <p className="text-[11px] font-black text-amber-500/80 uppercase tracking-wider">Aviso de Seguridad</p>
+                            <p className="text-[10px] text-white/50 leading-relaxed font-medium">
+                              Los cambios realizados aquí son <b>temporales</b> y se almacenan únicamente en este navegador. Para una actualización permanente, descargue el archivo JSON y envíelo al administrador del servidor.
                             </p>
                           </div>
                         </div>
                       </div>
 
                       <button 
-                        onClick={() => setIsAdminAuthenticated(false)}
-                        className="w-full p-3 rounded-xl border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/5 transition-all text-[11px] font-bold uppercase tracking-widest"
+                        onClick={() => {
+                          setIsAdminAuthenticated(false);
+                          setAdminMode(null);
+                          setAdminPasswordInput('');
+                          setAdminEditorText('');
+                        }}
+                        className="w-full p-4 rounded-2xl border border-white/5 text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3"
                       >
-                        Cerrar Sesión Admin
+                        <LogOut className="w-4 h-4" />
+                        Cerrar Sesión Pro
                       </button>
                     </div>
                   )}
