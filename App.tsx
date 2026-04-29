@@ -351,6 +351,7 @@ function App() {
   const [recommendedConcepts, setRecommendedConcepts] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState({ ageG: '', laG: '' });
   const [isAtAModalOpen, setIsAtAModalOpen] = useState(false);
+  const [isClinicalConceptModalOpen, setIsClinicalConceptModalOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminMode, setAdminMode] = useState<'H' | 'M' | 'E' | 'I' | 'G' | null>(null);
@@ -1237,7 +1238,18 @@ function App() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1">Concepto Clínico</label>
+                <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                  Concepto Clínico
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsClinicalConceptModalOpen(true);
+                    }} 
+                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <HelpCircle className="w-3 h-3" />
+                  </button>
+                </label>
                 <select className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-sm font-bold text-blue-800 outline-none" value={basicFilters.clinicalConcept} onChange={e => {
                   const val = e.target.value;
                   let mapped = basicFilters.opticConcept;
@@ -1712,6 +1724,41 @@ function App() {
                     <p className="text-xs font-bold text-amber-700">Lamina Mod.</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isClinicalConceptModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setIsClinicalConceptModalOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setIsClinicalConceptModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+            <div className="p-8">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
+                <Info className="w-6 h-6 text-blue-600" /> Información Concepto Clínico
+              </h3>
+              <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center relative">
+                <img 
+                  src="Concepto Clinico.PNG" 
+                  alt="Información Concepto Clínico" 
+                  className="max-w-full max-h-full object-contain"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "https://picsum.photos/seed/clinico/1200/800?blur=2";
+                  }}
+                />
+              </div>
+              <div className="mt-6">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  Referencia visual de los conceptos clínicos utilizados para la clasificación de las lentes intraoculares.
+                </p>
               </div>
             </div>
           </div>
