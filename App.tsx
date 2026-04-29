@@ -1809,7 +1809,6 @@ function App() {
                         <Lock className="w-4 h-4 text-amber-400" />
                         <h3 className="text-sm font-black text-white/80 uppercase">Acceso Restringido</h3>
                       </div>
-                      <p className="text-xs text-white/40 leading-relaxed font-medium">Introduce la contraseña maestra para habilitar el editor de datos correspondiente.</p>
                       <div className="flex flex-col gap-3">
                         <div className="relative">
                           <input 
