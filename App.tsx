@@ -972,7 +972,10 @@ function App() {
       toric: settings.toric ? (lens.specifications.toric ? 'yes' : 'no') : 'all',
       technology: settings.technology ? (lens.specifications.technology || 'all') : 'all',
       aberration: settings.aberration ? (lens.specifications.aberration || 'all') : 'all',
-      material: settings.material ? (lens.specifications.opticMaterial || 'all') : 'all',
+      material: settings.material ? (
+        lens.specifications.hydro.toLowerCase().includes('hydrophobic') ? 'hidrofobico' : 
+        lens.specifications.hydro.toLowerCase().includes('hydrophilic') ? 'hidrofilico' : 'all'
+      ) : 'all',
       hapticDesign: settings.hapticDesign ? (lens.specifications.mappedHapticDesign || 'all') : 'all'
     });
     
@@ -1023,7 +1026,13 @@ function App() {
         }
         if (basicFilters.technology !== 'all' && lens.specifications.technology?.toLowerCase() !== basicFilters.technology.toLowerCase()) return false;
         if (basicFilters.aberration !== 'all' && lens.specifications.aberration?.toLowerCase() !== basicFilters.aberration.toLowerCase()) return false;
-        if (basicFilters.material !== 'all' && lens.specifications.opticMaterial?.toLowerCase() !== basicFilters.material.toLowerCase()) return false;
+        
+        if (basicFilters.material !== 'all') {
+          const m = (lens.specifications.hydro || lens.specifications.opticMaterial || "").toLowerCase();
+          if (basicFilters.material === 'hidrofilico' && !m.includes('hydrophilic')) return false;
+          if (basicFilters.material === 'hidrofobico' && !m.includes('hydrophobic')) return false;
+        }
+
         if (basicFilters.hapticDesign !== 'all') {
           const mapped = lens.specifications.mappedHapticDesign;
           if (mapped !== basicFilters.hapticDesign) return false;
@@ -1032,7 +1041,13 @@ function App() {
         if (lens.availability.minSphere > advFilters.filterMinSphere || lens.availability.maxSphere < advFilters.filterMaxSphere) return false;
         if (advFilters.isPreloaded && !lens.specifications.preloaded) return false;
         if (advFilters.isYellowFilter && !lens.specifications.filter.toLowerCase().includes('yellow')) return false;
-        if (advFilters.hydroType !== 'all' && lens.specifications.hydro.toLowerCase() !== advFilters.hydroType) return false;
+        
+        if (advFilters.hydroType !== 'all') {
+          const m = (lens.specifications.hydro || "").toLowerCase();
+          if (advFilters.hydroType === 'hydrophilic' && !m.includes('hydrophilic')) return false;
+          if (advFilters.hydroType === 'hydrophobic' && !m.includes('hydrophobic')) return false;
+        }
+
         if (advFilters.intendedLocation !== 'all' && lens.specifications.intendedLocation !== advFilters.intendedLocation) return false;
       } else if (activeTab === FilterTab.DR_ALFONSO) {
         // Filtros Técnicos de Dr. Alfonso
