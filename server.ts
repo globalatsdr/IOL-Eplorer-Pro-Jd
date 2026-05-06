@@ -15,7 +15,7 @@ async function startServer() {
   });
 
   // Inicializar Gemini
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY;
   const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
   // API Route para el Chat
