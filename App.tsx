@@ -45,18 +45,7 @@ import {
   Send,
   Eraser
 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
-
-let aiInstance: any = null;
-
-const getAiClient = () => {
-  if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    aiInstance = new GoogleGenAI({ apiKey: apiKey || '' });
-  }
-  return aiInstance;
-};
 
 // Helper para buscar gráficas
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
@@ -459,7 +448,6 @@ function App() {
     setIsAiLoading(true);
 
     try {
-      // Preparar contexto de las lentes filtradas (máx 40 para eficiencia)
       const lensesContext = filteredLenses.slice(0, 40).map(l => ({
         n: l.name,
         f: l.manufacturer,
@@ -481,33 +469,29 @@ INSTRUCCIONES:
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
 4. Tono profesional.`;
 
-      const aiClient = getAiClient();
-      const response = await aiClient.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: newHistory.map(m => ({ 
-          role: m.role, 
-          parts: [{ text: m.text }] 
-        })),
-        config: {
-          systemInstruction: systemPrompt
-        }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: newHistory,
+          systemInstruction: systemPrompt 
+        })
       });
 
-      const aiText = response.text || "Lo siento, no he podido procesar tu solicitud.";
-      setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error servidor: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'model', text: data.text }]);
     } catch (error: any) {
       console.error("Error AI Detallado:", error);
-      let errMsg = "Error de conexión con la IA.";
-      if (error?.message === 'API_KEY_MISSING') {
-        errMsg = "La clave de API (GEMINI_API_KEY) no está configurada.";
-      } else if (error?.message?.includes('403') || error?.message?.includes('permission')) {
-        errMsg = "Error de permisos o clave de API inválida.";
-      } else if (error?.message?.includes('429')) {
-        errMsg = "Límite de peticiones alcanzado.";
+      let errMsg = "Error de comunicación con el asistente.";
+      if (error.message?.includes('KEY')) {
+        errMsg = "Configuración de API pendiente en el servidor.";
       }
-      
-      const detail = error?.message || String(error);
-      setChatMessages(prev => [...prev, { role: 'model', text: `${errMsg}\n\n(Detalle: ${detail})` }]);
+      setChatMessages(prev => [...prev, { role: 'model', text: `${errMsg}\n\n(Detalle: ${error.message})` }]);
     } finally {
       setIsAiLoading(false);
     }
