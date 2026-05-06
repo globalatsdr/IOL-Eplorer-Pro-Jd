@@ -48,20 +48,12 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 
-// Polyfill para process.env en el navegador si es necesario
-if (typeof window !== 'undefined' && !(window as any).process) {
-  (window as any).process = { env: {} };
-}
-
 let aiInstance: any = null;
 
 const getAiClient = () => {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('API_KEY_MISSING');
-    }
-    aiInstance = new GoogleGenAI({ apiKey });
+    aiInstance = new GoogleGenAI({ apiKey: apiKey || '' });
   }
   return aiInstance;
 };
