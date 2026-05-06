@@ -9,6 +9,11 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health Check
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", apiKeyPresent: !!process.env.GEMINI_API_KEY });
+  });
+
   // Inicializar Gemini
   const apiKey = process.env.GEMINI_API_KEY;
   const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
