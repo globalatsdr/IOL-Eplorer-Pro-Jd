@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^1.52.0",
+    "@google/generative-ai": "^0.24.1",
     "@types/express": "^5.0.6",
     "express": "^5.2.1",
     "framer-motion": "^12.38.0",
