@@ -52,10 +52,9 @@ let aiInstance: any = null;
 
 const getAiClient = () => {
   if (!aiInstance) {
-    const isBrowser = typeof window !== 'undefined';
-    const env = isBrowser ? (window as any).process?.env : process.env;
-    const apiKey = env?.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error('CRITICAL: GEMINI_API_KEY no detectada.');
       throw new Error('GEMINI_API_KEY no detectada.');
     }
     aiInstance = new GoogleGenAI({ apiKey });
@@ -456,55 +455,53 @@ function App() {
 
     const userMsg = aiInput.trim();
     setAiInput('');
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    const newHistory: { role: 'user' | 'model'; text: string }[] = [
+      ...chatMessages,
+      { role: 'user', text: userMsg }
+    ];
+    setChatMessages(newHistory);
     setIsAiLoading(true);
 
     try {
-      // Preparar contexto de las lentes filtradas
-      const lensesContext = filteredLenses.map(l => ({
-        nombre: l.name,
-        fabricante: l.manufacturer,
-        material: l.specifications.opticMaterial,
-        hidro: l.specifications.hydro,
-        diseño: l.specifications.opticConcept,
-        tecnologia: l.specifications.technology,
-        constanteA: l.specifications.aConstant,
-        abbe: l.specifications.abbeNumber,
-        filtro: l.specifications.filter
-      })).slice(0, 40); 
+      // Preparar contexto de las lentes filtradas (máx 40 para eficiencia)
+      const lensesContext = filteredLenses.slice(0, 40).map(l => ({
+        n: l.name,
+        f: l.manufacturer,
+        m: l.specifications.opticMaterial,
+        h: l.specifications.hydro,
+        d: l.specifications.opticConcept,
+        t: l.specifications.technology,
+        c: l.specifications.aConstant,
+        a: l.specifications.abbeNumber,
+        fi: l.specifications.filter
+      }));
 
-      const systemPrompt = `Eres el ASISTENTE IA de IOL Explorer, experto en oftalmología y lentes intraoculares.
-Tu misión es asesorar al usuario basándote EN LAS LENTES QUE TIENE FILTRADAS actualmente.
-CONTEXTO ACTUAL: Hay ${filteredLenses.length} lentes en la vista del usuario.
-MUESTRA DE DATOS (Top 40):
-${JSON.stringify(lensesContext, null, 2)}
+      const systemPrompt = `Eres el ASISTENTE IA de IOL Explorer. Tienes ${filteredLenses.length} lentes en vista.
+DATOS CONTEXTO (Top 40): ${JSON.stringify(lensesContext)}
 
-INSTRUCCIONES CLAVE:
-1. Responde de forma concisa pero técnica.
-2. Usa tablas Markdown para comparar lentes si es relevante.
-3. Si el usuario pregunta por "la mejor lente", analiza material (Abbe), diseño óptico y fabricante.
-4. Explica brevemente por qué recomiendas una lente (ej. "Recomiendo X por su alto número de Abbe de 58 y su diseño asférico neutro").
-5. Si no hay lentes filtradas que coincidan, sugiérele ajustar los filtros.
-6. Mantén un tono profesional y servicial.`;
+INSTRUCCIONES:
+1. Sé conciso y técnico.
+2. Usa tablas para comparar.
+3. Justifica recomendaciones con números de Abbe y diseño óptico.
+4. Tono profesional.`;
 
       const aiClient = getAiClient();
       const response = await aiClient.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          ...chatMessages.map(m => ({ 
-            role: m.role, 
-            parts: [{ text: m.text }] 
-          })),
-          { role: 'user', parts: [{ text: userMsg }] }
-        ],
+        contents: newHistory.map(m => ({ 
+          role: m.role, 
+          parts: [{ text: m.text }] 
+        })),
+        config: {
+          systemInstruction: systemPrompt
+        }
       });
 
       const aiText = response.text || "Lo siento, no he podido procesar tu solicitud.";
       setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (error) {
       console.error("Error AI:", error);
-      setChatMessages(prev => [...prev, { role: 'model', text: "No he podido responder ahora. Verifica la conexión o intenta con menos filtros." }]);
+      setChatMessages(prev => [...prev, { role: 'model', text: "Error de conexión con la IA. Prueba con menos lentes filtradas." }]);
     } finally {
       setIsAiLoading(false);
     }
