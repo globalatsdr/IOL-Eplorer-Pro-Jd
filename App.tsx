@@ -48,14 +48,18 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 
+// Polyfill para process.env en el navegador si es necesario
+if (typeof window !== 'undefined' && !(window as any).process) {
+  (window as any).process = { env: {} };
+}
+
 let aiInstance: any = null;
 
 const getAiClient = () => {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('CRITICAL: GEMINI_API_KEY no detectada.');
-      throw new Error('GEMINI_API_KEY no detectada.');
+      throw new Error('API_KEY_MISSING');
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
@@ -499,9 +503,19 @@ INSTRUCCIONES:
 
       const aiText = response.text || "Lo siento, no he podido procesar tu solicitud.";
       setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
-    } catch (error) {
-      console.error("Error AI:", error);
-      setChatMessages(prev => [...prev, { role: 'model', text: "Error de conexión con la IA. Prueba con menos lentes filtradas." }]);
+    } catch (error: any) {
+      console.error("Error AI Detallado:", error);
+      let errMsg = "Error de conexión con la IA.";
+      if (error?.message === 'API_KEY_MISSING') {
+        errMsg = "La clave de API (GEMINI_API_KEY) no está configurada.";
+      } else if (error?.message?.includes('403') || error?.message?.includes('permission')) {
+        errMsg = "Error de permisos o clave de API inválida.";
+      } else if (error?.message?.includes('429')) {
+        errMsg = "Límite de peticiones alcanzado.";
+      }
+      
+      const detail = error?.message || String(error);
+      setChatMessages(prev => [...prev, { role: 'model', text: `${errMsg}\n\n(Detalle: ${detail})` }]);
     } finally {
       setIsAiLoading(false);
     }
