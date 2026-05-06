@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 async function startServer() {
   const app = express();
@@ -11,29 +11,30 @@ async function startServer() {
 
   // Inicializar Gemini
   const apiKey = process.env.GEMINI_API_KEY;
-  const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+  const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
   // API Route para el Chat
   app.post("/api/chat", async (req, res) => {
     try {
-      if (!ai) {
+      if (!genAI) {
         return res.status(500).json({ error: "GEMINI_API_KEY no configurada en el servidor." });
       }
 
       const { messages, systemInstruction } = req.body;
       
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: messages.map((m: any) => ({
-          role: m.role,
-          parts: [{ text: m.text }]
-        })),
-        config: {
-          systemInstruction
-        }
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction 
       });
 
-      res.json({ text: response.text });
+      const result = await model.generateContent({
+        contents: messages.map((m: any) => ({
+          role: m.role === 'model' ? 'model' : 'user',
+          parts: [{ text: m.text }]
+        }))
+      });
+
+      res.json({ text: result.response.text() });
     } catch (error: any) {
       console.error("Error en API chat:", error);
       res.status(500).json({ error: error.message || "Error interno del servidor" });
@@ -51,7 +52,7 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.sendFile(path.join(process.cwd(), 'index.html'));
     });
   }
 
