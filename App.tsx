@@ -40,8 +40,15 @@ import {
   CheckCircle2,
   Save,
   Download,
-  LogOut
+  LogOut,
+  Bot,
+  Send,
+  Eraser
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
+import Markdown from 'react-markdown';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // ... (existing imports)
 
@@ -361,6 +368,19 @@ function App() {
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
   const ataAssets = ['ata_info.png', 'ata_info.PNG', 'ata_info.jpg', 'ata_info.jpeg', 'ata_info.pdf'];
 
+  // AI Assistant States
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
   const handleAdminLogin = async () => {
     const pw = adminPasswordInput;
     let mode: 'H' | 'M' | 'E' | 'I' | 'G' | null = null;
@@ -417,6 +437,64 @@ function App() {
       // Así que lo limpiamos al cerrar sesión.
     } else {
       alert('Contraseña incorrecta');
+    }
+  };
+
+  const handleAiChat = async () => {
+    if (!aiInput.trim() || isAiLoading) return;
+
+    const userMsg = aiInput.trim();
+    setAiInput('');
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsAiLoading(true);
+
+    try {
+      // Preparar contexto de las lentes filtradas
+      const lensesContext = filteredLenses.map(l => ({
+        nombre: l.name,
+        fabricante: l.manufacturer,
+        material: l.specifications.opticMaterial,
+        hidro: l.specifications.hydro,
+        diseño: l.specifications.opticConcept,
+        tecnologia: l.specifications.technology,
+        constanteA: l.specifications.aConstant,
+        abbe: l.specifications.abbeNumber,
+        filtro: l.specifications.filter
+      })).slice(0, 40); 
+
+      const systemPrompt = `Eres el ASISTENTE IA de IOL Explorer, experto en oftalmología y lentes intraoculares.
+Tu misión es asesorar al usuario basándote EN LAS LENTES QUE TIENE FILTRADAS actualmente.
+CONTEXTO ACTUAL: Hay ${filteredLenses.length} lentes en la vista del usuario.
+MUESTRA DE DATOS (Top 40):
+${JSON.stringify(lensesContext, null, 2)}
+
+INSTRUCCIONES CLAVE:
+1. Responde de forma concisa pero técnica.
+2. Usa tablas Markdown para comparar lentes si es relevante.
+3. Si el usuario pregunta por "la mejor lente", analiza material (Abbe), diseño óptico y fabricante.
+4. Explica brevemente por qué recomiendas una lente (ej. "Recomiendo X por su alto número de Abbe de 58 y su diseño asférico neutro").
+5. Si no hay lentes filtradas que coincidan, sugiérele ajustar los filtros.
+6. Mantén un tono profesional y servicial.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          { role: 'user', parts: [{ text: systemPrompt }] },
+          ...chatMessages.map(m => ({ 
+            role: m.role, 
+            parts: [{ text: m.text }] 
+          })),
+          { role: 'user', parts: [{ text: userMsg }] }
+        ],
+      });
+
+      const aiText = response.text || "Lo siento, no he podido procesar tu solicitud.";
+      setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
+    } catch (error) {
+      console.error("Error AI:", error);
+      setChatMessages(prev => [...prev, { role: 'model', text: "No he podido responder ahora. Verifica la conexión o intenta con menos filtros." }]);
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -1144,6 +1222,13 @@ function App() {
         </div>
         
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsAiSidebarOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-blue-900/20 active:scale-95 group"
+          >
+            <Bot className="w-4 h-4 group-hover:animate-bounce" />
+            <span className="hidden sm:inline">Asistente IA</span>
+          </button>
           
           {/* BOTONES ADMINISTRATIVOS - AHORA PROTEGIDOS */}
           <div className={`hidden sm:flex bg-white/5 p-1 rounded-xl border border-white/10 gap-1 transition-opacity ${!areAdminActionsEnabled ? 'opacity-50 grayscale' : ''}`}>
@@ -1941,6 +2026,134 @@ function App() {
                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Versión 2.0 Enterprise</span>
                   </div>
                   <p className="text-[10px] text-white/20 italic">Desarrollado para alta precisión oftalmológica.</p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar del Asistente IA (Izquierda) */}
+      <AnimatePresence>
+        {isAiSidebarOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAiSidebarOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]"
+            />
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 h-full w-[380px] bg-slate-50 border-r border-slate-200 shadow-2xl z-[70] flex flex-col"
+            >
+              {/* Cabecera del IA */}
+              <div className="p-6 bg-white border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 uppercase tracking-tighter text-sm">Asistente IA</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">En línea - Contextual</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsAiSidebarOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Chat Area */}
+              <div 
+                ref={chatScrollRef}
+                className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar"
+              >
+                {chatMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4 px-8">
+                    <Sparkles className="w-12 h-12 text-blue-500" />
+                    <p className="text-xs font-bold text-slate-600 leading-relaxed">
+                      Hola, soy tu asistente experto en IOLs. Puedo ayudarte con dudas sobre materiales, constantes A o recomendarte la mejor lente según tus filtros actuales.
+                    </p>
+                  </div>
+                ) : (
+                  chatMessages.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[90%] rounded-2xl p-4 text-sm font-medium leading-relaxed shadow-sm ${
+                        msg.role === 'user' 
+                          ? 'bg-blue-600 text-white rounded-tr-none' 
+                          : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                      }`}>
+                        {msg.role === 'model' ? (
+                          <div className="prose prose-sm prose-slate max-w-none prose-p:leading-relaxed prose-strong:text-blue-600">
+                            <Markdown>{msg.text}</Markdown>
+                          </div>
+                        ) : (
+                          msg.text
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {isAiLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border border-slate-100 rounded-2xl p-4 flex gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="p-6 bg-white border-t border-slate-100">
+                <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all">
+                  <input 
+                    type="text" 
+                    placeholder="Pregúntame algo sobre las lentes..." 
+                    value={aiInput}
+                    onChange={e => setAiInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAiChat()}
+                    className="flex-1 bg-transparent border-none outline-none text-sm text-slate-700 font-bold placeholder:text-slate-400"
+                  />
+                  <button 
+                    onClick={handleAiChat}
+                    disabled={!aiInput.trim() || isAiLoading}
+                    className="p-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors disabled:opacity-30 disabled:hover:bg-blue-600 active:scale-90"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Sugerencias Rápidas */}
+                <div className="flex gap-2 mt-4 overflow-x-auto pb-2 custom-scrollbar-thin">
+                  <button 
+                    onClick={() => setChatMessages([])}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                  >
+                    <Eraser className="w-3 h-3" /> Limpiar Chat
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setAiInput("¿Cuáles son las constantes A de las lentes filtradas?");
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase whitespace-nowrap transition-colors"
+                  >
+                    Consultar Constantes
+                  </button>
                 </div>
               </div>
             </motion.div>
