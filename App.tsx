@@ -48,9 +48,20 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: any = null;
 
-// ... (existing imports)
+const getAiClient = () => {
+  if (!aiInstance) {
+    const isBrowser = typeof window !== 'undefined';
+    const env = isBrowser ? (window as any).process?.env : process.env;
+    const apiKey = env?.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY no detectada.');
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 // Helper para buscar gráficas
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
@@ -476,7 +487,8 @@ INSTRUCCIONES CLAVE:
 5. Si no hay lentes filtradas que coincidan, sugiérele ajustar los filtros.
 6. Mantén un tono profesional y servicial.`;
 
-      const response = await ai.models.generateContent({
+      const aiClient = getAiClient();
+      const response = await aiClient.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
           { role: 'user', parts: [{ text: systemPrompt }] },
@@ -2097,7 +2109,7 @@ INSTRUCCIONES CLAVE:
                           : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                       }`}>
                         {msg.role === 'model' ? (
-                          <div className="prose prose-sm prose-slate max-w-none prose-p:leading-relaxed prose-strong:text-blue-600">
+                          <div className="markdown-body">
                             <Markdown>{msg.text}</Markdown>
                           </div>
                         ) : (

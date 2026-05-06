@@ -64,6 +64,44 @@
   background-color: #d1d5db;
 }
 
-.scrollbar-track-transparent::-webkit-scrollbar-track {
-  background: transparent;
+/* Markdown Styling for AI Assistant */
+.markdown-body {
+  line-height: 1.6;
+}
+.markdown-body p {
+  margin-bottom: 0.75rem;
+}
+.markdown-body ul, .markdown-body ol {
+  margin-bottom: 1rem;
+  padding-left: 1.25rem;
+}
+.markdown-body ul {
+  list-style-type: disc;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.markdown-body th, .markdown-body td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+  text-align: left;
+}
+.markdown-body th {
+  background-color: #f8fafc;
+  font-weight: 700;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  font-weight: 800;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1e3a8a;
+}
+.markdown-body strong {
+  color: #2563eb;
 }
