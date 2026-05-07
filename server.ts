@@ -13,11 +13,9 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Logging Middleware
+  // Logging Middleware - Enhanced for debugging 404
   app.use((req, _res, next) => {
-    if (req.url.startsWith('/api')) {
-      console.log(`[API-REQUEST] ${req.method} ${req.url}`);
-    }
+    console.log(`[REQ] ${req.method} ${req.url} (Original: ${req.originalUrl})`);
     next();
   });
 
@@ -26,18 +24,24 @@ async function startServer() {
   const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
   // --- API ROUTES ---
-  app.get("/api/health", (req, res) => {
-    console.log(`[SERVER] Health check from ${req.ip} - Path: ${req.path}`);
+  const api = express.Router();
+
+  api.get("/health", (req, res) => {
+    console.log(`[SERVER] Health check hit. Process CWD: ${process.cwd()}`);
     res.json({ 
       status: "ok", 
       apiKeyPresent: !!apiKey,
       nodeEnv: process.env.NODE_ENV || 'production',
-      time: new Date().toISOString()
+      currentTime: new Date().toISOString(),
+      cwd: process.cwd(),
+      dirname: __dirname,
+      url: req.url,
+      originalUrl: req.originalUrl
     });
   });
 
-  app.post("/api/chat", async (req, res) => {
-    console.log(`[SERVER] Chat request - Path: ${req.path}`);
+  api.post("/chat", async (req, res) => {
+    console.log("[SERVER] Chat request received");
     try {
       if (!genAI) {
         return res.status(503).json({ error: "Gemini AI no configurado." });
@@ -67,14 +71,18 @@ async function startServer() {
     }
   });
 
-  // Catch-all for /api before falling through to frontend
+  // Mount API router
+  app.use("/api", api);
+
+  // Catch-all for /api explicitly (before frontend)
   app.all("/api/*", (req, res) => {
-    console.warn(`[SERVER] 404 for API route: ${req.method} ${req.originalUrl}`);
-    res.status(404).json({ error: "Ruta API no encontrada" });
+    console.warn(`[SERVER] API 404: ${req.method} ${req.url}`);
+    res.status(404).json({ error: "API route not found", path: req.url });
   });
 
   // --- FRONTEND ROUTING ---
   if (process.env.NODE_ENV !== "production") {
+    console.log("[SERVER] Starting Vite in dev mode...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -82,11 +90,12 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
+    console.log(`[SERVER] Serving static files from: ${distPath}`);
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      // Don't fall back for API routes that missed the router
-      if (req.originalUrl.startsWith('/api')) {
-        return res.status(404).json({ error: "API route not found" });
+      // If it starts with /api but reached here, it's a 404 for API
+      if (req.url.startsWith('/api') || req.originalUrl.startsWith('/api')) {
+        return res.status(404).json({ error: "API endpoint definitely not found" });
       }
       res.sendFile(path.join(distPath, 'index.html'));
     });
