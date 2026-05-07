@@ -1,7 +1,11 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import { fileURLToPath } from "url";
 import { GoogleGenAI } from "@google/genai";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -21,29 +25,27 @@ async function startServer() {
   const apiKey = process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY || "";
   const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
-  // --- API ROUTER ---
-  const apiRouter = express.Router();
-
-  apiRouter.get("/health", (req, res) => {
-    console.log(`[API] Health check requested from ${req.ip}`);
+  // --- API ROUTES ---
+  app.get("/api/health", (req, res) => {
+    console.log(`[SERVER] Health check from ${req.ip} - Path: ${req.path}`);
     res.json({ 
       status: "ok", 
       apiKeyPresent: !!apiKey,
-      nodeEnv: process.env.NODE_ENV || 'development',
+      nodeEnv: process.env.NODE_ENV || 'production',
       time: new Date().toISOString()
     });
   });
 
-  apiRouter.post("/chat", async (req, res) => {
-    console.log("[API] Chat request received");
+  app.post("/api/chat", async (req, res) => {
+    console.log(`[SERVER] Chat request - Path: ${req.path}`);
     try {
       if (!genAI) {
-        return res.status(503).json({ error: "Gemini AI not configured on server" });
+        return res.status(503).json({ error: "Gemini AI no configurado." });
       }
 
       const { messages, systemInstruction } = req.body;
       if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: "Invalid request body: 'messages' array required" });
+        return res.status(400).json({ error: "Mensaje inválido." });
       }
 
       const response = await genAI.models.generateContent({
@@ -60,25 +62,16 @@ async function startServer() {
 
       res.json({ text: response.text });
     } catch (error: any) {
-      console.error("[API-ERROR] AI process failed:", error);
-      res.status(500).json({ 
-        error: "Internal server error during AI processing",
-        details: error.message 
-      });
+      console.error("[SERVER ERROR]", error);
+      res.status(500).json({ error: "Error interno del servidor", details: error.message });
     }
   });
 
-  // API 404 - Always return JSON for anything starting with /api
-  apiRouter.all("*", (req, res) => {
-    console.warn(`[API-404] Not Found: ${req.method} ${req.originalUrl}`);
-    res.status(404).json({ 
-      error: "API endpoint not found", 
-      path: req.originalUrl 
-    });
+  // Catch-all for /api before falling through to frontend
+  app.all("/api/*", (req, res) => {
+    console.warn(`[SERVER] 404 for API route: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: "Ruta API no encontrada" });
   });
-
-  // Mount API router FIRST
-  app.use("/api", apiRouter);
 
   // --- FRONTEND ROUTING ---
   if (process.env.NODE_ENV !== "production") {
@@ -88,12 +81,22 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(process.cwd(), 'dist');
+    const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.get("*", (req, res) => {
+      // Don't fall back for API routes that missed the router
+      if (req.originalUrl.startsWith('/api')) {
+        return res.status(404).json({ error: "API route not found" });
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global Error Handler
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("[FATAL ERROR]", err);
+    res.status(500).json({ error: "Internal Server Error", message: err.message });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[SERVER] IOL Explorer Pro activo en http://localhost:${PORT}`);
