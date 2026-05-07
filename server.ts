@@ -17,77 +17,59 @@ async function startServer() {
     next();
   });
 
-  // Health Check mejorado
-  app.get("/api/health", (_req, res) => {
-    console.log("[HEALTH] Solicitud recibida");
-    res.set('Content-Type', 'application/json');
-    res.json({ 
-      status: "ok", 
-      apiKeyPresent: !!(process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY),
-      usingCustomKey: !!process.env.CLAVE_GEMINI_PROPIA,
-      env: process.env.NODE_ENV || 'development'
-    });
-  });
-
-  // Inicializar Gemini
+  // --- INICIALIZACIÓN DE GEMINI ---
   const apiKey = process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY;
   if (apiKey) {
     console.log(`[INIT] Gemini API configurada usando clave ${process.env.CLAVE_GEMINI_PROPIA ? 'PROPIA' : 'del SISTEMA'}`);
   } else {
-    console.warn("[INIT] ADVERTENCIA: No se detectó ninguna clave API de Gemini (GEMINI_API_KEY o CLAVE_GEMINI_PROPIA)");
+    console.warn("[INIT] ADVERTENCIA: No hay clave API detectada");
   }
   const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-  // API Route para el Chat
-  app.post("/api/ai-chat", async (req, res) => {
-    console.log("[API] Petición recibida en /api/ai-chat");
+  // --- RUTAS DE LA API ---
+  const apiRouter = express.Router();
+
+  // Logging específico para la API
+  apiRouter.use((req, _res, next) => {
+    console.log(`[API-ROUTER] ${req.method} ${req.url}`);
+    next();
+  });
+
+  apiRouter.get("/health", (_req, res) => {
+    console.log("[API] Health Check solicitado");
+    res.json({ 
+      status: "ok", 
+      apiKeyPresent: !!(process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY),
+      usingCustomKey: !!process.env.CLAVE_GEMINI_PROPIA,
+      version: "2.0.0"
+    });
+  });
+
+  apiRouter.post("/ai-chat", async (req, res) => {
+    console.log("[API] Chat solicitado");
     try {
       if (!genAI) {
-        console.error("Error: genAI no inicializado. ¿ApiKey presente?");
-        return res.status(500).json({ 
-          error: "GEMINI_API_KEY no configurada en el servidor.",
-          detail: "Asegúrate de que CLAVE_GEMINI_PROPIA o GEMINI_API_KEY estén en Settings > Secrets"
-        });
+        return res.status(500).json({ error: "Gemini no inicializado" });
       }
-
       const { messages, systemInstruction } = req.body;
-      console.log("Mensajes recibidos:", messages?.length);
-      
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction 
-      });
-
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
       const result = await model.generateContent({
         contents: messages.map((m: any) => ({
           role: m.role === 'model' ? 'model' : 'user',
           parts: [{ text: m.text }]
         }))
       });
-
-      const responseText = result.response.text();
-      console.log(`[CHAT] Respuesta generada: ${responseText.substring(0, 50)}...`);
-      res.set('Content-Type', 'application/json');
-      res.json({ text: responseText });
+      res.json({ text: result.response.text() });
     } catch (error: any) {
-      console.error("[CHAT] Error fatal:", error);
-      res.status(500).set('Content-Type', 'application/json').json({ 
-        error: "Error interno del servidor al procesar el chat",
-        message: error.message || "Error desconocido"
-      });
+      console.error("[API] Error en chat:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 
-  // Asegurar que cualquier otra ruta /api devuelva JSON 404 (Sintaxis Express 5)
-  app.all("/api/:params*", (req, res) => {
-    console.warn(`[API] 404 - Ruta no encontrada: ${req.method} ${req.url}`);
-    res.status(404).set('Content-Type', 'application/json').json({ 
-      error: "Ruta API no encontrada", 
-      path: req.url 
-    });
-  });
+  // Montar el router de la API
+  app.use("/api", apiRouter);
 
-  // Vite middleware para desarrollo
+  // --- FRONTEND / VITE ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -95,13 +77,20 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    // Sintaxis Express 5 para el catch-all del SPA
-    app.get("/:params*", (_req, res) => {
+    // Fallback para SPA en producción (Express 5)
+    app.get("*", (req, res, next) => {
+      // Si empieza por /api y llegó aquí, es un 404 de API real
+      if (req.url.startsWith('/api')) return next();
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // 404 Genérico para API
+  app.use("/api/*", (req, res) => {
+    res.status(404).json({ error: "Ruta API no encontrada", path: req.originalUrl });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Servidor de IOL Explorer Pro corriendo en http://localhost:${PORT}`);
