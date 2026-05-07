@@ -2151,7 +2151,7 @@ INSTRUCCIONES:
                            throw new Error(`Respuesta no es JSON. Status: ${res.status}. Tipo: ${contentType}. Inicio del cuerpo: ${text.substring(0, 50)}`);
                         }
                         const data = await res.json();
-                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Custom Key: ${data.usingCustomKey ? '💎 Sí' : '⚙️ Sistema'}\n- Entorno: \`${data.env || 'production'}\`` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Entorno: \`${data.nodeEnv}\`\n- Hora: \`${data.time}\`` }]);
                       } catch (e: any) {
                         setChatMessages(prev => [...prev, { role: 'model', text: `❌ **Error de Conexión:**\n\n${e.message}` }]);
                       }
