@@ -2144,16 +2144,39 @@ INSTRUCCIONES:
                   <button 
                     onClick={async () => {
                       try {
+                        const results: string[] = [];
+                        
+                        // Test 1: PING
+                        try {
+                          const rPing = await fetch('/ping');
+                          const tPing = await rPing.text();
+                          results.push(`🔹 PING: ${rPing.status} (${tPing})`);
+                        } catch (e: any) { results.push(`❌ PING: ${e.message}`); }
+
+                        // Test 2: HEALTH
+                        try {
+                          const rH = await fetch('/health');
+                          const tH = await rH.text();
+                          results.push(`🔹 HEALTH: ${rH.status} (${tH.substring(0,20)}...)`);
+                        } catch (e: any) { results.push(`❌ HEALTH: ${e.message}`); }
+
+                        // Test 3: API HEALTH
                         const res = await fetch('/api/health');
                         const contentType = res.headers.get("content-type");
                         if (!contentType || !contentType.includes("application/json")) {
                            const text = await res.text();
-                           throw new Error(`404: No JSON (${res.status}). Body: ${text.substring(0, 30)}`);
+                           results.push(`❌ API: 404 No JSON. Body: ${text.substring(0, 30).replace(/</g, '&lt;')}`);
+                        } else {
+                           const data = await res.json();
+                           results.push(`✅ API OK: v${data.version} (Env: ${data.nodeEnv})`);
                         }
-                        const data = await res.json();
-                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **SERVER v${data.version}**\nStatus: ${res.status}\nAI: ${data.apiKeyPresent ? 'ON' : 'OFF'}` }]);
+                        
+                        setChatMessages(prev => [...prev, { 
+                          role: 'model', 
+                          text: `🔍 **DIAGNÓSTICO:**\n\n${results.join('\n')}\n\n📍 Path: \`${window.location.pathname}\`\n📍 Origin: \`${window.location.origin}\`` 
+                        }]);
                       } catch (e: any) {
-                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **CONN ERROR:** ${e.message}` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **CRITICAL DEBUG ERROR:** ${e.message}` }]);
                       }
                     }}
                     className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-black uppercase whitespace-nowrap transition-colors"

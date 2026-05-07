@@ -27,17 +27,26 @@ async function startServer() {
   const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
   // --- API DIRECT ROUTES ---
-  app.get("/api/health", (req, res) => {
-    console.log(`[API-HIT] Health request: ${req.originalUrl}`);
+  // We use both /api/health and /health to verify routing
+  const apiHandler = (req: any, res: any) => {
+    console.log(`[API-HIT] ${req.method} ${req.originalUrl} - ENV: ${process.env.NODE_ENV}`);
+    res.set('Cache-Control', 'no-store');
     res.json({ 
       status: "ok", 
       apiKeyPresent: !!apiKey,
-      nodeEnv: process.env.NODE_ENV || 'production',
+      nodeEnv: process.env.NODE_ENV || 'development',
       time: new Date().toISOString(),
       url: req.url,
       originalUrl: req.originalUrl,
-      version: "1.0.1"
+      version: "1.0.2-DEBUG"
     });
+  };
+
+  app.get("/api/health", apiHandler);
+  app.get("/health", apiHandler);
+  app.get("/ping", (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.send("pong-v1.0.2");
   });
 
   app.post("/api/chat", async (req, res) => {
