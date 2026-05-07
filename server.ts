@@ -19,10 +19,13 @@ async function startServer() {
 
   // Health Check mejorado
   app.get("/api/health", (_req, res) => {
+    console.log("[HEALTH] Solicitud recibida");
+    res.set('Content-Type', 'application/json');
     res.json({ 
       status: "ok", 
       apiKeyPresent: !!(process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY),
-      usingCustomKey: !!process.env.CLAVE_GEMINI_PROPIA
+      usingCustomKey: !!process.env.CLAVE_GEMINI_PROPIA,
+      env: process.env.NODE_ENV || 'development'
     });
   });
 
@@ -63,17 +66,25 @@ async function startServer() {
       });
 
       const responseText = result.response.text();
-      console.log("Respuesta generada correctamente");
+      console.log(`[CHAT] Respuesta generada: ${responseText.substring(0, 50)}...`);
+      res.set('Content-Type', 'application/json');
       res.json({ text: responseText });
     } catch (error: any) {
-      console.error("Error detallado en API chat:", error);
-      // Asegurarse de devolver JSON siempre
-      res.status(500).json({ 
+      console.error("[CHAT] Error fatal:", error);
+      res.status(500).set('Content-Type', 'application/json').json({ 
         error: "Error interno del servidor al procesar el chat",
-        message: error.message || "Error desconocido",
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message || "Error desconocido"
       });
     }
+  });
+
+  // Asegurar que cualquier otra ruta /api devuelva JSON 404
+  app.all("/api/*", (req, res) => {
+    console.warn(`[API] 404 - Ruta no encontrada: ${req.method} ${req.url}`);
+    res.status(404).set('Content-Type', 'application/json').json({ 
+      error: "Ruta API no encontrada", 
+      path: req.url 
+    });
   });
 
   // Vite middleware para desarrollo

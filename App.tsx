@@ -482,7 +482,7 @@ INSTRUCCIONES:
       if (!contentType || !contentType.includes("application/json")) {
         const textError = await response.text();
         console.error("Respuesta no JSON recibida:", textError);
-        throw new Error(`El servidor no respondió con JSON. Tipo recibidido: ${contentType}. Probablemente la ruta /api/chat no se encontró.`);
+        throw new Error(`Servidor respondió con Status ${response.status} (${response.statusText}). Tipo: ${contentType}. Cuerpo: ${textError.substring(0, 100)}...`);
       }
 
       const data = await response.json();
