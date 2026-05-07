@@ -469,7 +469,7 @@ INSTRUCCIONES:
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
 4. Tono profesional.`;
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -2148,6 +2148,20 @@ INSTRUCCIONES:
                 
                 {/* Sugerencias Rápidas */}
                 <div className="flex gap-2 mt-4 overflow-x-auto pb-2 custom-scrollbar-thin">
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/health');
+                        const data = await res.json();
+                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Custom Key: ${data.usingCustomKey ? '💎 Sí' : '⚙️ Sistema'}\n- Entorno: \`${data.env}\`` }]);
+                      } catch (e: any) {
+                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **Error de Conexión:**\n\n${e.message}` }]);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-black uppercase whitespace-nowrap transition-colors"
+                  >
+                    Verificar Conexión
+                  </button>
                   <button 
                     onClick={() => setChatMessages([])}
                     className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 whitespace-nowrap transition-colors"

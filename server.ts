@@ -39,8 +39,8 @@ async function startServer() {
   const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
   // API Route para el Chat
-  app.post("/api/chat", async (req, res) => {
-    console.log("Petición recibida en /api/chat");
+  app.post("/api/ai-chat", async (req, res) => {
+    console.log("[API] Petición recibida en /api/ai-chat");
     try {
       if (!genAI) {
         console.error("Error: genAI no inicializado. ¿ApiKey presente?");
@@ -78,8 +78,8 @@ async function startServer() {
     }
   });
 
-  // Asegurar que cualquier otra ruta /api devuelva JSON 404
-  app.all("/api/*", (req, res) => {
+  // Asegurar que cualquier otra ruta /api devuelva JSON 404 (Sintaxis Express 5)
+  app.all("/api/:params*", (req, res) => {
     console.warn(`[API] 404 - Ruta no encontrada: ${req.method} ${req.url}`);
     res.status(404).set('Content-Type', 'application/json').json({ 
       error: "Ruta API no encontrada", 
@@ -97,7 +97,8 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    // Sintaxis Express 5 para el catch-all del SPA
+    app.get("/:params*", (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
