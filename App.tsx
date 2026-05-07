@@ -46,12 +46,6 @@ import {
   Eraser
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { GoogleGenAI } from "@google/genai";
-
-// Inicializar Gemini siguiendo el skill
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || (process.env as any).CLAVE_GEMINI_PROPIA || ""
-});
 
 // Helper para buscar gráficas
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
@@ -475,19 +469,22 @@ INSTRUCCIONES:
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
 4. Tono profesional.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: newHistory.map(m => ({
-          role: m.role === 'model' ? 'model' : 'user',
-          parts: [{ text: m.text }]
-        })),
-        config: {
-          systemInstruction: systemPrompt
-        }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: newHistory,
+          systemInstruction: systemPrompt 
+        })
       });
 
-      const aiText = response.text || "Lo siento, no pude generar una respuesta.";
-      setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error del servidor (${response.status})`);
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'model', text: data.text || "Lo siento, no pude generar una respuesta." }]);
     } catch (error: any) {
       console.error("Error AI Detallado:", error);
       let errMsg = "Error de comunicación con el asistente.";
