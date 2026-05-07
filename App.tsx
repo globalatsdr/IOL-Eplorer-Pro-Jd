@@ -2144,39 +2144,15 @@ INSTRUCCIONES:
                   <button 
                     onClick={async () => {
                       try {
-                        const results: string[] = [];
-                        
-                        // Test 1: PING
-                        try {
-                          const rPing = await fetch('/ping');
-                          const tPing = await rPing.text();
-                          results.push(`🔹 PING: ${rPing.status} (${tPing})`);
-                        } catch (e: any) { results.push(`❌ PING: ${e.message}`); }
-
-                        // Test 2: HEALTH
-                        try {
-                          const rH = await fetch('/health');
-                          const tH = await rH.text();
-                          results.push(`🔹 HEALTH: ${rH.status} (${tH.substring(0,20)}...)`);
-                        } catch (e: any) { results.push(`❌ HEALTH: ${e.message}`); }
-
-                        // Test 3: API HEALTH
                         const res = await fetch('/api/health');
                         const contentType = res.headers.get("content-type");
                         if (!contentType || !contentType.includes("application/json")) {
-                           const text = await res.text();
-                           results.push(`❌ API: 404 No JSON. Body: ${text.substring(0, 30).replace(/</g, '&lt;')}`);
-                        } else {
-                           const data = await res.json();
-                           results.push(`✅ API OK: v${data.version} (Env: ${data.nodeEnv})`);
+                           throw new Error("El servidor de backend no está respondiendo (404 o Formato inválido). Si estás en GitHub Pages, esta función no está disponible.");
                         }
-                        
-                        setChatMessages(prev => [...prev, { 
-                          role: 'model', 
-                          text: `🔍 **DIAGNÓSTICO:**\n\n${results.join('\n')}\n\n📍 Path: \`${window.location.pathname}\`\n📍 Origin: \`${window.location.origin}\`` 
-                        }]);
+                        const data = await res.json();
+                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Conexión Exitosa**\n\nEstado: OK\nIA: ${data.apiKeyPresent ? 'Configurada' : 'No configurada'}\nVersión: ${data.version}` }]);
                       } catch (e: any) {
-                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **CRITICAL DEBUG ERROR:** ${e.message}` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **Error de Conexión:**\n\n${e.message}` }]);
                       }
                     }}
                     className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-black uppercase whitespace-nowrap transition-colors"
