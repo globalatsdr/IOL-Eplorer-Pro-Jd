@@ -11,11 +11,14 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // --- PRE-MIDDLEWARE API TEST ---
+  app.get("/ping", (_req, res) => res.send("pong"));
+  
   app.use(express.json());
 
-  // Logging Middleware - Enhanced for debugging 404
+  // Logging Middleware
   app.use((req, _res, next) => {
-    console.log(`[REQ] ${req.method} ${req.url} (Original: ${req.originalUrl})`);
+    console.log(`[REQ] ${req.method} ${req.url}`);
     next();
   });
 
@@ -23,33 +26,30 @@ async function startServer() {
   const apiKey = process.env.CLAVE_GEMINI_PROPIA || process.env.GEMINI_API_KEY || "";
   const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
-  // --- API ROUTES ---
-  const api = express.Router();
-
-  api.get("/health", (req, res) => {
-    console.log(`[SERVER] Health check hit. Process CWD: ${process.cwd()}`);
+  // --- API DIRECT ROUTES ---
+  app.get("/api/health", (req, res) => {
+    console.log(`[API-HIT] Health request: ${req.originalUrl}`);
     res.json({ 
       status: "ok", 
       apiKeyPresent: !!apiKey,
       nodeEnv: process.env.NODE_ENV || 'production',
-      currentTime: new Date().toISOString(),
-      cwd: process.cwd(),
-      dirname: __dirname,
+      time: new Date().toISOString(),
       url: req.url,
-      originalUrl: req.originalUrl
+      originalUrl: req.originalUrl,
+      version: "1.0.1"
     });
   });
 
-  api.post("/chat", async (req, res) => {
-    console.log("[SERVER] Chat request received");
+  app.post("/api/chat", async (req, res) => {
+    console.log(`[API-HIT] Chat: ${req.originalUrl}`);
     try {
       if (!genAI) {
-        return res.status(503).json({ error: "Gemini AI no configurado." });
+        return res.status(503).json({ error: "Gemini AI no configurado en el servidor." });
       }
 
       const { messages, systemInstruction } = req.body;
       if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: "Mensaje inválido." });
+        return res.status(400).json({ error: "Cuerpo de mensaje inválido." });
       }
 
       const response = await genAI.models.generateContent({
@@ -66,18 +66,18 @@ async function startServer() {
 
       res.json({ text: response.text });
     } catch (error: any) {
-      console.error("[SERVER ERROR]", error);
-      res.status(500).json({ error: "Error interno del servidor", details: error.message });
+      console.error("[API-ERROR] Error en chat:", error);
+      res.status(500).json({ 
+        error: "Error interno procesando la solicitud de IA",
+        details: error.message 
+      });
     }
   });
 
-  // Mount API router
-  app.use("/api", api);
-
-  // Catch-all for /api explicitly (before frontend)
+  // Catch-all para /api explícito antes de entrar en lógica de frontend
   app.all("/api/*", (req, res) => {
-    console.warn(`[SERVER] API 404: ${req.method} ${req.url}`);
-    res.status(404).json({ error: "API route not found", path: req.url });
+    console.warn(`[API-404] Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: "API endpoint not found", path: req.originalUrl });
   });
 
   // --- FRONTEND ROUTING ---

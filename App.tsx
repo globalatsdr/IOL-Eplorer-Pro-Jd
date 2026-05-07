@@ -2148,12 +2148,12 @@ INSTRUCCIONES:
                         const contentType = res.headers.get("content-type");
                         if (!contentType || !contentType.includes("application/json")) {
                            const text = await res.text();
-                           throw new Error(`Respuesta no es JSON. Status: ${res.status}. Tipo: ${contentType}. Inicio del cuerpo: ${text.substring(0, 50)}`);
+                           throw new Error(`404: No JSON (${res.status}). Body: ${text.substring(0, 30)}`);
                         }
                         const data = await res.json();
-                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Entorno: \`${data.nodeEnv}\`\n- Hora: \`${data.time}\`` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **SERVER v${data.version}**\nStatus: ${res.status}\nAI: ${data.apiKeyPresent ? 'ON' : 'OFF'}` }]);
                       } catch (e: any) {
-                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **Error de Conexión:**\n\n${e.message}` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `❌ **CONN ERROR:** ${e.message}` }]);
                       }
                     }}
                     className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-black uppercase whitespace-nowrap transition-colors"
