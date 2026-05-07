@@ -478,18 +478,27 @@ INSTRUCCIONES:
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Error servidor: ${response.status}`);
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textError = await response.text();
+        console.error("Respuesta no JSON recibida:", textError);
+        throw new Error(`El servidor no respondió con JSON. Tipo recibidido: ${contentType}. Probablemente la ruta /api/chat no se encontró.`);
       }
 
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.message || `Error servidor: ${response.status}`);
+      }
+
       setChatMessages(prev => [...prev, { role: 'model', text: data.text }]);
     } catch (error: any) {
       console.error("Error AI Detallado:", error);
       let errMsg = "Error de comunicación con el asistente.";
-      if (error.message?.includes('KEY')) {
-        errMsg = "Configuración de API pendiente en el servidor.";
+      if (error.message?.includes('JSON') || error.message?.includes('HTML')) {
+        errMsg = "Error de configuración de rutas en el servidor.";
+      } else if (error.message?.includes('KEY')) {
+        errMsg = "Configuración de API pendiente o incorrecta.";
       }
       setChatMessages(prev => [...prev, { role: 'model', text: `${errMsg}\n\n(Detalle: ${error.message})` }]);
     } finally {
