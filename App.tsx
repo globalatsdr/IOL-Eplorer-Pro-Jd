@@ -46,6 +46,12 @@ import {
   Eraser
 } from 'lucide-react';
 import Markdown from 'react-markdown';
+import { GoogleGenAI } from "@google/genai";
+
+// Inicializar Gemini
+const ai = new GoogleGenAI({ 
+  apiKey: (process.env as any).CLAVE_GEMINI_PROPIA || (process.env as any).GEMINI_API_KEY 
+});
 
 // Helper para buscar gráficas
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
@@ -469,29 +475,19 @@ INSTRUCCIONES:
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
 4. Tono profesional.`;
 
-      const response = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: newHistory,
-          systemInstruction: systemPrompt 
-        })
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: newHistory.map(m => ({
+          role: m.role === 'model' ? 'model' : 'user',
+          parts: [{ text: m.text }]
+        })),
+        config: {
+          systemInstruction: systemPrompt
+        }
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const textError = await response.text();
-        console.error("Respuesta no JSON recibida:", textError);
-        throw new Error(`Servidor respondió con Status ${response.status} (${response.statusText}). Tipo: ${contentType}. Cuerpo: ${textError.substring(0, 100)}...`);
-      }
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || data.message || `Error servidor: ${response.status}`);
-      }
-
-      setChatMessages(prev => [...prev, { role: 'model', text: data.text }]);
+      const aiText = response.text || "Lo siento, no pude generar una respuesta.";
+      setChatMessages(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (error: any) {
       console.error("Error AI Detallado:", error);
       let errMsg = "Error de comunicación con el asistente.";
@@ -2152,8 +2148,13 @@ INSTRUCCIONES:
                     onClick={async () => {
                       try {
                         const res = await fetch('/api/health');
+                        const contentType = res.headers.get("content-type");
+                        if (!contentType || !contentType.includes("application/json")) {
+                           const text = await res.text();
+                           throw new Error(`Respuesta no es JSON. Status: ${res.status}. Tipo: ${contentType}. Inicio del cuerpo: ${text.substring(0, 50)}`);
+                        }
                         const data = await res.json();
-                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Custom Key: ${data.usingCustomKey ? '💎 Sí' : '⚙️ Sistema'}\n- Entorno: \`${data.env}\`` }]);
+                        setChatMessages(prev => [...prev, { role: 'model', text: `📡 **Estado del Servidor:**\n\n- Status: ${res.status}\n- API Key: ${data.apiKeyPresent ? '✅ Sí' : '❌ No'}\n- Custom Key: ${data.usingCustomKey ? '💎 Sí' : '⚙️ Sistema'}\n- Entorno: \`${data.env || 'production'}\`` }]);
                       } catch (e: any) {
                         setChatMessages(prev => [...prev, { role: 'model', text: `❌ **Error de Conexión:**\n\n${e.message}` }]);
                       }
