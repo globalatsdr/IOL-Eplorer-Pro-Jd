@@ -48,9 +48,9 @@ import {
 import Markdown from 'react-markdown';
 import { GoogleGenAI } from "@google/genai";
 
-// Inicializar Gemini
+// Inicializar Gemini siguiendo el skill
 const ai = new GoogleGenAI({ 
-  apiKey: (process.env as any).CLAVE_GEMINI_PROPIA || (process.env as any).GEMINI_API_KEY 
+  apiKey: process.env.GEMINI_API_KEY || (process.env as any).CLAVE_GEMINI_PROPIA || ""
 });
 
 // Helper para buscar gráficas

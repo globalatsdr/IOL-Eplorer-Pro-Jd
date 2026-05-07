@@ -8,20 +8,21 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Logging de peticiones para diagnóstico
+  // Logging de peticiones
   app.use((req, _res, next) => {
     if (req.url.startsWith('/api')) {
-      console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+      console.log(`[API] ${req.method} ${req.url}`);
     }
     next();
   });
 
-  // --- RUTAS DE LA API ---
+  // RUTAS API
   app.get("/api/health", (_req, res) => {
     res.json({ 
       status: "ok", 
-      message: "Servidor operativo",
-      timestamp: new Date().toISOString()
+      apiKeyPresent: !!(process.env.GEMINI_API_KEY || process.env.CLAVE_GEMINI_PROPIA),
+      usingCustomKey: !!process.env.CLAVE_GEMINI_PROPIA,
+      env: process.env.NODE_ENV || 'production'
     });
   });
 
@@ -30,7 +31,7 @@ async function startServer() {
     res.status(404).json({ error: "Ruta API no encontrada", path: req.url });
   });
 
-  // --- FRONTEND / VITE ---
+  // FRONTEND / SPA
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -40,16 +41,15 @@ async function startServer() {
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    // Fallback para SPA en producción (Express 5)
     app.get("*", (req, res, next) => {
-      // Si empieza por /api y llegó aquí, es un 404 de API real
+      // No capturar rutas de la api aquí
       if (req.url.startsWith('/api')) return next();
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor de IOL Explorer Pro corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor listo en port ${PORT}`);
   });
 }
 
