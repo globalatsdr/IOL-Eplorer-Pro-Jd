@@ -46,8 +46,10 @@ import {
   Eraser
 } from 'lucide-react';
 import Markdown from 'react-markdown';
+import { GoogleGenAI } from "@google/genai";
 
-// Helper para buscar gráficas
+const STORAGE_KEY_GEMINI_API = 'iol_user_gemini_key';
+const isGitHubPages = window.location.hostname.includes('github.io');
 const getGraphUrl = (type: 'MTF3' | 'MTF45' | 'Defocus', lensName: string, availableGraphs: Set<string>) => {
   const cleanName = lensName.trim();
   const extensions = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG'];
@@ -368,6 +370,8 @@ function App() {
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
+  const [userGeminiKey, setUserGeminiKey] = useState(localStorage.getItem(STORAGE_KEY_GEMINI_API) || '');
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -446,6 +450,16 @@ function App() {
     ];
     setChatMessages(newHistory);
     setIsAiLoading(true);
+    
+    // Si estamos en GH Pages y no hay clave, avisamos
+    if (isGitHubPages && !userGeminiKey) {
+      setChatMessages(prev => [...prev, { 
+        role: 'model', 
+        text: `⚠️ **Modo Estático detectado (GitHub Pages)**\n\nEl servidor central no está disponible en este entorno. Para usar la IA aquí, por favor introduce tu propia **Gemini API Key** en los ajustes (icono de engranaje arriba).` 
+      }]);
+      setIsAiLoading(false);
+      return;
+    }
 
     try {
       const lensesContext = filteredLenses.slice(0, 40).map(l => ({
@@ -469,22 +483,53 @@ INSTRUCCIONES:
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
 4. Tono profesional.`;
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: newHistory,
-          systemInstruction: systemPrompt 
-        })
-      });
+      let responseText = "";
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error del servidor (${response.status})`);
+      // MODO CLIENTE: Si el usuario proporcionó su propia clave
+      if (userGeminiKey) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: userGeminiKey });
+          const result = await ai.models.generateContent({ 
+            model: "gemini-3-flash-preview",
+            contents: newHistory.map(m => ({
+              role: m.role === 'model' ? 'model' : 'user',
+              parts: [{ text: m.text }]
+            })),
+            config: {
+              systemInstruction: systemPrompt 
+            }
+          });
+          
+          responseText = result.text || "";
+        } catch (clientErr: any) {
+          throw new Error(`Error con tu API Key: ${clientErr.message}`);
+        }
+      } 
+      // MODO SERVIDOR: Intento normal
+      else {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            messages: newHistory,
+            systemInstruction: systemPrompt 
+          })
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          if (text.includes('<!DOCTYPE html>')) {
+             throw new Error("El servidor de backend no está disponible en este entorno (404). Por favor, usa una API Key propia.");
+          }
+          const errorData = JSON.parse(text).catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor (${response.status})`);
+        }
+
+        const data = await response.json();
+        responseText = data.text;
       }
 
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { role: 'model', text: data.text || "Lo siento, no pude generar una respuesta." }]);
+      setChatMessages(prev => [...prev, { role: 'model', text: responseText || "Lo siento, no pude generar una respuesta." }]);
     } catch (error: any) {
       console.error("Error AI Detallado:", error);
       let errMsg = "Error de comunicación con el asistente.";
@@ -2061,18 +2106,74 @@ INSTRUCCIONES:
                   <div>
                     <h3 className="font-black text-slate-900 uppercase tracking-tighter text-sm">Asistente IA</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">En línea - Contextual</span>
+                      <span className={`w-1.5 h-1.5 ${isGitHubPages && !userGeminiKey ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        {isGitHubPages && !userGeminiKey ? 'Requiere API Key' : 'En línea - Contextual'}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setIsAiSidebarOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-                >
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setIsAiSettingsOpen(!isAiSettingsOpen)}
+                    className={`p-2 rounded-xl transition-colors ${isAiSettingsOpen ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-100 text-slate-400'}`}
+                    title="Ajustes de IA"
+                  >
+                    <Settings2 className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setIsAiSidebarOpen(false)}
+                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
               </div>
+
+              {/* Panel de Ajustes IA */}
+              <AnimatePresence>
+                {isAiSettingsOpen && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="bg-blue-50 border-b border-blue-100 overflow-hidden"
+                  >
+                    <div className="p-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Tu Gemini API Key</label>
+                        {userGeminiKey && (
+                          <button 
+                            onClick={() => {
+                              localStorage.removeItem(STORAGE_KEY_GEMINI_API);
+                              setUserGeminiKey('');
+                            }}
+                            className="text-[10px] font-black uppercase text-red-500 hover:underline"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="password"
+                          placeholder="Pega aquí tu clave de Google..."
+                          value={userGeminiKey}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setUserGeminiKey(val);
+                            localStorage.setItem(STORAGE_KEY_GEMINI_API, val);
+                          }}
+                          className="flex-1 bg-white border border-blue-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <p className="text-[9px] text-blue-400 font-medium leading-normal italic">
+                        * Necesaria solo si usas la web desde GitHub. Tu clave se guarda localmente en tu navegador y no se comparte con nadie.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Chat Area */}
               <div 

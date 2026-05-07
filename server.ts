@@ -62,14 +62,13 @@ async function startServer() {
       }
 
       const response = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: messages.map((m: any) => ({
           role: m.role === 'model' ? 'model' : 'user',
           parts: [{ text: m.text }]
         })),
         config: {
           systemInstruction: systemInstruction,
-          maxOutputTokens: 1000,
         }
       });
 
