@@ -1754,7 +1754,7 @@ INSTRUCCIONES:
                 const lens = baseLenses.find(l => l.id === id);
                 return (
                   <div key={id} className="group relative bg-white/5 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors">
-                    <p className="text-[10px] font-black text-white truncate pr-5">{lens?.model || id}</p>
+                    <p className="text-[10px] font-black text-white truncate pr-5">{lens?.name || id}</p>
                     <button 
                       onClick={() => {
                         const newSet = new Set(selectedLensIds);
