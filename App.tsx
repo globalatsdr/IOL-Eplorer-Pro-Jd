@@ -374,30 +374,6 @@ function App() {
   const [userGeminiKey, setUserGeminiKey] = useState(localStorage.getItem(STORAGE_KEY_GEMINI_API) || '');
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // --- SHORTCUTS & LOGO PANEL HANDLERS ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Abrir panel lateral con Alt + L
-      if (e.altKey && e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        setIsSidePanelOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleLogoClick = (e: React.MouseEvent) => {
-    // Solo abre si se pulsa Alt al hacer click (secreto)
-    if (e.altKey) {
-      e.preventDefault();
-      setIsSidePanelOpen(true);
-    } else {
-      // Si hace click normal, no hace nada o podrías redirigir a inicio
-      // console.log("Click normal en logo - usa Alt para opciones");
-    }
-  };
-
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
@@ -1275,13 +1251,9 @@ INSTRUCCIONES:
 
       <header className="bg-black border-b border-white/10 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleLogoClick} 
-            className="w-14 h-14 flex items-center justify-center overflow-hidden cursor-help hover:scale-105 transition-transform active:scale-95 focus:outline-none"
-            title="IOL Explorer Pro (Alt+L para opciones)"
-          >
+          <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
              <img src="logo.png" alt="IOL Explorer Logo" className="w-full h-full object-contain" />
-          </button>
+          </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-black text-white tracking-tight leading-none">IOL Explorer <span className="text-blue-500">Pro</span></h1>
             <span className="text-[10px] text-white/50 font-bold uppercase mt-1 tracking-widest">Dr. Alfonso</span>
