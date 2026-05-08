@@ -312,10 +312,10 @@ function App() {
 
   const ADVANCED_UNLOCK_PASSWORD = "1234!";
   const DR_ALFONSO_UNLOCK_PASSWORD = "131/";
-  const [passwordInput, setPasswordInput] = useState('');
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
   
-  const isAdvancedUnlocked = passwordInput === ADVANCED_UNLOCK_PASSWORD || passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
-  const isDrAlfonsoUnlocked = passwordInput === DR_ALFONSO_UNLOCK_PASSWORD;
+  const isAdvancedUnlocked = adminPasswordInput === ADVANCED_UNLOCK_PASSWORD || adminPasswordInput === DR_ALFONSO_UNLOCK_PASSWORD;
+  const isDrAlfonsoUnlocked = adminPasswordInput === DR_ALFONSO_UNLOCK_PASSWORD;
 
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
   const [showComparison, setShowComparison] = useState(false);
@@ -359,7 +359,6 @@ function App() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminMode, setAdminMode] = useState<'H' | 'M' | 'E' | 'I' | 'G' | null>(null);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [adminEditorText, setAdminEditorText] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [ataAssetIndex, setAtaAssetIndex] = useState(0);
@@ -1209,7 +1208,6 @@ INSTRUCCIONES:
 
   // --- LOGICA DE BLOQUEO ---
   // Solo se habilitan los botones de carga si isDrAlfonsoUnlocked es true
-  const areAdminActionsEnabled = isDrAlfonsoUnlocked;
 
   if (!hasEntered) {
     return (
@@ -1276,67 +1274,15 @@ INSTRUCCIONES:
             <span className="hidden sm:inline">Asistente IA</span>
           </button>
           
-          {/* BOTONES ADMINISTRATIVOS - AHORA PROTEGIDOS */}
-          <div className={`hidden sm:flex bg-white/5 p-1 rounded-xl border border-white/10 gap-1 transition-opacity ${!areAdminActionsEnabled ? 'opacity-50 grayscale' : ''}`}>
-            <button 
-              onClick={() => xmlFileInputRef.current?.click()} 
-              disabled={!areAdminActionsEnabled}
-              className={`flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg shadow-sm text-xs font-bold text-white/90 border border-white/10 ${areAdminActionsEnabled ? 'hover:text-blue-400 cursor-pointer' : 'cursor-not-allowed'}`}
-              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Cargar base de datos XML"}
-            >
-              <Upload className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Cargar XML</span>
-            </button>
-            <button 
-              onClick={handleLoadModifications} 
-              disabled={!areAdminActionsEnabled}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-bold text-white/80 ${areAdminActionsEnabled ? 'hover:bg-white/10 hover:text-orange-400 cursor-pointer' : 'cursor-not-allowed'}`}
-              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Cargar modificaciones internas"}
-            >
-              <FileJson className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Modificaciones</span>
-            </button>
-            <div className="w-px h-8 bg-white/20 mx-1"></div>
-            <button 
-              onClick={handleClearOverrides} 
-              disabled={!areAdminActionsEnabled}
-              className={`p-2 rounded-lg transition-all text-white/60 ${areAdminActionsEnabled ? 'hover:bg-white/10 hover:text-orange-400 cursor-pointer' : 'cursor-not-allowed'}`}
-              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Borrar todas las modificaciones personalizadas"}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => {
-                if(window.confirm("¿Deseas limpiar la base de datos local y recargar desde el servidor?")) {
-                  localStorage.removeItem(STORAGE_KEY_XML);
-                  window.location.reload();
-                }
-              }} 
-              disabled={!areAdminActionsEnabled}
-              className={`p-2 rounded-lg transition-all text-white/60 ${areAdminActionsEnabled ? 'hover:bg-white/10 hover:text-blue-400 cursor-pointer' : 'cursor-not-allowed'}`}
-              title={!areAdminActionsEnabled ? "Requiere acceso Dr. Alfonso" : "Limpiar caché de base de datos y recargar"}
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            
-            {/* Candado visual sobre el grupo si está bloqueado */}
-            {!areAdminActionsEnabled && (
-                <div className="flex items-center justify-center px-2">
-                    <Lock className="w-3 h-3 text-white/40" />
-                </div>
-            )}
-          </div>
-
           <div className="h-10 w-px bg-white/20 mx-1"></div>
           
-          <div className="relative">
-            <input 
-              type="password" 
-              value={passwordInput} 
-              onChange={(e) => setPasswordInput(e.target.value)} 
-              placeholder="Unlock" 
-              className="bg-white/10 border border-white/20 text-xs w-20 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-white placeholder:text-white/30" 
-            />
-            {!isAdvancedUnlocked && !isDrAlfonsoUnlocked && <Lock className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"/>}
-          </div>
+          <button 
+            onClick={() => setIsSidePanelOpen(true)}
+            className="p-3 bg-white/5 hover:bg-blue-600/20 rounded-xl border border-white/10 transition-all group"
+            title="Opciones y Administración"
+          >
+            <Settings2 className="w-5 h-5 text-white/50 group-hover:text-blue-400 group-hover:rotate-90 transition-transform duration-500" />
+          </button>
         </div>
       </header>
 
@@ -1961,36 +1907,95 @@ INSTRUCCIONES:
 
                 <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
                   {!isAdminAuthenticated ? (
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Lock className="w-4 h-4 text-amber-400" />
-                        <h3 className="text-sm font-black text-white/80 uppercase">Acceso Restringido</h3>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <div className="relative">
-                          <input 
-                            type="password"
-                            value={adminPasswordInput}
-                            onChange={(e) => setAdminPasswordInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleAdminLogin();
-                            }}
-                            placeholder="Introduce password..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all font-mono"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                          </div>
+                    <div className="space-y-6">
+                      <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Lock className={`${isDrAlfonsoUnlocked ? 'text-emerald-400' : 'text-amber-400'} w-4 h-4`} />
+                          <h3 className="text-sm font-black text-white/80 uppercase">
+                            {isDrAlfonsoUnlocked ? 'Acceso Dr. Alfonso' : 'Acceso Restringido'}
+                          </h3>
                         </div>
-                        <button 
-                          onClick={handleAdminLogin}
-                          className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-white font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 group"
-                        >
-                          Autenticar
-                          <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
+                        <div className="flex flex-col gap-3">
+                          <div className="relative">
+                            <input 
+                              type="password"
+                              value={adminPasswordInput}
+                              onChange={(e) => setAdminPasswordInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleAdminLogin();
+                              }}
+                              placeholder="Introduce password..."
+                              className={`w-full bg-white/5 border ${isDrAlfonsoUnlocked ? 'border-emerald-500/50' : 'border-white/10'} rounded-xl p-3 pl-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all font-mono`}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                               <div className={`w-1.5 h-1.5 rounded-full ${isDrAlfonsoUnlocked ? 'bg-emerald-500' : 'bg-blue-500'} animate-pulse`}></div>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={handleAdminLogin}
+                            className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-white font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 group"
+                          >
+                            Autenticar Pro
+                            <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                        </div>
                       </div>
 
+                      {/* Botones de Administración Dr. Alfonso */}
+                      <AnimatePresence>
+                        {isDrAlfonsoUnlocked && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4"
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                              <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Panel de Control</h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-2">
+                              <button 
+                                onClick={() => xmlFileInputRef.current?.click()} 
+                                className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white text-xs font-bold transition-all border border-white/5"
+                              >
+                                <Upload className="w-4 h-4 text-blue-400" />
+                                <span>Cargar Base de Datos XML</span>
+                              </button>
+                              
+                              <button 
+                                onClick={handleLoadModifications} 
+                                className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white text-xs font-bold transition-all border border-white/5"
+                              >
+                                <FileJson className="w-4 h-4 text-orange-400" />
+                                <span>Cargar Modificaciones</span>
+                              </button>
+
+                              <button 
+                                onClick={handleClearOverrides} 
+                                className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-red-500/10 rounded-xl text-white/80 text-xs font-bold transition-all border border-white/5 hover:text-red-400"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span>Borrar Modificaciones</span>
+                              </button>
+
+                              <button 
+                                onClick={() => {
+                                  if(window.confirm("¿Deseas limpiar la base de datos local y recargar desde el servidor?")) {
+                                    localStorage.removeItem(STORAGE_KEY_XML);
+                                    window.location.reload();
+                                  }
+                                }} 
+                                className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-blue-500/10 rounded-xl text-white/80 text-xs font-bold transition-all border border-white/5 hover:text-blue-400"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                <span>Borrar Caché y Recargar</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ) : (
                     <div className="space-y-6">
