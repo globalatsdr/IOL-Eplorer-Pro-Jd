@@ -1783,24 +1783,33 @@ INSTRUCCIONES:
       </main>
 
       {selectedLensIds.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-[90%] md:max-w-2xl p-4 md:rounded-3xl bg-slate-900/95 backdrop-blur-xl text-white shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row justify-between items-center z-50 animate-in slide-in-from-bottom-5 border-t md:border border-white/10 gap-4 md:gap-0">
-          <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-start">
+        <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-[95%] md:max-w-5xl p-5 md:rounded-3xl bg-slate-900/75 backdrop-blur-2xl text-white shadow-[0_-10px_40px_rgba(0,0,0,0.4)] md:shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col md:flex-row justify-between items-center z-50 animate-in slide-in-from-bottom-5 border-t md:border border-white/20 gap-4 md:gap-0">
+          <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
             <div className="flex items-center gap-5">
-              <div className="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-900/40">{selectedLensIds.size}</div>
+              <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/40 animate-pulse">{selectedLensIds.size}</div>
               <div>
-                <p className="text-sm font-black uppercase tracking-tight">Comparativa Activa</p>
-                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite alcanzado' : 'Selecciona hasta 5'}</p>
+                <p className="text-base font-black uppercase tracking-tight">Comparativa Activa</p>
+                <p className="text-[11px] text-blue-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite de 5 alcanzado' : `Has seleccionado ${selectedLensIds.size} de 5`}</p>
               </div>
             </div>
-            <button onClick={() => setSelectedLensIds(new Set())} className="md:hidden text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Limpiar</button>
-          </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button onClick={() => setSelectedLensIds(new Set())} className="hidden md:block text-xs font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest mr-2">Limpiar</button>
-            <button onClick={() => setShowGraphsModal(true)} className="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 text-white px-4 py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-slate-900/40 uppercase tracking-tight flex items-center justify-center gap-2">
-              <LineChart className="w-4 h-4" /> <span className="inline">Gráficas</span>
+            <button onClick={() => setSelectedLensIds(new Set())} className="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
+              <Trash2 className="w-5 h-5" />
             </button>
-            <button onClick={() => setShowComparison(true)} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-6 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-900/40 uppercase tracking-tight">
-              Comparar
+          </div>
+          
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <button 
+              onClick={() => setSelectedLensIds(new Set())} 
+              className="hidden md:flex items-center gap-2 text-xs font-black text-slate-400 hover:text-red-400 transition-colors uppercase tracking-widest mr-4 group"
+            >
+              <RotateCcw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+              Limpiar
+            </button>
+            <button onClick={() => setShowGraphsModal(true)} className="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white px-6 py-4 rounded-2xl font-black text-sm transition-all border border-white/10 uppercase tracking-tight flex items-center justify-center gap-2">
+              <LineChart className="w-4 h-4 text-blue-400" /> <span>Graficos</span>
+            </button>
+            <button onClick={() => setShowComparison(true)} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-600/20 uppercase tracking-widest hover:scale-[1.02] active:scale-95">
+              Comparar Lentes
             </button>
           </div>
         </div>
