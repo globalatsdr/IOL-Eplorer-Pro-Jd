@@ -298,6 +298,23 @@ const normalizeText = (text: string) =>
   : '';
 
 function App() {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setIsSidePanelOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (e.altKey) {
+      setIsSidePanelOpen(true);
+    }
+  };
+
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
   const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
@@ -1252,8 +1269,9 @@ INSTRUCCIONES:
       <header className="bg-black border-b border-white/10 sticky top-0 z-30 shadow-sm px-4 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setIsSidePanelOpen(true)} 
-            className="w-14 h-14 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform active:scale-95 focus:outline-none"
+            onClick={handleLogoClick} 
+            className="w-14 h-14 flex items-center justify-center overflow-hidden cursor-help hover:scale-105 transition-transform active:scale-95 focus:outline-none"
+            title="IOL Explorer Pro (Alt+L para opciones)"
           >
              <img src="logo.png" alt="IOL Explorer Logo" className="w-full h-full object-contain" />
           </button>
