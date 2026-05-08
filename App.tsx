@@ -1726,40 +1726,83 @@ INSTRUCCIONES:
         </div>
       </main>
 
-      {selectedLensIds.size > 0 && (
-        <div className="fixed bottom-0 inset-x-0 md:bottom-8 flex justify-center z-50 pointer-events-none p-4">
-          <div className="pointer-events-auto w-full max-w-6xl p-5 rounded-2xl md:rounded-3xl bg-slate-900/65 backdrop-blur-2xl text-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col md:flex-row justify-between items-center animate-in slide-in-from-bottom-5 border border-white/20 gap-4 md:gap-0">
-            <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
-              <div className="flex items-center gap-5">
-                <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/40 animate-pulse">{selectedLensIds.size}</div>
+      {/* PANEL LATERAL IZQUIERDO: COMPARATIVA ACTIVA */}
+      <AnimatePresence>
+        {selectedLensIds.size > 0 && (
+          <motion.div 
+            initial={{ x: -100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -100, opacity: 0 }}
+            className="fixed top-24 left-4 bottom-8 w-56 bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-3xl z-40 shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Cabecera con Contador */}
+            <div className="p-5 border-b border-white/5 bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-lg shadow-lg shadow-blue-500/20">
+                  {selectedLensIds.size}
+                </div>
                 <div>
-                  <p className="text-base font-black uppercase tracking-tight">Comparativa Activa</p>
-                  <p className="text-[11px] text-blue-400 font-bold uppercase tracking-widest">{selectedLensIds.size === 5 ? 'Límite de 5 alcanzado' : `Has seleccionado ${selectedLensIds.size} de 5`}</p>
+                  <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Comparativa</h3>
+                  <p className="text-xs font-bold text-white leading-tight">Activa</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedLensIds(new Set())} className="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
-                <Trash2 className="w-5 h-5" />
-              </button>
             </div>
-            
-            <div className="flex items-center gap-4 w-full md:w-auto">
+
+            {/* Lista de Lentes */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              {Array.from(selectedLensIds).map(id => {
+                const lens = baseLenses.find(l => l.id === id);
+                return (
+                  <div key={id} className="group relative bg-white/5 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                    <p className="text-[10px] font-black text-white truncate pr-5">{lens?.model || id}</p>
+                    <button 
+                      onClick={() => {
+                        const newSet = new Set(selectedLensIds);
+                        newSet.delete(id);
+                        setSelectedLensIds(newSet);
+                      }}
+                      className="absolute top-1/2 -translate-y-1/2 right-2 p-1 text-white/20 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {selectedLensIds.size < 5 && (
+                <div className="border-2 border-dashed border-white/5 p-3 rounded-xl flex items-center justify-center">
+                  <p className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">Espacio libre ({5 - selectedLensIds.size})</p>
+                </div>
+              )}
+            </div>
+
+            {/* Botones Inferiores */}
+            <div className="p-4 bg-black/20 border-t border-white/5 space-y-2">
               <button 
-                onClick={() => setSelectedLensIds(new Set())} 
-                className="hidden md:flex items-center gap-2 text-xs font-black text-slate-400 hover:text-red-400 transition-colors uppercase tracking-widest mr-4 group"
+                onClick={() => setShowGraphsModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all"
               >
-                <RotateCcw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-                Limpiar
+                <LineChart className="w-3.5 h-3.5 text-blue-400" />
+                Gráficos
               </button>
-              <button onClick={() => setShowGraphsModal(true)} className="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white px-6 py-4 rounded-2xl font-black text-sm transition-all border border-white/10 uppercase tracking-tight flex items-center justify-center gap-2">
-                <LineChart className="w-4 h-4 text-blue-400" /> <span>Graficos</span>
+              
+              <button 
+                onClick={() => setShowComparison(true)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-95"
+              >
+                Comparar
               </button>
-              <button onClick={() => setShowComparison(true)} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-blue-600/20 uppercase tracking-widest hover:scale-[1.02] active:scale-95">
-                Comparar Lentes
+
+              <button 
+                onClick={() => setSelectedLensIds(new Set())}
+                className="w-full py-2 flex items-center justify-center gap-2 text-[9px] font-black text-white/30 hover:text-red-400 transition-colors uppercase tracking-widest group"
+              >
+                <RotateCcw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                Limpiar todo
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showComparison && <ComparisonView lenses={lenses.filter(l => selectedLensIds.has(l.id))} onClose={() => setShowComparison(false)} onRemove={id => {const n = new Set(selectedLensIds); n.delete(id); setSelectedLensIds(n);}} onFindSimilar={findEquivalent} manufacturers={uniqueManufacturers} />}
       {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
