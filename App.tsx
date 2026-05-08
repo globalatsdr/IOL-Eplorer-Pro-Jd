@@ -298,23 +298,6 @@ const normalizeText = (text: string) =>
   : '';
 
 function App() {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey && e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        setIsSidePanelOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleLogoClick = (e: React.MouseEvent) => {
-    if (e.altKey) {
-      setIsSidePanelOpen(true);
-    }
-  };
-
   const [baseLenses, setBaseLenses] = useState<Lens[]>([]);
   const [overrideData, setOverrideData] = useState<Record<string, Partial<Lens>>>({});
   const [activeTab, setActiveTab] = useState<FilterTab>(FilterTab.BASIC);
@@ -390,6 +373,30 @@ function App() {
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const [userGeminiKey, setUserGeminiKey] = useState(localStorage.getItem(STORAGE_KEY_GEMINI_API) || '');
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // --- SHORTCUTS & LOGO PANEL HANDLERS ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Abrir panel lateral con Alt + L
+      if (e.altKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setIsSidePanelOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    // Solo abre si se pulsa Alt al hacer click (secreto)
+    if (e.altKey) {
+      e.preventDefault();
+      setIsSidePanelOpen(true);
+    } else {
+      // Si hace click normal, no hace nada o podrías redirigir a inicio
+      // console.log("Click normal en logo - usa Alt para opciones");
+    }
+  };
 
   useEffect(() => {
     if (chatScrollRef.current) {
