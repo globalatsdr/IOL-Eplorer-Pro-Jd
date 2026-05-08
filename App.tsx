@@ -21,6 +21,7 @@ import RuleCreator from './components/RuleCreator';
 import { 
   Upload, 
   Lock, 
+  Unlock,
   RotateCcw, 
   Search, 
   ShieldCheck, 
@@ -1932,11 +1933,20 @@ INSTRUCCIONES:
                             </div>
                           </div>
                           <button 
-                            onClick={handleAdminLogin}
-                            className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-white font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 group"
+                            onClick={isAdvancedUnlocked || isDrAlfonsoUnlocked ? () => setAdminPasswordInput('') : handleAdminLogin}
+                            className={`w-full ${isAdvancedUnlocked || isDrAlfonsoUnlocked ? 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'} py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3 group`}
                           >
-                            Autenticar Pro
-                            <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            {isAdvancedUnlocked || isDrAlfonsoUnlocked ? (
+                              <>
+                                <Unlock className="w-4 h-4" />
+                                Cerrar Acceso / Bloquear
+                              </>
+                            ) : (
+                              <>
+                                Autenticar Pro
+                                <ArrowRightCircle className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
