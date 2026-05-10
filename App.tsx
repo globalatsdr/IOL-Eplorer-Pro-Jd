@@ -44,7 +44,9 @@ import {
   LogOut,
   Bot,
   Send,
-  Eraser
+  Eraser,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { GoogleGenAI } from "@google/genai";
@@ -319,6 +321,7 @@ function App() {
   const isDrAlfonsoUnlocked = adminPasswordInput === DR_ALFONSO_UNLOCK_PASSWORD;
 
   const [selectedLensIds, setSelectedLensIds] = useState<Set<string>>(new Set());
+  const [isComparisonPanelMinimized, setIsComparisonPanelMinimized] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGraphsModal, setShowGraphsModal] = useState(false);
   const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
@@ -1733,73 +1736,118 @@ INSTRUCCIONES:
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -100, opacity: 0 }}
-            className="fixed top-24 left-4 bottom-8 w-56 bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-3xl z-40 shadow-2xl flex flex-col overflow-hidden"
+            className={`fixed top-24 left-4 z-40 flex flex-col overflow-hidden bg-slate-900/80 backdrop-blur-3xl border border-white/10 shadow-2xl transition-all duration-300 ${
+              isComparisonPanelMinimized 
+                ? "w-16 h-16 bottom-auto rounded-full items-center justify-center cursor-pointer hover:bg-slate-800/80" 
+                : "w-56 bottom-8 rounded-3xl"
+            }`}
+            onClick={() => {
+              if (isComparisonPanelMinimized) {
+                setIsComparisonPanelMinimized(false);
+              }
+            }}
           >
-            {/* Cabecera con Contador */}
-            <div className="p-5 border-b border-white/5 bg-white/5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-lg shadow-lg shadow-blue-500/20">
-                  {selectedLensIds.size}
-                </div>
-                <div>
-                  <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Comparativa</h3>
-                  <p className="text-xs font-bold text-white leading-tight">Activa</p>
+            {isComparisonPanelMinimized ? (
+              <div className="relative flex items-center justify-center w-full h-full">
+                <div className="h-full w-full bg-blue-600 rounded-full flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20 text-white relative group">
+                  <span className="group-hover:hidden transition-opacity">{selectedLensIds.size}</span>
+                  <Maximize2 className="w-6 h-6 hidden group-hover:block transition-opacity" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shadow-lg border border-slate-900 overflow-hidden">
+                     {/* Un pequeño puntito rojo indicador de status o nada */}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Lista de Lentes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-              {Array.from(selectedLensIds).map(id => {
-                const lens = baseLenses.find(l => l.id === id);
-                return (
-                  <div key={id} className="group relative bg-white/5 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors">
-                    <p className="text-[10px] font-black text-white truncate pr-5">{lens?.name || id}</p>
-                    <button 
-                      onClick={() => {
-                        const newSet = new Set(selectedLensIds);
-                        newSet.delete(id);
-                        setSelectedLensIds(newSet);
-                      }}
-                      className="absolute top-1/2 -translate-y-1/2 right-2 p-1 text-white/20 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+            ) : (
+              <>
+                {/* Cabecera con Contador */}
+                <div 
+                  className="p-5 border-b border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors flex justify-between items-center group"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsComparisonPanelMinimized(true);
+                  }}
+                  title="Minimizar panel"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-lg shadow-lg shadow-blue-500/20 text-white">
+                      {selectedLensIds.size}
+                    </div>
+                    <div>
+                      <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Comparativa</h3>
+                      <p className="text-xs font-bold text-white leading-tight">Activa</p>
+                    </div>
                   </div>
-                );
-              })}
-              {selectedLensIds.size < 5 && (
-                <div className="border-2 border-dashed border-white/5 p-3 rounded-xl flex items-center justify-center">
-                  <p className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">Espacio libre ({5 - selectedLensIds.size})</p>
+                  <button className="text-white/40 hover:text-white transition-colors">
+                    <Minimize2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </button>
                 </div>
-              )}
-            </div>
 
-            {/* Botones Inferiores */}
-            <div className="p-4 bg-black/20 border-t border-white/5 space-y-2">
-              <button 
-                onClick={() => setShowGraphsModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all"
-              >
-                <LineChart className="w-3.5 h-3.5 text-blue-400" />
-                Gráficos
-              </button>
-              
-              <button 
-                onClick={() => setShowComparison(true)}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-95"
-              >
-                Comparar
-              </button>
+                {/* Lista de Lentes */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                  {Array.from(selectedLensIds).map(id => {
+                    const lens = baseLenses.find(l => l.id === id);
+                    return (
+                      <div key={id} className="group relative bg-white/5 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors">
+                        <p className="text-[10px] font-black text-white truncate pr-5">{lens?.name || id}</p>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newSet = new Set(selectedLensIds);
+                            newSet.delete(id);
+                            setSelectedLensIds(newSet);
+                            if (newSet.size === 0) setIsComparisonPanelMinimized(false);
+                          }}
+                          className="absolute top-1/2 -translate-y-1/2 right-2 p-1 text-white/20 hover:text-red-400 transition-colors z-10"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {selectedLensIds.size < 5 && (
+                    <div className="border-2 border-dashed border-white/5 p-3 rounded-xl flex items-center justify-center">
+                      <p className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">Espacio libre ({5 - selectedLensIds.size})</p>
+                    </div>
+                  )}
+                </div>
 
-              <button 
-                onClick={() => setSelectedLensIds(new Set())}
-                className="w-full py-2 flex items-center justify-center gap-2 text-[9px] font-black text-white/30 hover:text-red-400 transition-colors uppercase tracking-widest group"
-              >
-                <RotateCcw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
-                Limpiar todo
-              </button>
-            </div>
+                {/* Botones Inferiores */}
+                <div className="p-4 bg-black/20 border-t border-white/5 space-y-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowGraphsModal(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    <LineChart className="w-3.5 h-3.5 text-blue-400" />
+                    Gráficos
+                  </button>
+                  
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowComparison(true);
+                    }}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-95"
+                  >
+                    Comparar
+                  </button>
+
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLensIds(new Set());
+                      setIsComparisonPanelMinimized(false);
+                    }}
+                    className="w-full py-2 flex items-center justify-center gap-2 text-[9px] font-black text-white/30 hover:text-red-400 transition-colors uppercase tracking-widest group"
+                  >
+                    <RotateCcw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                    Limpiar todo
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
