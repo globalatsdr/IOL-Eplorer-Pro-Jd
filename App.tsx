@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { GoogleGenAI } from "@google/genai";
+import helpTextRaw from './Ayuda IOL Explorer Pro.txt?raw';
 
 const STORAGE_KEY_GEMINI_API = 'iol_user_gemini_key';
 const isGitHubPages = window.location.hostname.includes('github.io');
@@ -324,6 +325,7 @@ function App() {
   const [isComparisonPanelMinimized, setIsComparisonPanelMinimized] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGraphsModal, setShowGraphsModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [isRulesManagerOpen, setIsRulesManagerOpen] = useState(false);
   const [isRuleCreatorOpen, setIsRuleCreatorOpen] = useState(false);
 
@@ -1856,6 +1858,40 @@ INSTRUCCIONES:
       {showGraphsModal && <GraphsModal lenses={lenses.filter(l => selectedLensIds.has(l.id))} availableGraphs={availableGraphs} onClose={() => setShowGraphsModal(false)} />}
       {isRulesManagerOpen && <RulesManager rules={ALL_RULES} onClose={() => setIsRulesManagerOpen(false)} onOpenCreator={() => { setIsRulesManagerOpen(false); setIsRuleCreatorOpen(true); }} />}
       
+      {showHelpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowHelpModal(false)}>
+          <div className="bg-slate-900 border border-white/10 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col relative" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-xl">
+                  <HelpCircle className="w-5 h-5 text-purple-400" />
+                </div>
+                <h2 className="text-xl font-black text-white tracking-tight">Ayuda IOL Explorer Pro</h2>
+              </div>
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 whitespace-pre-wrap font-mono text-sm text-slate-300 leading-relaxed">
+              {helpTextRaw || "El archivo de ayuda no contiene texto o no se pudo cargar."}
+            </div>
+            
+            <div className="p-4 border-t border-white/5 bg-black/20 flex justify-end">
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition-all shadow-lg"
+              >
+                Cerrar Ayuda
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAtAModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setIsAtAModalOpen(false)}>
           <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden relative" onClick={e => e.stopPropagation()}>
@@ -2068,6 +2104,14 @@ INSTRUCCIONES:
                               >
                                 <FileJson className="w-4 h-4 text-orange-400" />
                                 <span>Cargar Modificaciones</span>
+                              </button>
+
+                              <button 
+                                onClick={() => setShowHelpModal(true)} 
+                                className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-purple-500/10 rounded-xl text-white text-xs font-bold transition-all border border-purple-500/20 hover:text-purple-300"
+                              >
+                                <HelpCircle className="w-4 h-4 text-purple-400" />
+                                <span>Ayuda IOL Explorer Pro</span>
                               </button>
 
                               <button 
