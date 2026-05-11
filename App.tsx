@@ -662,7 +662,7 @@ INSTRUCCIONES:
     const concepts = getLensRecommendations(drAlfonsoInputs);
     setRecommendedConcepts(concepts);
     
-    // Auto-poblar concepto óptico si hay una recomendación clara
+    // Auto-poblar concepto óptico según la recomendación
     if (concepts.length === 1) {
       const concept = concepts[0];
       let mapped = 'any';
@@ -671,9 +671,9 @@ INSTRUCCIONES:
       else if (concept.includes("Extend")) mapped = "EDoF";
       else if (concept.includes("Full Range")) mapped = "multifocal";
       
-      if (drAlfonsoInputs.opticConcept === 'any') {
-        setDrAlfonsoInputs(prev => ({ ...prev, opticConcept: mapped }));
-      }
+      setDrAlfonsoInputs(prev => prev.opticConcept !== mapped ? { ...prev, opticConcept: mapped } : prev);
+    } else {
+      setDrAlfonsoInputs(prev => prev.opticConcept !== 'any' ? { ...prev, opticConcept: 'any' } : prev);
     }
 
     const age = drAlfonsoInputs.age ? parseInt(drAlfonsoInputs.age, 10) : 0;
