@@ -479,14 +479,31 @@ function App() {
         fi: l.specifications.filter
       }));
 
+      let extendedContext = "";
+      if (isDrAlfonsoUnlocked) {
+        extendedContext = `
+--- CONTEXTO CLÍNICO DEL PACIENTE (Pestaña Dr. Alfonso) ---
+El usuario tiene los siguientes datos de paciente seleccionados actualmente:
+${JSON.stringify(drAlfonsoInputs, null, 2)}
+
+El sistema ha recomendado los siguientes Conceptos Ópticos en base a las reglas: ${recommendedConcepts.length ? recommendedConcepts.join(', ') : 'Ninguno/Cualquiera'}.
+
+REGLAS DE DECISIÓN EXPLÍCITAS DEL DR. ALFONSO EN EL SISTEMA:
+${JSON.stringify(ALL_RULES, null, 2)}
+
+IMPORTANTE: Si el usuario te pregunta por qué se ha recomendado una lente, qué regla has aplicado, o te pregunta sobre la relación entre los datos del paciente y la recomendación, DEBES buscar en las REGLAS DE DECISIÓN provistas arriba y cruzarlas con los datos del paciente para darle una justificación médica y técnica basada exactamente en esas reglas.
+`;
+      }
+
       const systemPrompt = `Eres el ASISTENTE IA de IOL Explorer. Tienes ${filteredLenses.length} lentes en vista.
 DATOS CONTEXTO (Top 40): ${JSON.stringify(lensesContext)}
-
+${extendedContext}
 INSTRUCCIONES:
 1. Sé conciso y técnico.
 2. Usa tablas para comparar.
 3. Justifica recomendaciones con números de Abbe y diseño óptico.
-4. Tono profesional.`;
+4. Si tienes el contexto clínico del Dr. Alfonso, justifica tus respuestas usando los datos del paciente y las reglas de decisión explícitas.
+5. Tono profesional.`;
 
       let responseText = "";
 
