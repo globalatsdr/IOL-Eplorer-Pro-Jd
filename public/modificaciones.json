@@ -68,6 +68,7 @@
    "DRN00V":{
     "surname": "Tecnis Odyssey",
     "specifications": {
+       "opticConcept": "Monofocal +",
       "technology": "Difractiva"
     }
   },
@@ -82,32 +83,6 @@
     "specifications": {
       "technology": "Difractiva?"
     }
-  },
-   "ZXR00":{
-    "surname": "Tecnis Symfony",
-    "specifications": {
-      "technology": "Difractiva",
-      "note": "indicated for primary implantation for the visual correction of aphakia, in adult patients with less than 1 diopter of pre-existing corneal astigmatism, in whom a cataractous lens has been removed"
-   }
-  },
-   "ZXR00V":{
-    "surname": "Tecnis Symfony OptiBlue IOL with InteliLight",
-    "specifications": {
-      "technology": "Difractiva?"
-   }
-  },
-   "ZXT":{
-    "surname": "Tecnis Symfony Toric",
-    "specifications": {
-      "technology": "Difractiva",
-      "note": "are indicated for primary implantation for the visual correction of aphakia and for reduction of residual refractive astigmatism in adult patients with greater than or equal to 1 diopter of preoperative corneal astigmatism"
-   }
-  },
-   "ZXW":{
-    "surname": "Tecnis Symfony OptiBlue Toric II with InteliLight",
-    "specifications": {
-      "technology": "Difractiva?"
-   }
   },
   "FINEVISION HP POD F GF":{
     "specifications": {
@@ -139,6 +114,11 @@
       "technology": "Difractiva"
     }
   },
+   "ICB00":{
+    "specifications": {
+      "opticConcept": "Monofocal +"
+    }
+  },
    "LuxLife":{    
       "AbbeNumber": 43
   },
@@ -150,6 +130,11 @@
   "Physiol FineVision Pod FT":{
     "specifications": {
       "technology": "Difractiva"
+    }
+  },
+   "RayOne EMV":{
+    "specifications": {
+      "opticConcept": "Monofocal +"
     }
   },
   "XY1-G / XY1-GP":{
@@ -214,5 +199,31 @@
       "technology": "Refractiva?",
       "note": "iSert injector"
     }
+  },
+   "ZXR00":{
+    "surname": "Tecnis Symfony",
+    "specifications": {
+      "technology": "Difractiva",
+      "note": "indicated for primary implantation for the visual correction of aphakia, in adult patients with less than 1 diopter of pre-existing corneal astigmatism, in whom a cataractous lens has been removed"
+   }
+  },
+   "ZXR00V":{
+    "surname": "Tecnis Symfony OptiBlue IOL with InteliLight",
+    "specifications": {
+      "technology": "Difractiva?"
+   }
+  },
+   "ZXT":{
+    "surname": "Tecnis Symfony Toric",
+    "specifications": {
+      "technology": "Difractiva",
+      "note": "are indicated for primary implantation for the visual correction of aphakia and for reduction of residual refractive astigmatism in adult patients with greater than or equal to 1 diopter of preoperative corneal astigmatism"
+   }
+  },
+   "ZXW":{
+    "surname": "Tecnis Symfony OptiBlue Toric II with InteliLight",
+    "specifications": {
+      "technology": "Difractiva?"
+   }
   }
 }
