@@ -34,6 +34,12 @@
       "note": "Tecnolog�a EDoF no difractiva. Ideal para evitar halos nocturnos."
     }
   },
+   "AcrySof IQ Vivity DFT015":{
+    "specifications": {
+      "technology": "No Difractiva",
+        "AbbeNumber": 37
+    }
+  },
   "DIB00":{
     "specifications": {
       "technology": "Refractiva?",
@@ -134,7 +140,8 @@
   },
    "RayOne EMV":{
     "specifications": {
-      "opticConcept": "Monofocal +"
+      "opticConcept": "Monofocal +",
+       "technology": "No Difractiva"
     }
   },
   "XY1-G / XY1-GP":{
