@@ -1,14 +1,13 @@
 {
    "611HPS":{
     "specifications": {
-      "opticConcept": "Monofocal +",
+      "opticConcept": "Monofocal",
       "hapticDesign": "C-Loop MODIFICADO",
       "toric": true,
       "hydro": "hydrophobic",
       "opticMaterial": "Silicona Modificada",
       "filter": "Violeta-TEST2",
-      "technology": "Refractiva",
-      "note": "Comportamiento como EDOF - Pruena de notas"
+      "technology": "Refractiva"
     },
     "availability": {
       "additions": [ 5.0, 6.0 ]
@@ -24,9 +23,8 @@
   },
   "A4DW0K":{
     "specifications": {
-      "opticConcept": "Monofocal +",
       "filter": "Violet-light & UV",
-      "technology": "RefractivaXXX",
+      "technology": "Refractiva?",
       "note": "Lente monofocal hidrof�lica est�ndar. Buena estabilidad en saco."
     }
   },
