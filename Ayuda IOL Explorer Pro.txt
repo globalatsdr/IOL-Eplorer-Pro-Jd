@@ -13,5 +13,6 @@ Aquí encontrarás información útil sobre IOL Explorer Pro.
 	5. Links de acceso directo iolcon
 	6. Asistente IA, análisis de lentes filtradas
 	7. Búsqueda de lentes de otro fabricante basado en uno o varios criterios concretos.
+-Archivos enlazados: Hapticos, Gráficas, Imagenes, lentesExcluidas, Modificaciones
 -Asistente de IA
 	"Si el usuario te pregunta por qué se ha recomendado una lente, qué regla has aplicado, o te pregunta sobre la relación entre los datos del paciente y la recomendación, DEBES buscar en las REGLAS DE DECISIÓN provistas 	y cruzarlas con los datos del paciente para darle una justificación médica y técnica basada exactamente en esas reglas."
